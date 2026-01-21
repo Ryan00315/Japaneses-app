@@ -17,7 +17,6 @@
         ::-webkit-scrollbar { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
 
-        /* 新增區域的折疊動畫 */
         #input-section {
             max-height: 0;
             overflow: hidden;
@@ -85,7 +84,7 @@
 
         <section id="import-area" class="hidden bg-slate-900 rounded-3xl p-5 mb-6 text-white shadow-xl">
             <h3 class="font-bold mb-2">批量匯入 (CSV 格式)</h3>
-            <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="平假名,片假名,中文,分類"></textarea>
+            <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="單語,漢字,中文,分類"></textarea>
             <div class="flex gap-2">
                 <button onclick="bulkImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">開始匯入</button>
                 <button onclick="toggleImportArea()" class="px-5 bg-slate-700 rounded-xl font-bold text-sm">取消</button>
@@ -95,8 +94,8 @@
         <section id="input-section" class="bg-white rounded-3xl shadow-sm border border-slate-200 px-5 transition-all">
             <div class="py-5">
                 <div class="grid grid-cols-2 gap-3 mb-4">
-                    <input id="word" type="text" placeholder="平假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                    <input id="reading" type="text" placeholder="片假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
+                    <input id="word" type="text" placeholder="單語" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
+                    <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
                 </div>
                 <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none focus:ring-2 ring-indigo-300">
                 
@@ -123,7 +122,7 @@
     <div id="quiz-overlay" class="fixed inset-0 z-[100] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white">
         <div class="w-full max-w-md flex flex-col h-full">
             <div class="flex justify-between items-center text-white/50 mb-8">
-                <span class="text-xs font-mono tracking-widest uppercase tracking-widest">Random Test Mode</span>
+                <span class="text-xs font-mono tracking-widest uppercase">Random Test</span>
                 <button onclick="closeQuiz()" class="text-2xl">✕</button>
             </div>
             <div class="card-flip flex-1 w-full relative mb-10 text-slate-900">
@@ -149,7 +148,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase 配置
+        // Firebase 配置 (已套用記憶金鑰)
         const firebaseConfig = {
             apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4",
             authDomain: "jpnote-5f436.firebaseapp.com",
@@ -177,7 +176,7 @@
             const w = document.getElementById('word');
             const r = document.getElementById('reading');
             const m = document.getElementById('meaning');
-            if (!w.value.trim() || !m.value.trim()) return alert("請輸入平假名與中文");
+            if (!w.value.trim() || !m.value.trim()) return alert("請輸入單語與中文");
             try {
                 await addDoc(vocabsCol, {
                     word: w.value.trim(),
@@ -241,22 +240,17 @@
             input.focus();
         }
 
-        // 優化口語發音
         function speak(text) {
             if (!text) return;
             window.speechSynthesis.cancel();
             const uttr = new SpeechSynthesisUtterance(text);
             const voices = window.speechSynthesis.getVoices();
-            
-            // 尋找系統預設高品質日文語音，不再刻意限制女聲
-            let targetVoice = voices.find(v => v.lang.includes('ja') && v.name.includes('Premium')) || 
-                              voices.find(v => v.lang.includes('ja') && v.name.includes('Google')) ||
-                              voices.find(v => v.lang.includes('ja'));
-
+            let targetVoice = voices.find(v => v.lang.includes('ja') && (v.name.includes('Premium') || v.name.includes('Google') || v.name.includes('Kyoko')));
+            if (!targetVoice) targetVoice = voices.find(v => v.lang.includes('ja'));
             uttr.voice = targetVoice;
             uttr.lang = 'ja-JP';
-            uttr.rate = 1.0;   // 恢復正常語速
-            uttr.pitch = 1.0;  // 恢復自然音調
+            uttr.rate = 1.0;
+            uttr.pitch = 1.0;
             window.speechSynthesis.speak(uttr);
         }
 
@@ -314,7 +308,7 @@
             nextQuestion();
         }
         function exportCSV() {
-            const header = "\uFEFF平假名,片假名,中文,分類,錯誤計數\n";
+            const header = "\uFEFF單語,漢字,中文,分類,錯誤計數\n";
             const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category},${v.wrongCount}`).join("\n");
             const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
@@ -325,4 +319,3 @@
     </script>
 </body>
 </html>
-
