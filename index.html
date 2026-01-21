@@ -2,30 +2,9 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日文雲端單字本</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>日文雲端筆記 Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // FIXME: 請在此處填入你的 Firebase 專案設定
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // 初始化 Firebase (若沒填設定會跑 Local 模式)
-        if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
-            const app = initializeApp(firebaseConfig);
-            window.db = getFirestore(app);
-            console.log("Cloud Mode Enabled");
-        }
-    </script>
     <style>
         .card-flip { perspective: 1000px; }
         .card-inner { transition: transform 0.4s; transform-style: preserve-3d; cursor: pointer; }
@@ -34,191 +13,71 @@
         .card-back { transform: rotateY(180deg); }
         .active-filter { background-color: #4f46e5 !important; color: white !important; }
         ::-webkit-scrollbar { display: none; }
+        .sticky-top { position: sticky; top: 0; z-index: 50; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen p-4 pb-10 font-sans">
+<body class="bg-gray-50 min-h-screen pb-10 font-sans">
 
-    <div class="max-w-md mx-auto">
+    <div class="sticky-top bg-gray-50/80 backdrop-blur-md px-4 py-3 border-b border-gray-200">
+        <div class="max-w-md mx-auto relative">
+            <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋單字或中文..." 
+                   class="w-full p-3 pl-10 rounded-2xl bg-white shadow-sm border border-gray-100 outline-none focus:ring-2 ring-indigo-400 transition-all">
+            <span class="absolute left-3 top-3.5 text-gray-400"></span>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto p-4">
         <header class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-black text-indigo-600">日文雲端筆記</h1>
+            <h1 class="text-xl font-black text-indigo-600 tracking-tighter">日文學習助手</h1>
             <div class="flex gap-2">
-                <button onclick="exportCSV()" class="text-xs bg-white border px-2 py-1 rounded shadow-sm hover:bg-gray-50">匯出</button>
-                <label class="text-xs bg-indigo-50 border border-indigo-200 px-2 py-1 rounded shadow-sm cursor-pointer hover:bg-indigo-100">
+                <button onclick="exportCSV()" class="text-xs bg-white border px-3 py-1.5 rounded-lg shadow-sm hover:bg-gray-50 font-bold text-gray-600">匯出</button>
+                <label class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg shadow-sm cursor-pointer hover:bg-indigo-700 font-bold">
                     匯入 <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="importCSV(event)">
                 </label>
             </div>
         </header>
 
         <div id="quiz-section" class="mb-8 hidden">
-            <div class="card-flip h-52 w-full relative mb-4">
-                <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full shadow-xl">
-                    <div class="card-front bg-indigo-600 text-white rounded-3xl flex flex-col items-center justify-center p-6 text-center">
-                        <span id="quiz-q" class="text-5xl font-bold mb-2"></span>
-                        <button onclick="event.stopPropagation(); speak(document.getElementById('quiz-q').innerText)" class="mt-2 bg-indigo-500 p-2 rounded-full hover:bg-indigo-400 transition">🔊</button>
+            <div class="card-flip h-56 w-full relative mb-4">
+                <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full shadow-2xl">
+                    <div class="card-front bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-3xl flex flex-col items-center justify-center p-6 text-center">
+                        <span id="quiz-q" class="text-5xl font-bold mb-4 tracking-wider"></span>
+                        <button onclick="event.stopPropagation(); speak(document.getElementById('quiz-q').innerText)" 
+                                class="bg-white/20 p-4 rounded-full hover:bg-white/30 transition-all backdrop-blur-sm">
+                            <span class="text-2xl">🔊</span>
+                        </button>
                     </div>
                     <div class="card-back bg-white border-4 border-indigo-600 rounded-3xl flex flex-col items-center justify-center p-6 shadow-inner">
-                        <p id="quiz-r" class="text-indigo-400 font-bold mb-1"></p>
+                        <p id="quiz-r" class="text-indigo-500 font-bold text-lg mb-2"></p>
                         <p id="quiz-a" class="text-3xl font-black text-slate-800"></p>
                     </div>
                 </div>
             </div>
-            <button onclick="loadRandomWord()" class="w-full py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 active:scale-95 transition">下一題</button>
+            <button onclick="loadRandomWord()" class="w-full py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-2xl font-black shadow-lg active:scale-[0.98] transition-all">
+                NEXT WORD
+            </button>
         </div>
 
-        <section class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
+        <section class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 mb-6">
+            <h3 class="text-sm font-bold text-gray-400 mb-3 ml-1">快速新增</h3>
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <input id="word" type="text" placeholder="單字" class="bg-gray-50 p-3 rounded-xl outline-none focus:ring-2 ring-indigo-300">
-                <input id="reading" type="text" placeholder="讀音" class="bg-gray-50 p-3 rounded-xl outline-none focus:ring-2 ring-indigo-300">
+                <input id="reading" type="text" placeholder="假名" class="bg-gray-50 p-3 rounded-xl outline-none focus:ring-2 ring-indigo-300">
             </div>
             <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-gray-50 p-3 rounded-xl mb-3 outline-none focus:ring-2 ring-indigo-300">
             <div class="flex gap-3">
-                <select id="category" class="bg-gray-50 px-4 rounded-xl text-sm font-bold text-gray-500">
+                <select id="category" class="bg-gray-50 px-4 rounded-xl text-sm font-bold text-gray-500 border-none outline-none">
                     <option>名詞</option>
                     <option>動詞</option>
                     <option>形容詞</option>
+                    <option>其他</option>
                 </select>
-                <button onclick="addWord()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-black transition">新增</button>
+                <button onclick="addWord()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-black transition shadow-lg">加入清單</button>
             </div>
         </section>
 
-        <div class="sticky top-0 bg-gray-50 pt-2 pb-4 z-10">
-            <input type="text" id="searchInput" oninput="renderList()" placeholder="搜尋單字..." class="w-full p-4 rounded-2xl bg-white shadow-sm border border-gray-100 mb-3">
-            <div class="flex gap-2 overflow-x-auto">
-                <button onclick="setFilter('全部')" class="filter-btn active-filter px-5 py-2 rounded-full bg-white border text-sm font-bold shadow-sm">全部</button>
-                <button onclick="setFilter('名詞')" class="filter-btn px-5 py-2 rounded-full bg-white border text-sm font-bold shadow-sm">名詞</button>
-                <button onclick="setFilter('動詞')" class="filter-btn px-5 py-2 rounded-full bg-white border text-sm font-bold shadow-sm">動詞</button>
-                <button onclick="setFilter('形容詞')" class="filter-btn px-5 py-2 rounded-full bg-white border text-sm font-bold shadow-sm">形容詞</button>
-            </div>
-        </div>
-
-        <ul id="vocab-list" class="space-y-3"></ul>
-    </div>
-
-    <script>
-        let vocabs = JSON.parse(localStorage.getItem('myVocabsV3')) || [];
-        let currentFilter = '全部';
-        let currentQuizWord = null;
-
-        // --- 核心功能 ---
-        function addWord() {
-            const data = {
-                word: document.getElementById('word').value,
-                reading: document.getElementById('reading').value,
-                meaning: document.getElementById('meaning').value,
-                category: document.getElementById('category').value,
-                id: Date.now()
-            };
-            if (!data.word || !data.meaning) return alert("內容不能為空");
-            
-            vocabs.push(data);
-            saveData();
-            ['word', 'reading', 'meaning'].forEach(id => document.getElementById(id).value = '');
-        }
-
-        function saveData() {
-            localStorage.setItem('myVocabsV3', JSON.stringify(vocabs));
-            renderList();
-            renderQuizUI();
-        }
-
-        // --- 匯入/匯出 (Excel CSV) ---
-        function exportCSV() {
-            const header = "\uFEFF單字,讀音,意思,分類\n"; // \uFEFF 解決 Excel 中文亂碼
-            const rows = vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category}`).join("\n");
-            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "日文單字本.csv";
-            link.click();
-        }
-
-        function importCSV(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split("\n").slice(1); // 跳過標題列
-                lines.forEach(line => {
-                    const [word, reading, meaning, category] = line.split(",");
-                    if (word && meaning) {
-                        vocabs.push({ word: word.trim(), reading: reading.trim(), meaning: meaning.trim(), category: category.trim() || '未分類', id: Date.now() + Math.random() });
-                    }
-                });
-                saveData();
-                alert("匯入完成！");
-            };
-            reader.readAsText(file);
-        }
-
-        // --- 自然發音 (TTS) ---
-        function speak(text) {
-            const uttr = new SpeechSynthesisUtterance(text);
-            const voices = window.speechSynthesis.getVoices();
-            // 挑選最佳日文聲音
-            uttr.voice = voices.find(v => v.lang === 'ja-JP' && v.name.includes('Google')) || 
-                         voices.find(v => v.lang === 'ja-JP');
-            uttr.lang = 'ja-JP';
-            uttr.rate = 0.8;
-            window.speechSynthesis.speak(uttr);
-        }
-
-        // --- UI 渲染與篩選 ---
-        function setFilter(cat) {
-            currentFilter = cat;
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active-filter', btn.innerText === cat));
-            renderList();
-        }
-
-        function renderList() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const listEl = document.getElementById('vocab-list');
-            const filtered = vocabs.filter(v => (currentFilter === '全部' || v.category === currentFilter) && (v.word.includes(search) || v.meaning.includes(search)));
-            
-            listEl.innerHTML = filtered.map(v => `
-                <li class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-gray-100">
-                    <div>
-                        <span class="text-[10px] font-black text-indigo-400 uppercase">${v.category}</span>
-                        <div class="text-xl font-bold text-gray-800">${v.word} <span class="text-xs font-normal text-gray-400">【${v.reading}】</span></div>
-                        <div class="text-gray-500 text-sm font-medium">${v.meaning}</div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="speak('${v.word}')" class="text-gray-300 hover:text-indigo-500 transition">🔊</button>
-                        <button onclick="deleteWord(${v.id})" class="text-gray-300 hover:text-red-500 transition">✕</button>
-                    </div>
-                </li>
-            `).reverse().join('');
-        }
-
-        function loadRandomWord() {
-            document.getElementById('quiz-card').classList.remove('is-flipped');
-            const pool = currentFilter === '全部' ? vocabs : vocabs.filter(v => v.category === currentFilter);
-            if (pool.length === 0) return;
-            setTimeout(() => {
-                currentQuizWord = pool[Math.floor(Math.random() * pool.length)];
-                document.getElementById('quiz-q').innerText = currentQuizWord.word;
-                document.getElementById('quiz-r').innerText = currentQuizWord.reading;
-                document.getElementById('quiz-a').innerText = currentQuizWord.meaning;
-            }, 150);
-        }
-
-        function renderQuizUI() {
-            const section = document.getElementById('quiz-section');
-            if (vocabs.length > 0) {
-                section.classList.remove('hidden');
-                if (!currentQuizWord) loadRandomWord();
-            } else {
-                section.classList.add('hidden');
-            }
-        }
-
-        function deleteWord(id) {
-            vocabs = vocabs.filter(v => v.id !== id);
-            saveData();
-        }
-
-        // 啟動語音系統 (部分瀏覽器需要先交互)
-        window.speechSynthesis.getVoices();
-        saveData();
-    </script>
-</body>
-</html>
+        <div class="flex gap-2 overflow-x-auto mb-4 pb-2">
+            <button onclick="setFilter('全部')" class="filter-btn active-filter px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm transition-all">全部</button>
+            <button onclick="setFilter('名詞')" class="filter-btn px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm transition-all">名詞</button>
+            <button onclick="setFilter('動詞')" class="filter-btn px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm transition-all">動詞</button>
+            <button onclick="setFilter
