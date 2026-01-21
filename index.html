@@ -13,18 +13,19 @@
         .card-back { transform: rotateY(180deg); }
         .bg-glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
         .active-cat { background-color: #4f46e5 !important; color: white !important; }
+        /* 新增區按鈕選中樣式 */
+        .active-new-cat { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
         ::-webkit-scrollbar { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
 
-        /* 強化清除按鈕樣式 */
         #clearSearch {
             display: none;
             align-items: center;
             justify-content: center;
             width: 20px;
             height: 20px;
-            background-color: #ef4444; /* 紅色背景 */
-            color: white; /* 白色叉叉 */
+            background-color: #ef4444;
+            color: white;
             border-radius: 999px;
             font-size: 10px;
             font-weight: bold;
@@ -78,19 +79,27 @@
         </section>
 
         <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 mb-6">
-            <div class="grid grid-cols-2 gap-3 mb-3">
+            <div class="grid grid-cols-2 gap-3 mb-4">
                 <input id="word" type="text" placeholder="平假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
                 <input id="reading" type="text" placeholder="片假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
             </div>
-            <div class="flex gap-2 mb-4">
-                <input id="meaning" type="text" placeholder="中文" class="flex-1 bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                <select id="newCategory" class="bg-slate-50 px-3 rounded-2xl text-xs font-bold">
-                    <option value="n.">n.</option><option value="v.">v.</option><option value="adj.">adj.</option>
-                    <option value="數字">數字</option><option value="時間">時間</option><option value="期間">期間</option>
-                    <option value="量詞">量詞</option><option value="其他">其他</option>
-                </select>
+            <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none focus:ring-2 ring-indigo-300">
+            
+            <div class="mb-4">
+                <p class="text-[10px] font-bold text-slate-400 mb-2 ml-1 uppercase tracking-wider">選擇分類</p>
+                <div id="newCategoryContainer" class="flex flex-wrap gap-2">
+                    <button type="button" onclick="selectNewCategory(this, 'n.')" class="new-cat-btn active-new-cat border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">n.</button>
+                    <button type="button" onclick="selectNewCategory(this, 'v.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">v.</button>
+                    <button type="button" onclick="selectNewCategory(this, 'adj.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">adj.</button>
+                    <button type="button" onclick="selectNewCategory(this, '數字')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">數字</button>
+                    <button type="button" onclick="selectNewCategory(this, '時間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">時間</button>
+                    <button type="button" onclick="selectNewCategory(this, '期間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">期間</button>
+                    <button type="button" onclick="selectNewCategory(this, '量詞')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">量詞</button>
+                    <button type="button" onclick="selectNewCategory(this, '其他')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all">其他</button>
+                </div>
             </div>
-            <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 disabled:opacity-50">同步到雲端</button>
+
+            <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 disabled:opacity-50 transition-all">同步到雲端</button>
         </section>
 
         <ul id="vocab-list" class="space-y-3"></ul>
@@ -141,6 +150,7 @@
 
         window.vocabs = [];
         window.currentCategory = '全部';
+        window.selectedNewCategory = 'n.'; // 預設新增分類
 
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snapshot) => {
             window.vocabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -151,14 +161,13 @@
             const w = document.getElementById('word');
             const r = document.getElementById('reading');
             const m = document.getElementById('meaning');
-            const c = document.getElementById('newCategory');
             if (!w.value.trim() || !m.value.trim()) return alert("請輸入平假名與中文");
             try {
                 await addDoc(vocabsCol, {
                     word: w.value.trim(),
                     reading: r.value.trim(),
                     meaning: m.value.trim(),
-                    category: c.value,
+                    category: window.selectedNewCategory,
                     wrongCount: 0,
                     createdAt: new Date()
                 });
@@ -197,13 +206,21 @@
 
     <script>
         function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
+        
+        // 頂端清單過濾切換
         function setCategory(cat) {
             window.currentCategory = cat;
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active-cat', b.innerText === cat));
             renderList();
         }
 
-        // 搜尋清除功能
+        // 新增區域的按鈕選取邏輯
+        function selectNewCategory(btn, cat) {
+            window.selectedNewCategory = cat;
+            document.querySelectorAll('.new-cat-btn').forEach(b => b.classList.remove('active-new-cat'));
+            btn.classList.add('active-new-cat');
+        }
+
         function clearSearch() {
             const input = document.getElementById('searchInput');
             input.value = '';
@@ -216,12 +233,8 @@
             const search = input.value.toLowerCase();
             const clearBtn = document.getElementById('clearSearch');
             
-            // 判斷是否顯示 X：有字才顯示
-            if (search.length > 0) {
-                clearBtn.style.display = 'flex';
-            } else {
-                clearBtn.style.display = 'none';
-            }
+            if (search.length > 0) clearBtn.style.display = 'flex';
+            else clearBtn.style.display = 'none';
 
             const listEl = document.getElementById('vocab-list');
             const filtered = window.vocabs.filter(v => 
@@ -255,6 +268,7 @@
 
         function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
         let currentQuizWord = null;
+
         function nextQuestion() {
             document.getElementById('quiz-card').classList.remove('is-flipped');
             const pool = window.vocabs.filter(v => window.currentCategory === '全部' || v.category === window.currentCategory);
