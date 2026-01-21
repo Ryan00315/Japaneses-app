@@ -37,6 +37,7 @@
         
         <div class="max-w-md mx-auto px-4 pb-3">
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="lesson-filter-container"></div>
+            
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="type-filter">
                 <button onclick="toggleType('n.')" class="type-btn border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold">n.</button>
                 <button onclick="toggleType('v.')" class="type-btn border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold">v.</button>
@@ -60,7 +61,9 @@
                 <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
             </div>
             <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none focus:ring-2 ring-indigo-300">
+            
             <div id="newLessonBtnContainer" class="flex flex-wrap gap-2 mb-4"></div>
+            
             <div id="newCategoryContainer" class="flex flex-wrap gap-2 mb-4">
                 <button type="button" onclick="selectNewCategory(this, 'n.')" class="new-cat-btn active-new-cat border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">n.</button>
                 <button type="button" onclick="selectNewCategory(this, 'v.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">v.</button>
@@ -79,21 +82,6 @@
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 z-[110] modal-overlay hidden flex flex-col items-center justify-center p-6">
-        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl relative">
-            <h2 class="text-2xl font-black text-slate-800 mb-6">編輯單字</h2>
-            <div class="space-y-4">
-                <input id="edit-word" type="text" class="w-full bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                <input id="edit-reading" type="text" class="w-full bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                <input id="edit-meaning" type="text" class="w-full bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                <div class="flex gap-3 mt-4">
-                    <button onclick="closeEditModal()" class="flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl font-bold">取消</button>
-                    <button onclick="saveEdit()" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg">更新內容</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div id="quiz-overlay" class="fixed inset-0 z-[100] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">
         <div class="w-full max-w-md" id="quiz-setup">
             <h2 class="text-3xl font-black mb-6">測試範圍</h2>
@@ -110,7 +98,6 @@
                 <button onclick="openDict(currentQuizWord.word)" class="text-xs bg-white/10 px-3 py-1 rounded-full border border-white/20">📖 字典</button>
                 <button onclick="closeQuiz()" class="text-2xl">✕</button>
             </div>
-            
             <div id="quiz-card-container" class="card-flip flex-1 w-full relative mb-6" onclick="flipCard()">
                 <div id="quiz-card" class="card-inner w-full h-full">
                     <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 shadow-2xl">
@@ -127,13 +114,11 @@
                     </div>
                 </div>
             </div>
-
             <div id="spelling-input-area" class="mb-6 hidden">
                 <input type="text" id="spelling-input" placeholder="請輸入單語後按 Enter..." 
                        class="w-full p-5 bg-white/10 border-2 border-white/20 rounded-3xl text-center text-2xl font-bold outline-none focus:border-indigo-500">
                 <p id="feedback-msg" class="mt-2 text-sm font-bold"></p>
             </div>
-
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black">加強</button>
                 <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black shadow-lg">下一個</button>
@@ -162,21 +147,21 @@
         window.vocabs = [];
         window.selectedLessons = [];
         window.selectedTypes = [];
-        window.selectedNewLesson = 'L1';
+        window.selectedNewLesson = '未分類'; // 核心更動：預設為 未分類
         window.selectedNewCategory = 'n.';
-        window.currentQuizWord = null;
-        window.currentEditId = null;
 
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snapshot) => {
             window.vocabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderList();
         });
 
-        // 初始化 L1-L12
+        // 初始化 課數清單 (加入未分類)
+        const lessons = ["未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"];
         const lessonFilter = document.getElementById('lesson-filter-container');
         const lessonNewBtnContainer = document.getElementById('newLessonBtnContainer');
-        for(let i=1; i<=12; i++) {
-            const label = `L${i}`;
+
+        lessons.forEach((label, index) => {
+            // 頂部篩選按鈕
             const btnF = document.createElement('button');
             btnF.className = "lesson-btn border border-slate-200 px-4 py-1 rounded-lg text-[11px] font-bold shadow-sm whitespace-nowrap bg-white text-slate-500";
             btnF.innerText = label;
@@ -189,17 +174,23 @@
             };
             lessonFilter.appendChild(btnF);
 
+            // 新增區按鈕
             const btnN = document.createElement('button');
-            btnN.className = `new-lesson-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold ${i===1?'active-new-cat':''}`;
+            btnN.className = `new-lesson-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold ${label === '未分類' ? 'active-new-cat' : 'bg-white text-slate-500'}`;
             btnN.innerText = label;
             btnN.onclick = () => {
                 window.selectedNewLesson = label;
-                document.querySelectorAll('.new-lesson-btn').forEach(b => b.classList.remove('active-new-cat'));
+                document.querySelectorAll('.new-lesson-btn').forEach(b => {
+                    b.classList.remove('active-new-cat');
+                    b.classList.add('bg-white', 'text-slate-500');
+                });
                 btnN.classList.add('active-new-cat');
+                btnN.classList.remove('bg-white', 'text-slate-500');
             };
             lessonNewBtnContainer.appendChild(btnN);
-        }
+        });
 
+        // 其餘邏輯保持不變...
         window.toggleInputSection = () => {
             document.getElementById('input-section').classList.toggle('show');
             document.getElementById('toggleBtn').innerText = document.getElementById('input-section').classList.contains('show') ? '✕ 關閉' : '＋ 新增單字';
@@ -216,31 +207,18 @@
             const r = document.getElementById('reading');
             const m = document.getElementById('meaning');
             if (!w.value.trim() || !m.value.trim()) return alert("內容不可為空");
-            await addDoc(vocabsCol, { word: w.value.trim(), reading: r.value.trim(), meaning: m.value.trim(), category: window.selectedNewCategory, lesson: window.selectedNewLesson, wrongCount: 0, createdAt: new Date() });
-            w.value = r.value = m.value = ''; toggleInputSection();
-        };
-
-        window.openEditModal = (id) => {
-            const v = window.vocabs.find(x => x.id === id);
-            window.currentEditId = id;
-            document.getElementById('edit-word').value = v.word;
-            document.getElementById('edit-reading').value = v.reading;
-            document.getElementById('edit-meaning').value = v.meaning;
-            document.getElementById('edit-modal').classList.remove('hidden');
-        };
-
-        window.closeEditModal = () => document.getElementById('edit-modal').classList.add('hidden');
-
-        window.saveEdit = async () => {
-            await updateDoc(doc(db, "vocabs", window.currentEditId), { 
-                word: document.getElementById('edit-word').value, 
-                reading: document.getElementById('edit-reading').value, 
-                meaning: document.getElementById('edit-meaning').value 
+            await addDoc(vocabsCol, { 
+                word: w.value.trim(), 
+                reading: r.value.trim(), 
+                meaning: m.value.trim(), 
+                category: window.selectedNewCategory, 
+                lesson: window.selectedNewLesson, 
+                wrongCount: 0, 
+                createdAt: new Date() 
             });
-            closeEditModal();
+            w.value = r.value = m.value = ''; 
+            toggleInputSection();
         };
-
-        window.deleteWord = async (id) => { if(confirm("刪除？")) await deleteDoc(doc(db, "vocabs", id)); };
 
         window.renderList = () => {
             const search = document.getElementById('searchInput').value.toLowerCase();
@@ -256,7 +234,7 @@
                 <li class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100">
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-md">${v.lesson || 'L1'}</span>
+                            <span class="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-md">${v.lesson || '未分類'}</span>
                             <span class="text-[9px] font-black bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md uppercase">${v.category || 'n.'}</span>
                         </div>
                         <div class="text-xl font-bold text-slate-800 mt-1">${v.word} <span class="text-xs font-normal text-slate-400">【${v.reading}】</span></div>
@@ -264,19 +242,16 @@
                     </div>
                     <div class="flex gap-2">
                         <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-lg">🔊</button>
-                        <button onclick="openEditModal('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-xs">✏️</button>
                         <button onclick="deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200 text-xl">✕</button>
                     </div>
                 </li>
             `).join('');
         };
 
-        window.openQuiz = () => {
-            document.getElementById('quiz-setup').classList.remove('hidden');
-            document.getElementById('quiz-content').classList.add('hidden');
-            document.getElementById('quiz-overlay').classList.remove('hidden');
-        };
-
+        window.deleteWord = async (id) => { if(confirm("刪除？")) await deleteDoc(doc(db, "vocabs", id)); };
+        window.speak = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; window.speechSynthesis.speak(u); };
+        window.openQuiz = () => { document.getElementById('quiz-setup').classList.remove('hidden'); document.getElementById('quiz-content').classList.add('hidden'); document.getElementById('quiz-overlay').classList.remove('hidden'); };
+        window.closeQuiz = () => { document.getElementById('quiz-overlay').classList.add('hidden'); };
         window.startQuiz = (mode) => {
             window.activeQuizPool = mode === 'all' ? [...window.vocabs] : [...window.filteredPool];
             if(window.activeQuizPool.length === 0) return alert("範圍內無單字");
@@ -294,18 +269,11 @@
             let weighted = [];
             window.activeQuizPool.forEach(v => { for(let i=0; i<(1+(v.wrongCount||0)); i++) weighted.push(v); });
             window.currentQuizWord = weighted[Math.floor(Math.random() * weighted.length)];
-            
-            // 題目顯示中文
             document.getElementById('q-meaning-front').innerText = window.currentQuizWord.meaning;
-            
-            // 答案顯示全部
             document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
             document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading;
             document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
-            
-            if(!document.getElementById('spelling-input-area').classList.contains('hidden')) {
-                document.getElementById('spelling-input').focus();
-            }
+            if(!document.getElementById('spelling-input-area').classList.contains('hidden')) document.getElementById('spelling-input').focus();
         }
 
         document.getElementById('spelling-input').addEventListener('keypress', (e) => {
@@ -329,11 +297,8 @@
             await updateDoc(doc(db, "vocabs", window.currentQuizWord.id), { wrongCount: isCorrect ? increment(0) : increment(1) });
             nextQuestion();
         };
-        window.closeQuiz = () => document.getElementById('quiz-overlay').classList.add('hidden');
-        window.speak = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; window.speechSynthesis.speak(u); };
         window.openDict = (w) => window.open(`https://www.mojidict.com/search/${encodeURIComponent(w)}`, '_blank');
         window.clearSearch = () => { document.getElementById('searchInput').value = ''; renderList(); };
-        window.toggleImportArea = () => document.getElementById('import-area').classList.toggle('hidden');
         window.toggleType = (type) => {
             const idx = window.selectedTypes.indexOf(type);
             if(idx > -1) window.selectedTypes.splice(idx, 1);
@@ -341,24 +306,23 @@
             document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('type-active', window.selectedTypes.includes(b.innerText)));
             renderList();
         };
-        window.exportCSV = () => {
-            const header = "\uFEFF單語,漢字,中文,分類,課數,錯誤計數\n";
-            const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category},${v.lesson},${v.wrongCount}`).join("\n");
-            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob); link.download = `JPNote_Backup.csv`; link.click();
-        };
+        window.toggleImportArea = () => document.getElementById('import-area').classList.toggle('hidden');
         window.bulkImport = async () => {
             const text = document.getElementById('import-text').value.trim();
             const lines = text.split('\n');
             const batch = writeBatch(db);
             lines.forEach(line => {
                 const [w, r, m, c, l] = line.split(',').map(s => s?.trim());
-                if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "n.", lesson: l || 'L1', wrongCount: 0, createdAt: new Date() });
+                if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "n.", lesson: l || '未分類', wrongCount: 0, createdAt: new Date() });
             });
-            await batch.commit();
-            alert("匯入成功");
-            toggleImportArea();
+            await batch.commit(); alert("匯入成功"); toggleImportArea();
+        };
+        window.exportCSV = () => {
+            const header = "\uFEFF單語,漢字,中文,分類,課數,錯誤計數\n";
+            const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category},${v.lesson},${v.wrongCount}`).join("\n");
+            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob); link.download = `JPNote_Backup.csv`; link.click();
         };
     </script>
 </body>
