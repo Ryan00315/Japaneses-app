@@ -25,7 +25,7 @@
             opacity: 0;
         }
         #input-section.show {
-            max-height: 500px; /* 足夠容納內容的高度 */
+            max-height: 600px;
             opacity: 1;
             margin-bottom: 1.5rem;
         }
@@ -34,15 +34,14 @@
             display: none;
             align-items: center;
             justify-content: center;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             background-color: #ef4444;
             color: white;
             border-radius: 999px;
             font-size: 10px;
             font-weight: bold;
             z-index: 60;
-            line-height: 1;
         }
     </style>
 </head>
@@ -52,7 +51,8 @@
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
             <h1 class="text-lg font-black text-indigo-600">Kingtex JPNote</h1>
             <div class="flex items-center gap-2">
-                <button onclick="toggleInputSection()" id="toggleBtn" class="bg-indigo-50 text-indigo-600 px-4 py-1.5 rounded-full text-sm font-bold border border-indigo-100 active:scale-95 transition-all">＋ 新增</button>
+                <button onclick="toggleImportArea()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-full font-bold">批量匯入</button>
+                <button onclick="exportCSV()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-full font-bold">匯出 CSV</button>
                 <button onclick="openQuiz()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200 active:scale-95">隨機測試</button>
             </div>
         </div>
@@ -79,67 +79,68 @@
     </div>
 
     <div class="max-w-md mx-auto p-4">
-        <div class="flex justify-end gap-2 mb-4">
-            <button onclick="toggleImportArea()" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">批量匯入</button>
-            <span class="text-slate-300">|</span>
-            <button onclick="exportCSV()" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">匯出備份</button>
+        <div class="flex justify-start mb-4">
+            <button onclick="toggleInputSection()" id="toggleBtn" class="bg-indigo-50 text-indigo-600 px-6 py-2 rounded-full text-sm font-bold border border-indigo-100 active:scale-95 shadow-sm transition-all">＋ 新增單字</button>
         </div>
 
-        <section id="import-area" class="hidden bg-slate-900 rounded-3xl p-5 mb-6 text-white">
+        <section id="import-area" class="hidden bg-slate-900 rounded-3xl p-5 mb-6 text-white shadow-xl">
             <h3 class="font-bold mb-2">批量匯入 (CSV 格式)</h3>
-            <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="猫,ねこ,貓,n."></textarea>
+            <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="平假名,片假名,中文,分類"></textarea>
             <div class="flex gap-2">
                 <button onclick="bulkImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">開始匯入</button>
                 <button onclick="toggleImportArea()" class="px-5 bg-slate-700 rounded-xl font-bold text-sm">取消</button>
             </div>
         </section>
 
-        <section id="input-section" class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <input id="word" type="text" placeholder="平假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                <input id="reading" type="text" placeholder="片假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-            </div>
-            <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none focus:ring-2 ring-indigo-300">
-            
-            <div class="mb-4">
-                <div id="newCategoryContainer" class="flex flex-wrap gap-2">
-                    <button type="button" onclick="selectNewCategory(this, 'n.')" class="new-cat-btn active-new-cat border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">n.</button>
-                    <button type="button" onclick="selectNewCategory(this, 'v.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">v.</button>
-                    <button type="button" onclick="selectNewCategory(this, 'adj.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">adj.</button>
-                    <button type="button" onclick="selectNewCategory(this, '數字')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">數字</button>
-                    <button type="button" onclick="selectNewCategory(this, '時間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">時間</button>
-                    <button type="button" onclick="selectNewCategory(this, '期間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">期間</button>
-                    <button type="button" onclick="selectNewCategory(this, '量詞')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">量詞</button>
-                    <button type="button" onclick="selectNewCategory(this, '其他')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">其他</button>
+        <section id="input-section" class="bg-white rounded-3xl shadow-sm border border-slate-200 px-5 transition-all">
+            <div class="py-5">
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <input id="word" type="text" placeholder="平假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
+                    <input id="reading" type="text" placeholder="片假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
                 </div>
+                <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none focus:ring-2 ring-indigo-300">
+                
+                <div class="mb-4">
+                    <p class="text-[10px] font-bold text-slate-400 mb-2 ml-1 uppercase">選擇分類</p>
+                    <div id="newCategoryContainer" class="flex flex-wrap gap-2">
+                        <button type="button" onclick="selectNewCategory(this, 'n.')" class="new-cat-btn active-new-cat border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">n.</button>
+                        <button type="button" onclick="selectNewCategory(this, 'v.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">v.</button>
+                        <button type="button" onclick="selectNewCategory(this, 'adj.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">adj.</button>
+                        <button type="button" onclick="selectNewCategory(this, '數字')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">數字</button>
+                        <button type="button" onclick="selectNewCategory(this, '時間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">時間</button>
+                        <button type="button" onclick="selectNewCategory(this, '期間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">期間</button>
+                        <button type="button" onclick="selectNewCategory(this, '量詞')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">量詞</button>
+                        <button type="button" onclick="selectNewCategory(this, '其他')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">其他</button>
+                    </div>
+                </div>
+                <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">同步到雲端</button>
             </div>
-            <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">同步到雲端</button>
         </section>
 
-        <ul id="vocab-list" class="space-y-3"></ul>
+        <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
     <div id="quiz-overlay" class="fixed inset-0 z-[100] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white">
         <div class="w-full max-w-md flex flex-col h-full">
             <div class="flex justify-between items-center text-white/50 mb-8">
-                <span class="text-xs font-mono tracking-widest uppercase">Random Test</span>
+                <span class="text-xs font-mono tracking-widest uppercase tracking-widest">Random Test Mode</span>
                 <button onclick="closeQuiz()" class="text-2xl">✕</button>
             </div>
             <div class="card-flip flex-1 w-full relative mb-10 text-slate-900">
                 <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full">
-                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center">
+                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center shadow-2xl">
                         <span id="q-word" class="text-6xl font-black mb-6 tracking-tighter"></span>
                         <button onclick="event.stopPropagation(); speak(document.getElementById('q-word').innerText)" class="bg-white/20 p-5 rounded-full">🔊</button>
                     </div>
-                    <div class="card-back bg-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center">
+                    <div class="card-back bg-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center shadow-2xl">
                         <p id="q-reading" class="text-indigo-500 font-bold text-xl mb-2"></p>
                         <p id="q-meaning" class="text-4xl font-black text-slate-800"></p>
                     </div>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4 mb-8">
-                <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black text-xl">加強</button>
-                <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black text-xl shadow-lg">下一個</button>
+                <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black text-xl active:scale-95">加強</button>
+                <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black text-xl shadow-lg active:scale-95">下一個</button>
             </div>
         </div>
     </div>
@@ -148,6 +149,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4",
             authDomain: "jpnote-5f436.firebaseapp.com",
@@ -186,7 +188,7 @@
                     createdAt: new Date()
                 });
                 w.value = r.value = m.value = '';
-                toggleInputSection(); // 新增完自動隱藏
+                toggleInputSection();
             } catch (e) { alert("同步錯誤"); }
         };
 
@@ -213,20 +215,12 @@
     </script>
 
     <script>
-        // 控制新增區域顯示/隱藏
         function toggleInputSection() {
             const section = document.getElementById('input-section');
             const btn = document.getElementById('toggleBtn');
             section.classList.toggle('show');
-            if (section.classList.contains('show')) {
-                btn.innerText = '✕ 關閉';
-                btn.classList.replace('bg-indigo-50', 'bg-slate-200');
-                btn.classList.replace('text-indigo-600', 'text-slate-600');
-            } else {
-                btn.innerText = '＋ 新增';
-                btn.classList.replace('bg-slate-200', 'bg-indigo-50');
-                btn.classList.replace('text-slate-600', 'text-indigo-600');
-            }
+            btn.innerText = section.classList.contains('show') ? '✕ 關閉新增' : '＋ 新增單字';
+            btn.classList.toggle('bg-slate-200', section.classList.contains('show'));
         }
 
         function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
@@ -246,6 +240,22 @@
             renderList();
             input.focus();
         }
+
+        // 優化口語發音
+        function speak(text) {
+            if (!text) return;
+            window.speechSynthesis.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
+            const voices = window.speechSynthesis.getVoices();
+            let targetVoice = voices.find(v => v.lang.includes('ja') && (v.name.includes('Google') || v.name.includes('Kyoko') || v.name.includes('Nanami') || v.name.includes('Siri')));
+            if (!targetVoice) targetVoice = voices.find(v => v.lang.includes('ja'));
+            uttr.voice = targetVoice;
+            uttr.lang = 'ja-JP';
+            uttr.rate = 0.85;
+            uttr.pitch = 1.3;
+            window.speechSynthesis.speak(uttr);
+        }
+
         function renderList() {
             const input = document.getElementById('searchInput');
             const search = input.value.toLowerCase();
@@ -268,8 +278,8 @@
                         <div class="text-slate-500 text-sm mt-0.5">${v.meaning}</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-xl">🔊</button>
-                        <button onclick="deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200">✕</button>
+                        <button onclick="speak('${v.word}')" class="w-12 h-12 flex items-center justify-center bg-slate-50 rounded-full text-xl active:scale-90 transition-all">🔊</button>
+                        <button onclick="deleteWord('${v.id}')" class="w-12 h-12 flex items-center justify-center text-slate-200 hover:text-red-500 transition-all text-xl">✕</button>
                     </div>
                 </li>
             `).join('');
@@ -298,13 +308,6 @@
         async function handleResult(isCorrect) {
             await window.updateWordStats(currentQuizWord.id, isCorrect);
             nextQuestion();
-        }
-        function speak(text) {
-            window.speechSynthesis.cancel();
-            const uttr = new SpeechSynthesisUtterance(text);
-            uttr.lang = 'ja-JP';
-            uttr.rate = 0.8;
-            window.speechSynthesis.speak(uttr);
         }
         function exportCSV() {
             const header = "\uFEFF平假名,片假名,中文,分類,錯誤計數\n";
