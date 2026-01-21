@@ -41,7 +41,12 @@
                 <button onclick="setCategory('量詞')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">量詞</button>
                 <button onclick="setCategory('其他')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">其他</button>
             </div>
-            <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋內容..." class="w-full mt-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
+            
+            <div class="relative mt-1">
+                <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋內容..." 
+                       class="w-full p-3 pr-10 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
+                <button id="clearSearch" onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 font-bold p-1 hidden">✕</button>
+            </div>
         </div>
     </div>
 
@@ -104,7 +109,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 已套用記憶中的 Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4",
             authDomain: "jpnote-5f436.firebaseapp.com",
@@ -183,8 +187,23 @@
             renderList();
         }
 
+        // 搜尋清除功能
+        function clearSearch() {
+            const input = document.getElementById('searchInput');
+            input.value = '';
+            renderList();
+            input.focus();
+        }
+
         function renderList() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
+            const input = document.getElementById('searchInput');
+            const search = input.value.toLowerCase();
+            const clearBtn = document.getElementById('clearSearch');
+            
+            // 判斷是否顯示 X
+            if (search.length > 0) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+
             const listEl = document.getElementById('vocab-list');
             const filtered = window.vocabs.filter(v => 
                 (window.currentCategory === '全部' || v.category === window.currentCategory) &&
