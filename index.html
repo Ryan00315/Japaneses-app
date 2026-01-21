@@ -34,6 +34,7 @@
                 <button onclick="openQuiz()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200">隨機測試</button>
             </div>
         </div>
+        
         <div class="max-w-md mx-auto px-4 pb-3">
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="lesson-filter-container"></div>
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="type-filter">
@@ -52,7 +53,8 @@
 
     <div class="max-w-md mx-auto p-4">
         <button onclick="toggleInputSection()" id="toggleBtn" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2 rounded-full text-sm font-bold border border-indigo-100">＋ 新增單字</button>
-        <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
+        
+        <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all">
              <div class="grid grid-cols-2 gap-3 mb-4">
                 <input id="word" type="text" placeholder="單語" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
                 <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
@@ -65,8 +67,15 @@
                 <button type="button" onclick="selectNewCategory(this, 'adj.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">adj.</button>
                 <button type="button" onclick="selectNewCategory(this, '其他')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">其他</button>
             </div>
-            <button onclick="addWordToCloud()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold active:scale-95 shadow-xl">同步到雲端</button>
+            <button onclick="addWordToCloud()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95">同步到雲端</button>
         </section>
+
+        <section id="import-area" class="hidden bg-slate-900 rounded-3xl p-5 mb-6 text-white shadow-xl mt-4">
+            <h3 class="font-bold mb-2">批量匯入 (CSV)</h3>
+            <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="單語,漢字,中文,分類,L1"></textarea>
+            <button onclick="bulkImport()" class="w-full bg-indigo-500 py-3 rounded-xl font-bold">開始匯入</button>
+        </section>
+
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
@@ -74,9 +83,9 @@
         <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl relative">
             <h2 class="text-2xl font-black text-slate-800 mb-6">編輯單字</h2>
             <div class="space-y-4">
-                <input id="edit-word" type="text" placeholder="單語" class="w-full bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                <input id="edit-reading" type="text" placeholder="漢字" class="w-full bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                <input id="edit-meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
+                <input id="edit-word" type="text" class="w-full bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
+                <input id="edit-reading" type="text" class="w-full bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
+                <input id="edit-meaning" type="text" class="w-full bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
                 <div class="flex gap-3 mt-4">
                     <button onclick="closeEditModal()" class="flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl font-bold">取消</button>
                     <button onclick="saveEdit()" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg">更新內容</button>
@@ -90,7 +99,7 @@
             <h2 class="text-3xl font-black mb-6">測試範圍</h2>
             <div class="flex items-center justify-center gap-2 mb-8 bg-slate-800 p-4 rounded-2xl">
                 <input type="checkbox" id="spelling-mode" class="w-5 h-5">
-                <label for="spelling-mode" class="text-sm font-bold">拼寫模式 (僅核對單語)</label>
+                <label for="spelling-mode" class="text-sm font-bold">拼寫模式 (核對單語)</label>
             </div>
             <button onclick="startQuiz('filtered')" class="w-full py-6 bg-indigo-600 rounded-3xl mb-4 font-bold text-xl">目前篩選範圍</button>
             <button onclick="closeQuiz()" class="text-slate-500 font-bold">取消</button>
@@ -101,26 +110,30 @@
                 <button onclick="openDict(currentQuizWord.word)" class="text-xs bg-white/10 px-3 py-1 rounded-full border border-white/20">📖 字典</button>
                 <button onclick="closeQuiz()" class="text-2xl">✕</button>
             </div>
+            
             <div id="quiz-card-container" class="card-flip flex-1 w-full relative mb-6" onclick="flipCard()">
                 <div id="quiz-card" class="card-inner w-full h-full">
                     <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 shadow-2xl">
-                        <span id="q-word-hint" class="text-sm opacity-50 mb-2">請核對單語</span>
-                        <div class="h-32 flex items-center justify-center">
-                            <p class="text-4xl font-bold opacity-20">???</p>
-                        </div>
+                        <span class="text-sm opacity-50 mb-6 uppercase tracking-widest font-bold">中文題目</span>
+                        <p id="q-meaning-front" class="text-5xl font-black mb-6"></p>
                     </div>
                     <div class="card-back bg-white text-slate-900 rounded-[40px] flex flex-col items-center justify-center p-10 shadow-2xl">
-                        <p id="q-word-answer" class="text-indigo-600 font-black text-4xl mb-2"></p>
-                        <p id="q-reading" class="text-slate-400 font-bold text-xl mb-2"></p>
-                        <p id="q-meaning" class="text-3xl font-black"></p>
+                        <p class="text-[10px] font-black text-indigo-500 uppercase mb-2 tracking-widest">正確答案</p>
+                        <p id="q-word-answer" class="text-indigo-600 font-black text-5xl mb-4"></p>
+                        <p id="q-reading-back" class="text-slate-400 font-bold text-xl mb-4"></p>
+                        <hr class="w-12 border-slate-100 mb-4">
+                        <p id="q-meaning-back" class="text-2xl font-bold text-slate-500"></p>
+                        <button onclick="event.stopPropagation(); speak(currentQuizWord.word)" class="mt-6 bg-slate-50 p-4 rounded-full text-2xl shadow-inner active:scale-90">🔊</button>
                     </div>
                 </div>
             </div>
+
             <div id="spelling-input-area" class="mb-6 hidden">
-                <input type="text" id="spelling-input" placeholder="輸入單語後按 Enter..." 
+                <input type="text" id="spelling-input" placeholder="請輸入單語後按 Enter..." 
                        class="w-full p-5 bg-white/10 border-2 border-white/20 rounded-3xl text-center text-2xl font-bold outline-none focus:border-indigo-500">
                 <p id="feedback-msg" class="mt-2 text-sm font-bold"></p>
             </div>
+
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black">加強</button>
                 <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black shadow-lg">下一個</button>
@@ -165,7 +178,7 @@
         for(let i=1; i<=12; i++) {
             const label = `L${i}`;
             const btnF = document.createElement('button');
-            btnF.className = "lesson-btn border border-slate-200 px-4 py-1 rounded-lg text-[11px] font-bold";
+            btnF.className = "lesson-btn border border-slate-200 px-4 py-1 rounded-lg text-[11px] font-bold shadow-sm whitespace-nowrap bg-white text-slate-500";
             btnF.innerText = label;
             btnF.onclick = () => {
                 const idx = window.selectedLessons.indexOf(label);
@@ -266,7 +279,7 @@
 
         window.startQuiz = (mode) => {
             window.activeQuizPool = mode === 'all' ? [...window.vocabs] : [...window.filteredPool];
-            if(window.activeQuizPool.length === 0) return alert("無單字");
+            if(window.activeQuizPool.length === 0) return alert("範圍內無單字");
             const isSpelling = document.getElementById('spelling-mode').checked;
             document.getElementById('spelling-input-area').classList.toggle('hidden', !isSpelling);
             document.getElementById('quiz-setup').classList.add('hidden');
@@ -282,9 +295,13 @@
             window.activeQuizPool.forEach(v => { for(let i=0; i<(1+(v.wrongCount||0)); i++) weighted.push(v); });
             window.currentQuizWord = weighted[Math.floor(Math.random() * weighted.length)];
             
+            // 題目顯示中文
+            document.getElementById('q-meaning-front').innerText = window.currentQuizWord.meaning;
+            
+            // 答案顯示全部
             document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
-            document.getElementById('q-reading').innerText = window.currentQuizWord.reading;
-            document.getElementById('q-meaning').innerText = window.currentQuizWord.meaning;
+            document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading;
+            document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
             
             if(!document.getElementById('spelling-input-area').classList.contains('hidden')) {
                 document.getElementById('spelling-input').focus();
@@ -317,7 +334,32 @@
         window.openDict = (w) => window.open(`https://www.mojidict.com/search/${encodeURIComponent(w)}`, '_blank');
         window.clearSearch = () => { document.getElementById('searchInput').value = ''; renderList(); };
         window.toggleImportArea = () => document.getElementById('import-area').classList.toggle('hidden');
-        window.exportCSV = () => { /* 匯出邏輯 */ };
+        window.toggleType = (type) => {
+            const idx = window.selectedTypes.indexOf(type);
+            if(idx > -1) window.selectedTypes.splice(idx, 1);
+            else window.selectedTypes.push(type);
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('type-active', window.selectedTypes.includes(b.innerText)));
+            renderList();
+        };
+        window.exportCSV = () => {
+            const header = "\uFEFF單語,漢字,中文,分類,課數,錯誤計數\n";
+            const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category},${v.lesson},${v.wrongCount}`).join("\n");
+            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob); link.download = `JPNote_Backup.csv`; link.click();
+        };
+        window.bulkImport = async () => {
+            const text = document.getElementById('import-text').value.trim();
+            const lines = text.split('\n');
+            const batch = writeBatch(db);
+            lines.forEach(line => {
+                const [w, r, m, c, l] = line.split(',').map(s => s?.trim());
+                if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "n.", lesson: l || 'L1', wrongCount: 0, createdAt: new Date() });
+            });
+            await batch.commit();
+            alert("匯入成功");
+            toggleImportArea();
+        };
     </script>
 </body>
 </html>
