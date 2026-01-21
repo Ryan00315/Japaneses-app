@@ -13,49 +13,68 @@
         .card-back { transform: rotateY(180deg); }
         .sticky-top { position: sticky; top: 0; z-index: 50; }
         ::-webkit-scrollbar { display: none; }
+        .bg-glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900">
 
-    <div class="sticky-top bg-white/80 backdrop-blur-md px-4 py-3 border-b border-slate-200">
-        <div class="max-w-md mx-auto flex items-center gap-2">
-            <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 雲端搜尋..." 
-                   class="flex-1 p-3 rounded-2xl bg-slate-100 border-none outline-none focus:ring-2 ring-indigo-400 transition-all">
-            <div id="sync-status" class="w-3 h-3 rounded-full bg-gray-300"></div>
+    <div class="sticky-top bg-glass px-4 py-3 border-b border-slate-200">
+        <div class="max-w-md mx-auto flex items-center gap-3">
+            <div class="relative flex-1">
+                <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋雲端單字..." 
+                       class="w-full p-3 rounded-2xl bg-slate-100 border-none outline-none focus:ring-2 ring-indigo-400 transition-all">
+            </div>
+            <div id="sync-status" class="flex flex-col items-center">
+                <div id="status-dot" class="w-3 h-3 rounded-full bg-gray-300"></div>
+                <span class="text-[8px] mt-1 font-bold text-gray-400 uppercase">Cloud</span>
+            </div>
         </div>
     </div>
 
     <div class="max-w-md mx-auto p-4">
-        <header class="flex justify-between items-center mb-6">
-            <h1 class="text-xl font-black text-indigo-600">Cloud Note V4.0</h1>
-            <button onclick="exportCSV()" class="text-xs bg-white border px-3 py-1.5 rounded-lg shadow-sm font-bold">匯出 CSV</button>
+        <header class="flex justify-between items-center mb-6 px-1">
+            <h1 class="text-xl font-black text-indigo-600 tracking-tighter">NIHONGO CLOUD</h1>
+            <button onclick="exportCSV()" class="text-xs bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm font-bold text-slate-600 active:scale-95 transition-all">匯出 CSV</button>
         </header>
 
         <div id="quiz-section" class="mb-8 hidden">
-            <div class="card-flip h-52 w-full relative mb-4">
-                <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full shadow-xl">
-                    <div class="card-front bg-indigo-600 text-white rounded-3xl flex flex-col items-center justify-center p-6 text-center">
-                        <span id="quiz-q" class="text-5xl font-bold mb-4"></span>
-                        <button onclick="event.stopPropagation(); speak(document.getElementById('quiz-q').innerText)" class="bg-white/20 p-3 rounded-full">🔊</button>
+            <div class="card-flip h-56 w-full relative mb-4">
+                <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full shadow-2xl">
+                    <div class="card-front bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-3xl flex flex-col items-center justify-center p-6 text-center">
+                        <span id="quiz-q" class="text-5xl font-bold mb-4 tracking-wider"></span>
+                        <button onclick="event.stopPropagation(); speak(document.getElementById('quiz-q').innerText)" 
+                                class="bg-white/20 p-4 rounded-full hover:bg-white/30 transition-all">
+                            <span class="text-2xl">🔊</span>
+                        </button>
                     </div>
-                    <div class="card-back bg-white border-4 border-indigo-600 rounded-3xl flex flex-col items-center justify-center p-6">
-                        <p id="quiz-r" class="text-indigo-400 font-bold mb-1"></p>
+                    <div class="card-back bg-white border-4 border-indigo-600 rounded-3xl flex flex-col items-center justify-center p-6 shadow-inner">
+                        <p id="quiz-r" class="text-indigo-500 font-bold text-lg mb-2"></p>
                         <p id="quiz-a" class="text-3xl font-black text-slate-800"></p>
                     </div>
                 </div>
             </div>
-            <button onclick="loadRandomWord()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg active:scale-95">NEXT</button>
+            <button onclick="loadRandomWord()" class="w-full py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-2xl font-black shadow-lg active:scale-[0.98] transition-all">
+                NEXT WORD
+            </button>
         </div>
 
         <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 mb-6">
+            <h3 class="text-xs font-bold text-slate-400 mb-3 ml-1">快速同步新單字</h3>
             <div class="grid grid-cols-2 gap-3 mb-3">
-                <input id="word" type="text" placeholder="單字" class="bg-slate-50 p-3 rounded-xl outline-none">
-                <input id="reading" type="text" placeholder="讀音" class="bg-slate-50 p-3 rounded-xl outline-none">
+                <input id="word" type="text" placeholder="單字" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300 transition-all">
+                <input id="reading" type="text" placeholder="假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300 transition-all">
             </div>
-            <input id="meaning" type="text" placeholder="意思" class="w-full bg-slate-50 p-3 rounded-xl mb-3 outline-none">
-            <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-black transition disabled:opacity-50">同步到雲端</button>
+            <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none focus:ring-2 ring-indigo-300 transition-all">
+            <button onclick="addWordToCloud()" id="addBtn" 
+                    class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-[0.98] disabled:opacity-50">
+                同步到雲端資料庫
+            </button>
         </section>
 
+        <div class="flex items-center justify-between mb-4 px-1">
+            <h2 class="font-bold text-slate-700">我的字庫</h2>
+            <span id="count-badge" class="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">0 Words</span>
+        </div>
         <ul id="vocab-list" class="space-y-3"></ul>
     </div>
 
@@ -63,7 +82,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 🔥 重要：請在此處貼上你從 Firebase 複製的 Config 資料
+        // 🔥 重要：請在此處替換為你自己的 Firebase Config
         const firebaseConfig = {
   apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4",
   authDomain: "jpnote-5f436.firebaseapp.com",
@@ -80,35 +99,45 @@
 
         window.vocabs = [];
 
-        // 1. 監聽雲端資料 (即時同步關鍵！)
+        // 1. 監聽雲端資料 (即時同步)
         const q = query(vocabsCol, orderBy("createdAt", "desc"));
         onSnapshot(q, (snapshot) => {
             window.vocabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderList();
             updateQuizUI();
-            document.getElementById('sync-status').classList.replace('bg-gray-300', 'bg-green-500');
+            document.getElementById('status-dot').classList.replace('bg-gray-300', 'bg-green-500');
         }, (error) => {
-            console.error("同步失敗:", error);
-            alert("雲端同步失敗，請檢查 Firebase 設定或規則。");
+            console.error("Firebase 連線失敗:", error);
+            document.getElementById('status-dot').classList.replace('bg-gray-300', 'bg-red-500');
         });
 
-        // 2. 新增單字到雲端
+        // 2. 新增單字 (含重複檢查)
         window.addWordToCloud = async () => {
             const w = document.getElementById('word');
             const r = document.getElementById('reading');
             const m = document.getElementById('meaning');
             const btn = document.getElementById('addBtn');
 
-            if (!w.value.trim() || !m.value.trim()) return alert("請填寫單字與意思");
+            const wordValue = w.value.trim();
+            const meaningValue = m.value.trim();
+
+            if (!wordValue || !meaningValue) return alert("請填寫單字與意思");
+
+            // --- 重複偵測 ---
+            const isDuplicate = window.vocabs.some(v => v.word === wordValue);
+            if (isDuplicate) {
+                const confirmAdd = confirm(`⚠️ 單字「${wordValue}」已在資料庫中。\n是否仍要新增？`);
+                if (!confirmAdd) return;
+            }
 
             btn.disabled = true;
             btn.innerText = "同步中...";
 
             try {
                 await addDoc(vocabsCol, {
-                    word: w.value.trim(),
+                    word: wordValue,
                     reading: r.value.trim(),
-                    meaning: m.value.trim(),
+                    meaning: meaningValue,
                     category: "未分類",
                     createdAt: new Date()
                 });
@@ -117,13 +146,13 @@
                 alert("同步失敗: " + e.message);
             } finally {
                 btn.disabled = false;
-                btn.innerText = "同步到雲端";
+                btn.innerText = "同步到雲端資料庫";
             }
         };
 
-        // 3. 刪除雲端單字
+        // 3. 刪除單字
         window.deleteWord = async (id) => {
-            if (!confirm("確定從雲端刪除？")) return;
+            if (!confirm("確定要從雲端永久刪除此單字嗎？")) return;
             try {
                 await deleteDoc(doc(db, "vocabs", id));
             } catch (e) {
@@ -133,51 +162,65 @@
     </script>
 
     <script>
-        // 非同步相關的 UI 功能
         function renderList() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const listEl = document.getElementById('vocab-list');
-            const filtered = (window.vocabs || []).filter(v => v.word.includes(search) || v.meaning.includes(search));
+            const countBadge = document.getElementById('count-badge');
             
+            const filtered = (window.vocabs || []).filter(v => 
+                v.word.includes(search) || v.meaning.includes(search) || v.reading.includes(search)
+            );
+            
+            countBadge.innerText = `${filtered.length} Words`;
+
             listEl.innerHTML = filtered.map(v => `
-                <li class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100">
+                <li class="bg-white p-5 rounded-3xl flex justify-between items-center shadow-sm border border-slate-100 transition-all active:bg-slate-50">
                     <div>
-                        <div class="text-xl font-bold text-slate-800">${v.word} <span class="text-xs font-normal text-slate-400">【${v.reading}】</span></div>
-                        <div class="text-slate-500 text-sm font-medium">${v.meaning}</div>
+                        <div class="text-xl font-bold text-slate-800">${v.word} <span class="text-xs font-normal text-slate-400 ml-1">【${v.reading}】</span></div>
+                        <div class="text-slate-500 text-sm font-medium mt-1">${v.meaning}</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-slate-400">🔊</button>
-                        <button onclick="deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500">✕</button>
+                        <button onclick="speak('${v.word}')" class="w-12 h-12 flex items-center justify-center bg-slate-50 rounded-2xl text-slate-400 hover:text-indigo-500 transition-colors text-xl">🔊</button>
+                        <button onclick="deleteWord('${v.id}')" class="w-12 h-12 flex items-center justify-center text-slate-200 hover:text-red-400 transition-colors text-xl">✕</button>
                     </div>
                 </li>
             `).join('');
         }
 
         function speak(text) {
+            if (!text) return;
             window.speechSynthesis.cancel();
             const uttr = new SpeechSynthesisUtterance(text);
             const voices = window.speechSynthesis.getVoices();
-            uttr.voice = voices.find(v => v.lang.includes('ja') && (v.name.includes('Google') || v.name.includes('Nanami'))) || voices.find(v => v.lang.includes('ja'));
+            
+            // 尋找最佳女聲
+            const femaleVoice = voices.find(v => v.lang.includes('ja') && (v.name.includes('Google') || v.name.includes('Nanami') || v.name.includes('Kyoko')));
+            
+            uttr.voice = femaleVoice || voices.find(v => v.lang.includes('ja'));
             uttr.lang = 'ja-JP';
-            uttr.rate = 0.8;
-            uttr.pitch = 1.1;
+            uttr.rate = 0.85;
+            uttr.pitch = 1.15; // 稍微提高音調模擬自然女聲
             window.speechSynthesis.speak(uttr);
         }
 
         let currentQuizWord = null;
         function updateQuizUI() {
             const section = document.getElementById('quiz-section');
-            if (window.vocabs.length > 0) {
+            if (window.vocabs && window.vocabs.length > 0) {
                 section.classList.remove('hidden');
                 if (!currentQuizWord) loadRandomWord();
+            } else {
+                section.classList.add('hidden');
             }
         }
 
         function loadRandomWord() {
             document.getElementById('quiz-card').classList.remove('is-flipped');
             if (!window.vocabs || window.vocabs.length === 0) return;
+            
             setTimeout(() => {
-                currentQuizWord = window.vocabs[Math.floor(Math.random() * window.vocabs.length)];
+                const randomIndex = Math.floor(Math.random() * window.vocabs.length);
+                currentQuizWord = window.vocabs[randomIndex];
                 document.getElementById('quiz-q').innerText = currentQuizWord.word;
                 document.getElementById('quiz-r').innerText = currentQuizWord.reading;
                 document.getElementById('quiz-a').innerText = currentQuizWord.meaning;
@@ -185,14 +228,18 @@
         }
 
         function exportCSV() {
+            if (!window.vocabs || window.vocabs.length === 0) return alert("目前沒有單字可以匯出");
             const header = "\uFEFF單字,讀音,意思\n";
-            const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning}`).join("\n");
+            const rows = window.vocabs.map(v => `"${v.word}","${v.reading}","${v.meaning}"`).join("\n");
             const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "雲端單字備份.csv";
+            link.download = `日文單字備份_${new Date().toLocaleDateString()}.csv`;
             link.click();
         }
+
+        // 初始化語音載入
+        window.speechSynthesis.getVoices();
     </script>
 </body>
 </html>
