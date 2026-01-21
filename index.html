@@ -14,6 +14,7 @@
         .bg-glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
         .active-cat { background-color: #4f46e5 !important; color: white !important; }
         ::-webkit-scrollbar { display: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900">
@@ -21,41 +22,55 @@
     <div class="sticky top-0 z-50 bg-glass px-4 py-3 border-b border-slate-200">
         <div class="max-w-md mx-auto flex items-center justify-between">
             <h1 class="text-lg font-black text-indigo-600">Kingtex JPNote</h1>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+                <button onclick="toggleImportArea()" class="text-xs bg-slate-100 px-3 py-1.5 rounded-full font-bold">批量匯入</button>
                 <button onclick="openQuiz()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200 active:scale-95">隨機測試</button>
-                <div id="status-dot" class="w-3 h-3 rounded-full bg-gray-300"></div>
+                <div id="status-dot" class="w-2 h-2 rounded-full bg-gray-300 ml-1"></div>
             </div>
         </div>
         <div class="max-w-md mx-auto flex gap-2 overflow-x-auto py-2 mt-2 no-scrollbar">
-            <button onclick="setCategory('全部')" class="cat-btn active-cat whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold shadow-sm">全部</button>
-            <button onclick="setCategory('n.')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold shadow-sm">n.</button>
-            <button onclick="setCategory('v.')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold shadow-sm">v.</button>
-            <button onclick="setCategory('adj.')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold shadow-sm">adj.</button>
-            <button onclick="setCategory('其他')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-xs font-bold shadow-sm">其他</button>
+            <button onclick="setCategory('全部')" class="cat-btn active-cat whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">全部</button>
+            <button onclick="setCategory('n.')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">n.</button>
+            <button onclick="setCategory('v.')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">v.</button>
+            <button onclick="setCategory('adj.')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">adj.</button>
+            <button onclick="setCategory('數字')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">數字</button>
+            <button onclick="setCategory('時間')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">時間</button>
+            <button onclick="setCategory('期間')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">期間</button>
+            <button onclick="setCategory('量詞')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">量詞</button>
+            <button onclick="setCategory('其他')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">其他</button>
         </div>
     </div>
 
     <div class="max-w-md mx-auto p-4">
+        <section id="import-area" class="hidden bg-slate-900 rounded-3xl p-5 mb-6 text-white transition-all">
+            <h3 class="font-bold mb-2">批量匯入 (CSV 格式)</h3>
+            <p class="text-[10px] text-slate-400 mb-3">格式：單字,假名,意思,分類 (每行一個)</p>
+            <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="猫,ねこ,貓,n.&#10;行く,いく,去,v."></textarea>
+            <div class="flex gap-2">
+                <button onclick="bulkImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold active:scale-95">開始匯入</button>
+                <button onclick="toggleImportArea()" class="px-5 bg-slate-700 rounded-xl font-bold">取消</button>
+            </div>
+        </section>
+
         <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 mb-6">
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <input id="word" type="text" placeholder="單字" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
                 <input id="reading" type="text" placeholder="假名" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
             </div>
-            <div class="flex gap-2 mb-3">
+            <div class="flex gap-2 mb-4">
                 <input id="meaning" type="text" placeholder="意思" class="flex-1 bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                <select id="newCategory" class="bg-slate-50 px-2 rounded-2xl text-xs font-bold">
-                    <option value="n.">n.</option>
-                    <option value="v.">v.</option>
-                    <option value="adj.">adj.</option>
-                    <option value="其他">其他</option>
+                <select id="newCategory" class="bg-slate-50 px-3 rounded-2xl text-xs font-bold">
+                    <option value="n.">n.</option><option value="v.">v.</option><option value="adj.">adj.</option>
+                    <option value="數字">數字</option><option value="時間">時間</option><option value="期間">期間</option>
+                    <option value="量詞">量詞</option><option value="其他">其他</option>
                 </select>
             </div>
             <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 disabled:opacity-50">同步到雲端</button>
         </section>
 
-        <div class="px-1 mb-4">
-            <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋我的字庫..." 
-                   class="w-full p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm">
+        <div class="flex gap-2 mb-4">
+            <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋內容..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm">
+            <button onclick="exportCSV()" class="bg-white border border-slate-200 px-4 rounded-2xl text-xs font-bold shadow-sm">匯出 CSV</button>
         </div>
 
         <ul id="vocab-list" class="space-y-3"></ul>
@@ -64,36 +79,33 @@
     <div id="quiz-overlay" class="fixed inset-0 z-[100] bg-slate-900 hidden flex flex-col items-center justify-center p-6">
         <div class="w-full max-w-md flex flex-col h-full">
             <div class="flex justify-between items-center text-white/50 mb-8">
-                <span id="quiz-progress" class="text-xs font-mono">RANDOM TEST MODE</span>
+                <span id="quiz-progress" class="text-xs font-mono tracking-widest uppercase">Random Test Mode</span>
                 <button onclick="closeQuiz()" class="text-2xl">✕</button>
             </div>
-            
             <div class="card-flip flex-1 w-full relative mb-10">
-                <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full shadow-2xl">
-                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center">
+                <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full">
+                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center shadow-2xl shadow-indigo-500/20">
                         <span id="q-word" class="text-6xl font-black mb-6"></span>
                         <button onclick="event.stopPropagation(); speak(document.getElementById('q-word').innerText)" class="bg-white/20 p-5 rounded-full">🔊</button>
-                        <p class="mt-8 text-white/40 text-sm italic">點擊卡片看答案</p>
                     </div>
-                    <div class="card-back bg-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center">
+                    <div class="card-back bg-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center shadow-2xl">
                         <p id="q-reading" class="text-indigo-500 font-bold text-xl mb-2"></p>
                         <p id="q-meaning" class="text-4xl font-black text-slate-800"></p>
                     </div>
                 </div>
             </div>
-
             <div class="grid grid-cols-2 gap-4 mb-8">
-                <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black text-xl active:scale-95">我不認識</button>
-                <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black text-xl shadow-lg active:scale-95">我認識</button>
+                <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black text-xl">我不認識</button>
+                <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black text-xl shadow-lg shadow-emerald-500/30">我認識</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 🔥 請填入你的 Firebase Config
+        // 🔥 填入 Firebase Config
         const firebaseConfig = {
   apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4",
   authDomain: "jpnote-5f436.firebaseapp.com",
@@ -117,13 +129,14 @@
             document.getElementById('status-dot').style.backgroundColor = '#22c55e';
         });
 
+        // 單個新增
         window.addWordToCloud = async () => {
             const w = document.getElementById('word');
             const r = document.getElementById('reading');
             const m = document.getElementById('meaning');
             const c = document.getElementById('newCategory');
-            if (!w.value.trim() || !m.value.trim()) return alert("必填欄位缺失");
-            if (window.vocabs.some(v => v.word === w.value.trim()) && !confirm("單字已存在，要重複新增嗎？")) return;
+            if (!w.value.trim() || !m.value.trim()) return alert("請輸入單字與意思");
+            
             try {
                 await addDoc(vocabsCol, {
                     word: w.value.trim(),
@@ -137,12 +150,41 @@
             } catch (e) { alert("同步錯誤"); }
         };
 
-        window.updateWordStats = async (id, isCorrect) => {
+        // 批量匯入
+        window.bulkImport = async () => {
+            const text = document.getElementById('import-text').value.trim();
+            if (!text) return alert("請輸入 CSV 資料內容");
+            const lines = text.split('\n');
+            const batch = writeBatch(db);
+            let count = 0;
+
+            lines.forEach(line => {
+                const [w, r, m, c] = line.split(',').map(s => s?.trim());
+                if (w && m) {
+                    const newDocRef = doc(vocabsCol);
+                    batch.set(newDocRef, {
+                        word: w,
+                        reading: r || "",
+                        meaning: m,
+                        category: c || "其他",
+                        wrongCount: 0,
+                        createdAt: new Date()
+                    });
+                    count++;
+                }
+            });
+
+            if (count === 0) return alert("格式不正確");
             try {
-                await updateDoc(doc(db, "vocabs", id), {
-                    wrongCount: isCorrect ? increment(0) : increment(1)
-                });
-            } catch (e) { console.error(e); }
+                await batch.commit();
+                alert(`成功匯入 ${count} 個單字！`);
+                document.getElementById('import-text').value = "";
+                toggleImportArea();
+            } catch (e) { alert("批量匯入失敗: " + e.message); }
+        };
+
+        window.updateWordStats = async (id, isCorrect) => {
+            try { await updateDoc(doc(db, "vocabs", id), { wrongCount: isCorrect ? increment(0) : increment(1) }); } catch (e) { console.error(e); }
         };
 
         window.deleteWord = async (id) => {
@@ -151,6 +193,8 @@
     </script>
 
     <script>
+        function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
+
         function setCategory(cat) {
             window.currentCategory = cat;
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active-cat', b.innerText === cat));
@@ -171,12 +215,12 @@
                             <span class="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-md uppercase">${v.category || 'n.'}</span>
                             ${v.wrongCount > 0 ? `<span class="text-[9px] font-black bg-rose-50 text-rose-500 px-2 py-0.5 rounded-md">弱點: ${v.wrongCount}</span>` : ''}
                         </div>
-                        <div class="text-xl font-bold text-slate-800 mt-1">${v.word} <span class="text-xs font-normal text-slate-400">【${v.reading}】</span></div>
+                        <div class="text-xl font-bold text-slate-800 mt-1 font-mono">${v.word} <span class="text-xs font-normal text-slate-400">【${v.reading}】</span></div>
                         <div class="text-slate-500 text-sm mt-0.5">${v.meaning}</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-xl">🔊</button>
-                        <button onclick="deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200">✕</button>
+                        <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-xl active:scale-90">🔊</button>
+                        <button onclick="deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200 hover:text-red-500 transition-colors">✕</button>
                     </div>
                 </li>
             `).join('');
@@ -219,6 +263,17 @@
             uttr.lang = 'ja-JP';
             uttr.rate = 0.8;
             window.speechSynthesis.speak(uttr);
+        }
+
+        function exportCSV() {
+            if (!window.vocabs || window.vocabs.length === 0) return alert("目前沒有單字可匯出");
+            const header = "\uFEFF單字,讀音,意思,分類,錯誤計數\n";
+            const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category},${v.wrongCount}`).join("\n");
+            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Kingtex_JPNote_Backup.csv`;
+            link.click();
         }
     </script>
 </body>
