@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JPNote</title>
-    <link rel="icon" type="image/png" href="https://images.vocus.cc/c49f8600-4786-44c1-9d22-19f85c490264.png">
+    <title>Kingtex JPNote</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -42,8 +41,7 @@
     <div class="sticky top-0 z-50 bg-glass border-b border-slate-200">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <img src="https://images.vocus.cc/c49f8600-4786-44c1-9d22-19f85c490264.png" alt="Logo" class="h-6 w-auto object-contain">
-                <h1 class="text-xl font-black text-slate-800 tracking-tighter">JPNote</h1>
+                <h1 class="text-xl font-black text-indigo-600 tracking-tighter">Kingtex JPNote</h1>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="toggleImportArea()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">批量</button>
@@ -173,7 +171,7 @@
             </div>
             <div class="card-flip flex-1 w-full relative mb-10 text-slate-900">
                 <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full">
-                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 shadow-2xl">
+                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 shadow-2xl text-center">
                         <span id="q-word" class="text-6xl font-black mb-6 tracking-tighter"></span>
                         <button onclick="event.stopPropagation(); speak(document.getElementById('q-word').innerText)" class="bg-white/20 p-5 rounded-full">🔊</button>
                     </div>
@@ -194,7 +192,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 已套用金鑰
+        // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4",
             authDomain: "jpnote-5f436.firebaseapp.com",
@@ -256,7 +254,7 @@
                     wrongCount: 0, createdAt: new Date()
                 });
                 w.value = r.value = m.value = ''; toggleInputSection();
-            } catch (e) { alert("失敗"); }
+            } catch (e) { alert("同步失敗"); }
         };
 
         window.saveEdit = async () => {
@@ -292,7 +290,6 @@
         }
 
         function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
-        function setCategory(cat) { window.currentCategory = cat; renderList(); }
         function selectNewLesson(btn, lesson) {
             window.selectedNewLesson = lesson;
             document.querySelectorAll('.new-lesson-btn').forEach(b => b.classList.remove('active-new-cat'));
@@ -398,6 +395,22 @@
         async function handleResult(isCorrect) {
             await window.updateWordStats(currentQuizWord.id, isCorrect); nextQuestion();
         }
+
+        window.bulkImport = async () => {
+            const text = document.getElementById('import-text').value.trim();
+            const lines = text.split('\n');
+            const batch = writeBatch(db);
+            lines.forEach(line => {
+                const [w, r, m, c, l] = line.split(',').map(s => s?.trim());
+                if (w && m) batch.set(doc(vocabsCol), { 
+                    word: w, reading: r || "", meaning: m, 
+                    category: c || "n.", lesson: l || 'L1', 
+                    wrongCount: 0, createdAt: new Date() 
+                });
+            });
+            await batch.commit();
+            alert("成功"); toggleImportArea();
+        };
 
         function exportCSV() {
             const header = "\uFEFF單語,漢字,中文,詞性,課數,錯誤計數\n";
