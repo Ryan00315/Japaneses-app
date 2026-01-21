@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>日本語筆記</title>
+    <title>JPNote-Web</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .card-flip { perspective: 1000px; }
@@ -11,151 +11,146 @@
         .card-inner.is-flipped { transform: rotateY(180deg); }
         .card-front, .card-back { backface-visibility: hidden; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .card-back { transform: rotateY(180deg); }
-        .active-filter { background-color: #4f46e5 !important; color: white !important; }
         .sticky-top { position: sticky; top: 0; z-index: 50; }
         ::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen pb-10 font-sans text-slate-900">
+<body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900">
 
-    <div class="sticky-top bg-gray-50/90 backdrop-blur-md px-4 py-3 border-b border-gray-200">
-        <div class="max-w-md mx-auto">
-            <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋單字..." 
-                   class="w-full p-3 rounded-2xl bg-white shadow-sm border border-gray-100 outline-none focus:ring-2 ring-indigo-400">
+    <div class="sticky-top bg-white/80 backdrop-blur-md px-4 py-3 border-b border-slate-200">
+        <div class="max-w-md mx-auto flex items-center gap-2">
+            <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 雲端搜尋..." 
+                   class="flex-1 p-3 rounded-2xl bg-slate-100 border-none outline-none focus:ring-2 ring-indigo-400 transition-all">
+            <div id="sync-status" class="w-3 h-3 rounded-full bg-gray-300"></div>
         </div>
     </div>
 
     <div class="max-w-md mx-auto p-4">
-        <div id="status-bar" class="text-[10px] text-right text-green-500 mb-2 font-mono">● System Ready</div>
-
         <header class="flex justify-between items-center mb-6">
-            <h1 class="text-xl font-black text-indigo-600">單字本 V3.2</h1>
-            <div class="flex gap-2">
-                <button onclick="exportCSV()" class="text-xs bg-white border px-2 py-1.5 rounded-lg shadow-sm font-bold">匯出</button>
-                <button onclick="resetSystem()" class="text-xs bg-red-50 text-red-500 px-2 py-1.5 rounded-lg font-bold">重置</button>
-            </div>
+            <h1 class="text-xl font-black text-indigo-600">Cloud Note V4.0</h1>
+            <button onclick="exportCSV()" class="text-xs bg-white border px-3 py-1.5 rounded-lg shadow-sm font-bold">匯出 CSV</button>
         </header>
 
         <div id="quiz-section" class="mb-8 hidden">
-            <div class="card-flip h-56 w-full relative mb-4">
-                <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full shadow-2xl">
+            <div class="card-flip h-52 w-full relative mb-4">
+                <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full shadow-xl">
                     <div class="card-front bg-indigo-600 text-white rounded-3xl flex flex-col items-center justify-center p-6 text-center">
                         <span id="quiz-q" class="text-5xl font-bold mb-4"></span>
-                        <button onclick="event.stopPropagation(); speak(document.getElementById('quiz-q').innerText)" class="bg-white/20 p-4 rounded-full">🔊</button>
+                        <button onclick="event.stopPropagation(); speak(document.getElementById('quiz-q').innerText)" class="bg-white/20 p-3 rounded-full">🔊</button>
                     </div>
                     <div class="card-back bg-white border-4 border-indigo-600 rounded-3xl flex flex-col items-center justify-center p-6">
-                        <p id="quiz-r" class="text-indigo-500 font-bold mb-2"></p>
+                        <p id="quiz-r" class="text-indigo-400 font-bold mb-1"></p>
                         <p id="quiz-a" class="text-3xl font-black text-slate-800"></p>
                     </div>
                 </div>
             </div>
-            <button onclick="loadRandomWord()" class="w-full py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-2xl font-black shadow-lg">NEXT WORD</button>
+            <button onclick="loadRandomWord()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg active:scale-95">NEXT</button>
         </div>
 
-        <section class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 mb-6">
+        <section class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 mb-6">
             <div class="grid grid-cols-2 gap-3 mb-3">
-                <input id="word" type="text" placeholder="單字" class="bg-gray-50 p-3 rounded-xl outline-none">
-                <input id="reading" type="text" placeholder="假名" class="bg-gray-50 p-3 rounded-xl outline-none">
+                <input id="word" type="text" placeholder="單字" class="bg-slate-50 p-3 rounded-xl outline-none">
+                <input id="reading" type="text" placeholder="讀音" class="bg-slate-50 p-3 rounded-xl outline-none">
             </div>
-            <input id="meaning" type="text" placeholder="意思" class="w-full bg-gray-50 p-3 rounded-xl mb-3 outline-none">
-            <div class="flex gap-3">
-                <select id="category" class="bg-gray-50 px-4 rounded-xl text-sm font-bold text-gray-500">
-                    <option>名詞</option><option>動詞</option><option>形容詞</option><option>其他</option>
-                </select>
-                <button onclick="addWord()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold active:bg-black transition">加入清單</button>
-            </div>
+            <input id="meaning" type="text" placeholder="意思" class="w-full bg-slate-50 p-3 rounded-xl mb-3 outline-none">
+            <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-black transition disabled:opacity-50">同步到雲端</button>
         </section>
 
         <ul id="vocab-list" class="space-y-3"></ul>
     </div>
 
-    <script>
-        // 【Git 存放區】 你以後可以直接把單字打在這裡，push 到 GitHub 後手機就能看到
-        const gitData = [
-            { word: "日本語", reading: "にほんご", meaning: "日文", category: "名詞", id: 1 },
-            // 在這裡繼續新增...
-        ];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        let vocabs = [];
+        // 🔥 重要：請在此處貼上你從 Firebase 複製的 Config 資料
+        const firebaseConfig = {
+  apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4",
+  authDomain: "jpnote-5f436.firebaseapp.com",
+  projectId: "jpnote-5f436",
+  storageBucket: "jpnote-5f436.firebasestorage.app",
+  messagingSenderId: "881660892658",
+  appId: "1:881660892658:web:9d88f9b2332aa9e2b3076b",
+  measurementId: "G-QV2NRXQSY7"
+};
 
-        // 初始化系統：加入錯誤偵測
-        try {
-            const localData = JSON.parse(localStorage.getItem('myVocabsV3')) || [];
-            vocabs = [...gitData, ...localData];
-            console.log("系統初始化成功，目前單字數:", vocabs.length);
-        } catch (error) {
-            console.error("資料讀取失敗:", error);
-            alert("資料讀取失敗，系統已自動修復。");
-            vocabs = [...gitData];
-        }
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const vocabsCol = collection(db, "vocabs");
 
-        function addWord() {
+        window.vocabs = [];
+
+        // 1. 監聽雲端資料 (即時同步關鍵！)
+        const q = query(vocabsCol, orderBy("createdAt", "desc"));
+        onSnapshot(q, (snapshot) => {
+            window.vocabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderList();
+            updateQuizUI();
+            document.getElementById('sync-status').classList.replace('bg-gray-300', 'bg-green-500');
+        }, (error) => {
+            console.error("同步失敗:", error);
+            alert("雲端同步失敗，請檢查 Firebase 設定或規則。");
+        });
+
+        // 2. 新增單字到雲端
+        window.addWordToCloud = async () => {
+            const w = document.getElementById('word');
+            const r = document.getElementById('reading');
+            const m = document.getElementById('meaning');
+            const btn = document.getElementById('addBtn');
+
+            if (!w.value.trim() || !m.value.trim()) return alert("請填寫單字與意思");
+
+            btn.disabled = true;
+            btn.innerText = "同步中...";
+
             try {
-                const w = document.getElementById('word').value.trim();
-                const r = document.getElementById('reading').value.trim();
-                const m = document.getElementById('meaning').value.trim();
-                const c = document.getElementById('category').value;
-
-                if (!w || !m) {
-                    alert("⚠️ 錯誤：單字和意思不能是空的！");
-                    return;
-                }
-
-                const newVocab = { word: w, reading: r, meaning: m, category: c, id: Date.now() };
-                
-                // 更新陣列與儲存
-                const localOnly = JSON.parse(localStorage.getItem('myVocabsV3')) || [];
-                localOnly.push(newVocab);
-                localStorage.setItem('myVocabsV3', JSON.stringify(localOnly));
-                
-                vocabs.push(newVocab);
-                renderList();
-                updateQuizUI();
-
-                // 清除輸入
-                document.getElementById('word').value = '';
-                document.getElementById('reading').value = '';
-                document.getElementById('meaning').value = '';
-                
-                document.getElementById('status-bar').innerText = "● Saved Success";
-                document.getElementById('status-bar').classList.replace('text-green-500', 'text-indigo-500');
+                await addDoc(vocabsCol, {
+                    word: w.value.trim(),
+                    reading: r.value.trim(),
+                    meaning: m.value.trim(),
+                    category: "未分類",
+                    createdAt: new Date()
+                });
+                w.value = ''; r.value = ''; m.value = '';
             } catch (e) {
-                alert("❌ 新增失敗！錯誤訊息：" + e.message);
-                document.getElementById('status-bar').innerText = "● Save Failed";
-                document.getElementById('status-bar').classList.replace('text-green-500', 'text-red-500');
+                alert("同步失敗: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "同步到雲端";
             }
-        }
+        };
 
+        // 3. 刪除雲端單字
+        window.deleteWord = async (id) => {
+            if (!confirm("確定從雲端刪除？")) return;
+            try {
+                await deleteDoc(doc(db, "vocabs", id));
+            } catch (e) {
+                alert("刪除失敗");
+            }
+        };
+    </script>
+
+    <script>
+        // 非同步相關的 UI 功能
         function renderList() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const listEl = document.getElementById('vocab-list');
-            const filtered = vocabs.filter(v => v.word.includes(search) || v.meaning.includes(search));
+            const filtered = (window.vocabs || []).filter(v => v.word.includes(search) || v.meaning.includes(search));
             
             listEl.innerHTML = filtered.map(v => `
-                <li class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-gray-100">
+                <li class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-100">
                     <div>
-                        <span class="text-[10px] font-black text-indigo-400 uppercase">${v.category}</span>
-                        <div class="text-xl font-bold text-gray-800">${v.word} <span class="text-xs font-normal text-gray-400 ml-1">【${v.reading}】</span></div>
-                        <div class="text-gray-500 text-sm font-medium">${v.meaning}</div>
+                        <div class="text-xl font-bold text-slate-800">${v.word} <span class="text-xs font-normal text-slate-400">【${v.reading}】</span></div>
+                        <div class="text-slate-500 text-sm font-medium">${v.meaning}</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-full text-gray-400">🔊</button>
-                        <button onclick="deleteWord(${v.id})" class="text-gray-300 hover:text-red-500 px-2">✕</button>
+                        <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-slate-400">🔊</button>
+                        <button onclick="deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500">✕</button>
                     </div>
                 </li>
-            `).reverse().join('');
-        }
-
-        function deleteWord(id) {
-            if (!confirm('確定刪除？')) return;
-            // 過濾掉 Git 固定資料，只刪除本地資料
-            let localData = JSON.parse(localStorage.getItem('myVocabsV3')) || [];
-            localData = localData.filter(v => v.id !== id);
-            localStorage.setItem('myVocabsV3', JSON.stringify(localData));
-            
-            vocabs = [...gitData, ...localData];
-            renderList();
-            updateQuizUI();
+            `).join('');
         }
 
         function speak(text) {
@@ -169,9 +164,10 @@
             window.speechSynthesis.speak(uttr);
         }
 
+        let currentQuizWord = null;
         function updateQuizUI() {
             const section = document.getElementById('quiz-section');
-            if (vocabs.length > 0) {
+            if (window.vocabs.length > 0) {
                 section.classList.remove('hidden');
                 if (!currentQuizWord) loadRandomWord();
             }
@@ -179,35 +175,24 @@
 
         function loadRandomWord() {
             document.getElementById('quiz-card').classList.remove('is-flipped');
-            if (vocabs.length === 0) return;
+            if (!window.vocabs || window.vocabs.length === 0) return;
             setTimeout(() => {
-                currentQuizWord = vocabs[Math.floor(Math.random() * vocabs.length)];
+                currentQuizWord = window.vocabs[Math.floor(Math.random() * window.vocabs.length)];
                 document.getElementById('quiz-q').innerText = currentQuizWord.word;
                 document.getElementById('quiz-r').innerText = currentQuizWord.reading;
                 document.getElementById('quiz-a').innerText = currentQuizWord.meaning;
             }, 150);
         }
 
-        function resetSystem() {
-            if(confirm("這將清除手機上的所有暫存單字，確定嗎？")) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
         function exportCSV() {
-            const header = "\uFEFF單字,讀音,意思,分類\n";
-            const rows = vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category}`).join("\n");
+            const header = "\uFEFF單字,讀音,意思\n";
+            const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning}`).join("\n");
             const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "日文單字本.csv";
+            link.download = "雲端單字備份.csv";
             link.click();
         }
-
-        // 啟動
-        renderList();
-        updateQuizUI();
     </script>
 </body>
 </html>
