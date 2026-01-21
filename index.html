@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>日文雲端筆記 Pro</title>
+    <title>日文單字筆記本</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .card-flip { perspective: 1000px; }
@@ -14,24 +14,25 @@
         .active-filter { background-color: #4f46e5 !important; color: white !important; }
         ::-webkit-scrollbar { display: none; }
         .sticky-top { position: sticky; top: 0; z-index: 50; }
+        .animate-pop { animation: pop 0.3s ease-out; }
+        @keyframes pop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen pb-10 font-sans">
+<body class="bg-gray-50 min-h-screen pb-10 font-sans text-slate-900">
 
-    <div class="sticky-top bg-gray-50/80 backdrop-blur-md px-4 py-3 border-b border-gray-200">
-        <div class="max-w-md mx-auto relative">
-            <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋單字或中文..." 
-                   class="w-full p-3 pl-10 rounded-2xl bg-white shadow-sm border border-gray-100 outline-none focus:ring-2 ring-indigo-400 transition-all">
-            <span class="absolute left-3 top-3.5 text-gray-400"></span>
+    <div class="sticky-top bg-gray-50/90 backdrop-blur-md px-4 py-3 border-b border-gray-200">
+        <div class="max-w-md mx-auto">
+            <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋單字、假名或中文..." 
+                   class="w-full p-3 rounded-2xl bg-white shadow-sm border border-gray-100 outline-none focus:ring-2 ring-indigo-400 transition-all">
         </div>
     </div>
 
     <div class="max-w-md mx-auto p-4">
         <header class="flex justify-between items-center mb-6">
-            <h1 class="text-xl font-black text-indigo-600 tracking-tighter">日文學習助手</h1>
+            <h1 class="text-xl font-black text-indigo-600 tracking-tighter">單字本 V3.1</h1>
             <div class="flex gap-2">
-                <button onclick="exportCSV()" class="text-xs bg-white border px-3 py-1.5 rounded-lg shadow-sm hover:bg-gray-50 font-bold text-gray-600">匯出</button>
-                <label class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg shadow-sm cursor-pointer hover:bg-indigo-700 font-bold">
+                <button onclick="exportCSV()" class="text-xs bg-white border px-3 py-1.5 rounded-lg shadow-sm font-bold text-gray-600 active:bg-gray-100">匯出</button>
+                <label class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg shadow-sm cursor-pointer font-bold active:bg-indigo-700">
                     匯入 <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="importCSV(event)">
                 </label>
             </div>
@@ -40,10 +41,10 @@
         <div id="quiz-section" class="mb-8 hidden">
             <div class="card-flip h-56 w-full relative mb-4">
                 <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full shadow-2xl">
-                    <div class="card-front bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-3xl flex flex-col items-center justify-center p-6 text-center">
-                        <span id="quiz-q" class="text-5xl font-bold mb-4 tracking-wider"></span>
+                    <div class="card-front bg-indigo-600 text-white rounded-3xl flex flex-col items-center justify-center p-6 text-center">
+                        <span id="quiz-q" class="text-5xl font-bold mb-4"></span>
                         <button onclick="event.stopPropagation(); speak(document.getElementById('quiz-q').innerText)" 
-                                class="bg-white/20 p-4 rounded-full hover:bg-white/30 transition-all backdrop-blur-sm">
+                                class="bg-white/20 p-4 rounded-full hover:bg-white/30 transition-all">
                             <span class="text-2xl">🔊</span>
                         </button>
                     </div>
@@ -53,31 +54,191 @@
                     </div>
                 </div>
             </div>
-            <button onclick="loadRandomWord()" class="w-full py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-2xl font-black shadow-lg active:scale-[0.98] transition-all">
+            <button onclick="loadRandomWord()" class="w-full py-4 bg-white border-2 border-indigo-600 text-indigo-600 rounded-2xl font-black shadow-lg active:scale-95 transition-all">
                 NEXT WORD
             </button>
         </div>
 
         <section class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 mb-6">
-            <h3 class="text-sm font-bold text-gray-400 mb-3 ml-1">快速新增</h3>
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <input id="word" type="text" placeholder="單字" class="bg-gray-50 p-3 rounded-xl outline-none focus:ring-2 ring-indigo-300">
                 <input id="reading" type="text" placeholder="假名" class="bg-gray-50 p-3 rounded-xl outline-none focus:ring-2 ring-indigo-300">
             </div>
             <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-gray-50 p-3 rounded-xl mb-3 outline-none focus:ring-2 ring-indigo-300">
             <div class="flex gap-3">
-                <select id="category" class="bg-gray-50 px-4 rounded-xl text-sm font-bold text-gray-500 border-none outline-none">
+                <select id="category" class="bg-gray-50 px-4 rounded-xl text-sm font-bold text-gray-500 border-none">
                     <option>名詞</option>
                     <option>動詞</option>
                     <option>形容詞</option>
                     <option>其他</option>
                 </select>
-                <button onclick="addWord()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-black transition shadow-lg">加入清單</button>
+                <button onclick="addWord()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold active:bg-black transition shadow-lg">加入清單</button>
             </div>
         </section>
 
         <div class="flex gap-2 overflow-x-auto mb-4 pb-2">
-            <button onclick="setFilter('全部')" class="filter-btn active-filter px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm transition-all">全部</button>
-            <button onclick="setFilter('名詞')" class="filter-btn px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm transition-all">名詞</button>
-            <button onclick="setFilter('動詞')" class="filter-btn px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm transition-all">動詞</button>
-            <button onclick="setFilter
+            <button onclick="setFilter('全部')" class="filter-btn active-filter px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm">全部</button>
+            <button onclick="setFilter('名詞')" class="filter-btn px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm">名詞</button>
+            <button onclick="setFilter('動詞')" class="filter-btn px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm">動詞</button>
+            <button onclick="setFilter('形容詞')" class="filter-btn px-6 py-2 rounded-full bg-white border text-xs font-black shadow-sm">形容詞</button>
+        </div>
+
+        <ul id="vocab-list" class="space-y-3"></ul>
+    </div>
+
+    <script>
+        // 1. 初始化資料 (移除所有 Firebase 邏輯)
+        let vocabs = JSON.parse(localStorage.getItem('myVocabsV3')) || [];
+        let currentFilter = '全部';
+        let currentQuizWord = null;
+
+        // 2. 核心：新增單字
+        function addWord() {
+            const w = document.getElementById('word');
+            const r = document.getElementById('reading');
+            const m = document.getElementById('meaning');
+            const c = document.getElementById('category');
+
+            if (!w.value.trim() || !m.value.trim()) {
+                alert("請填寫單字與意思");
+                return;
+            }
+
+            const newVocab = {
+                word: w.value.trim(),
+                reading: r.value.trim(),
+                meaning: m.value.trim(),
+                category: c.value,
+                id: Date.now()
+            };
+
+            vocabs.push(newVocab);
+            saveAndRefresh();
+
+            // 清空輸入框
+            w.value = ''; r.value = ''; m.value = '';
+        }
+
+        // 3. 儲存與重新渲染
+        function saveAndRefresh() {
+            localStorage.setItem('myVocabsV3', JSON.stringify(vocabs));
+            renderList();
+            updateQuizUI();
+        }
+
+        // 4. 語音功能 (高品質女聲優先)
+        function speak(text) {
+            if (!text) return;
+            window.speechSynthesis.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
+            const voices = window.speechSynthesis.getVoices();
+            const femaleVoice = voices.find(v => v.lang.includes('ja') && (v.name.includes('Google') || v.name.includes('Nanami') || v.name.includes('Kyoko')));
+            
+            uttr.voice = femaleVoice || voices.find(v => v.lang.includes('ja'));
+            uttr.lang = 'ja-JP';
+            uttr.rate = 0.8;
+            uttr.pitch = 1.1; 
+            window.speechSynthesis.speak(uttr);
+        }
+
+        // 5. 渲染清單 (含搜尋與篩選)
+        function renderList() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const listEl = document.getElementById('vocab-list');
+            
+            const filtered = vocabs.filter(v => 
+                (currentFilter === '全部' || v.category === currentFilter) && 
+                (v.word.includes(search) || v.meaning.includes(search) || v.reading.includes(search))
+            );
+            
+            listEl.innerHTML = filtered.map(v => `
+                <li class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-gray-100 animate-pop">
+                    <div>
+                        <span class="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">${v.category}</span>
+                        <div class="text-xl font-bold text-gray-800">${v.word} <span class="text-xs font-normal text-gray-400 ml-1">【${v.reading}】</span></div>
+                        <div class="text-gray-500 text-sm font-medium">${v.meaning}</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-full text-gray-400">🔊</button>
+                        <button onclick="deleteWord(${v.id})" class="w-10 h-10 flex items-center justify-center text-gray-300 hover:text-red-500">✕</button>
+                    </div>
+                </li>
+            `).reverse().join('');
+        }
+
+        // 6. 刪除
+        function deleteWord(id) {
+            if (confirm('確定刪除？')) {
+                vocabs = vocabs.filter(v => v.id !== id);
+                saveAndRefresh();
+            }
+        }
+
+        // 7. 複習邏輯
+        function updateQuizUI() {
+            const section = document.getElementById('quiz-section');
+            if (vocabs.length > 0) {
+                section.classList.remove('hidden');
+                if (!currentQuizWord) loadRandomWord();
+            } else {
+                section.classList.add('hidden');
+            }
+        }
+
+        function loadRandomWord() {
+            document.getElementById('quiz-card').classList.remove('is-flipped');
+            const pool = currentFilter === '全部' ? vocabs : vocabs.filter(v => v.category === currentFilter);
+            if (pool.length === 0) {
+                document.getElementById('quiz-q').innerText = "無單字";
+                return;
+            }
+            setTimeout(() => {
+                currentQuizWord = pool[Math.floor(Math.random() * pool.length)];
+                document.getElementById('quiz-q').innerText = currentQuizWord.word;
+                document.getElementById('quiz-r').innerText = currentQuizWord.reading;
+                document.getElementById('quiz-a').innerText = currentQuizWord.meaning;
+            }, 150);
+        }
+
+        function setFilter(cat) {
+            currentFilter = cat;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active-filter', btn.innerText === cat));
+            renderList();
+        }
+
+        // 8. 匯入/匯出 (CSV)
+        function exportCSV() {
+            const header = "\uFEFF單字,讀音,意思,分類\n";
+            const rows = vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category}`).join("\n");
+            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "日文單字本.csv";
+            link.click();
+        }
+
+        function importCSV(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split("\n").slice(1);
+                lines.forEach(line => {
+                    const f = line.split(",");
+                    if (f.length >= 3 && f[0].trim()) {
+                        vocabs.push({ word: f[0].trim(), reading: f[1].trim(), meaning: f[2].trim(), category: f[3]?.trim() || '其他', id: Date.now() + Math.random() });
+                    }
+                });
+                saveAndRefresh();
+                alert("匯入成功！");
+            };
+            reader.readAsText(file);
+        }
+
+        // 初始執行
+        window.speechSynthesis.getVoices();
+        renderList();
+        updateQuizUI();
+    </script>
+</body>
+</html>
