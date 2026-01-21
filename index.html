@@ -28,7 +28,6 @@
         .shake { animation: shake 0.3s; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
         
-        /* 手機端按鈕加大點擊熱區 */
         .tap-target { min-width: 44px; min-height: 44px; }
     </style>
 </head>
@@ -49,9 +48,7 @@
                 <button onclick="switchBook(1)" id="book1-btn" class="book-btn book-active flex-1 border border-slate-200 py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
                 <button onclick="switchBook(2)" id="book2-btn" class="book-btn bg-white text-slate-500 flex-1 border border-slate-200 py-1.5 rounded-xl text-xs font-bold transition-all">第二冊</button>
             </div>
-
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="lesson-filter-container"></div>
-            
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="type-filter">
                 <button onclick="toggleType('n.')" class="type-btn border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold bg-white text-slate-500">n.</button>
                 <button onclick="toggleType('v.')" class="type-btn border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold bg-white text-slate-500">v.</button>
@@ -62,7 +59,6 @@
                 <button onclick="toggleType('量詞')" class="type-btn border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold bg-white text-slate-500">量詞</button>
                 <button onclick="toggleType('其他')" class="type-btn border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold bg-white text-slate-500">其他</button>
             </div>
-
             <div class="relative mt-1">
                 <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋單語、漢字或中文..." class="w-full p-3 pr-10 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
                 <button id="clearSearch" onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 font-bold hidden">✕</button>
@@ -72,21 +68,18 @@
 
     <div class="max-w-md mx-auto p-4">
         <button onclick="toggleInputSection()" id="toggleBtn" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2 rounded-full text-sm font-bold border border-indigo-100">＋ 新增單字</button>
-        
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all">
              <div class="grid grid-cols-2 gap-3 mb-4">
                 <input id="word" type="text" placeholder="單語" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
                 <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
             </div>
             <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none focus:ring-2 ring-indigo-300">
-            
             <div class="text-[10px] font-bold text-slate-400 mb-2 ml-1">選擇冊數與課數</div>
             <div class="flex gap-2 mb-3">
                 <button type="button" onclick="setNewBook(1)" id="n-book1" class="flex-1 py-2 rounded-xl text-[10px] font-bold border border-slate-200 active-new-cat">第一冊</button>
                 <button type="button" onclick="setNewBook(2)" id="n-book2" class="flex-1 py-2 rounded-xl text-[10px] font-bold border border-slate-200 bg-white text-slate-500">第二冊</button>
             </div>
             <div id="newLessonBtnContainer" class="flex flex-wrap gap-2 mb-4 overflow-x-auto no-scrollbar"></div>
-            
             <div id="newCategoryContainer" class="flex flex-wrap gap-2 mb-4">
                 <button type="button" onclick="selectNewCategory(this, 'n.')" class="new-cat-btn active-new-cat border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">n.</button>
                 <button type="button" onclick="selectNewCategory(this, 'v.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">v.</button>
@@ -95,13 +88,11 @@
             </div>
             <button onclick="addWordToCloud()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95">同步到雲端</button>
         </section>
-
         <section id="import-area" class="hidden bg-slate-900 rounded-3xl p-5 mb-6 text-white shadow-xl mt-4">
             <h3 class="font-bold mb-2">批量匯入 (CSV)</h3>
             <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="單語,漢字,中文,分類,課數"></textarea>
             <button onclick="bulkImport()" class="w-full bg-indigo-500 py-3 rounded-xl font-bold">開始匯入</button>
         </section>
-
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
@@ -130,7 +121,6 @@
             <button onclick="startQuiz('filtered')" class="w-full py-6 bg-indigo-600 rounded-3xl mb-4 font-bold text-xl active:scale-95 transition-all">目前篩選範圍</button>
             <button onclick="closeQuiz()" class="text-slate-500 font-bold">取消</button>
         </div>
-        
         <div class="w-full max-w-md flex flex-col h-full hidden" id="quiz-content">
             <div class="flex justify-between items-center mb-6">
                 <button onclick="openDict(currentQuizWord.word)" class="text-xs bg-white/10 px-3 py-1 rounded-full border border-white/20">📖 字典</button>
@@ -196,8 +186,28 @@
             2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "附錄"]
         };
 
+        // 建立課數權重映射，用於排序
+        const LESSON_ORDER = [
+            "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12",
+            "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "附錄"
+        ];
+
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snapshot) => {
-            window.vocabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const rawData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // 執行重新排序：課數優先，時間次之
+            window.vocabs = rawData.sort((a, b) => {
+                const orderA = LESSON_ORDER.indexOf(a.lesson || "未分類");
+                const orderB = LESSON_ORDER.indexOf(b.lesson || "未分類");
+                
+                if (orderA !== orderB) {
+                    return orderA - orderB; // 課數由小到大 (L1 -> L2)
+                }
+                
+                // 如果課數相同，依照建立時間倒序 (最新在最前)
+                return b.createdAt?.seconds - a.createdAt?.seconds;
+            });
+
             renderLessonUI();
             renderList();
         });
@@ -234,6 +244,7 @@
 
         const initDragScroll = (id) => {
             const el = document.getElementById(id);
+            if (!el) return;
             let isDown = false; let startX; let scrollLeft;
             el.addEventListener('mousedown', (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; });
             el.addEventListener('mouseleave', () => { isDown = false; });
@@ -274,7 +285,15 @@
         window.addWordToCloud = async () => {
             const w = document.getElementById('word'); const r = document.getElementById('reading'); const m = document.getElementById('meaning');
             if (!w.value.trim() || !m.value.trim()) return alert("請填寫內容");
-            await addDoc(vocabsCol, { word: w.value.trim(), reading: r.value.trim(), meaning: m.value.trim(), category: window.selectedNewCategory, lesson: window.selectedNewLesson, wrongCount: 0, createdAt: new Date() });
+            await addDoc(vocabsCol, { 
+                word: w.value.trim(), 
+                reading: r.value.trim(), 
+                meaning: m.value.trim(), 
+                category: window.selectedNewCategory, 
+                lesson: window.selectedNewLesson, 
+                wrongCount: 0, 
+                createdAt: new Date() 
+            });
             w.value = r.value = m.value = ''; toggleInputSection();
         };
 
@@ -330,18 +349,13 @@
         window.closeEditModal = () => document.getElementById('edit-modal').classList.add('hidden');
         window.deleteWord = async (id) => { if(confirm("確定刪除？")) await deleteDoc(doc(db, "vocabs", id)); };
         
-        // 優化播放邏輯
         window.speak = (t) => {
             if (!t) return;
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(t);
             u.lang = 'ja-JP';
-            u.rate = 0.9; // 行動裝置稍微放慢語速更清晰
-            
-            // 處理 iOS 靜音模式
-            u.onstart = () => { console.log("Voice started"); };
-            u.onerror = (e) => { console.error("Voice error", e); };
-            
+            u.rate = 0.75;
+            u.pitch = 1.0;
             window.speechSynthesis.speak(u);
         };
 
