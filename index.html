@@ -247,12 +247,16 @@
             window.speechSynthesis.cancel();
             const uttr = new SpeechSynthesisUtterance(text);
             const voices = window.speechSynthesis.getVoices();
-            let targetVoice = voices.find(v => v.lang.includes('ja') && (v.name.includes('Google') || v.name.includes('Kyoko') || v.name.includes('Nanami') || v.name.includes('Siri')));
-            if (!targetVoice) targetVoice = voices.find(v => v.lang.includes('ja'));
+            
+            // 尋找系統預設高品質日文語音，不再刻意限制女聲
+            let targetVoice = voices.find(v => v.lang.includes('ja') && v.name.includes('Premium')) || 
+                              voices.find(v => v.lang.includes('ja') && v.name.includes('Google')) ||
+                              voices.find(v => v.lang.includes('ja'));
+
             uttr.voice = targetVoice;
             uttr.lang = 'ja-JP';
-            uttr.rate = 0.85;
-            uttr.pitch = 1.3;
+            uttr.rate = 1.0;   // 恢復正常語速
+            uttr.pitch = 1.0;  // 恢復自然音調
             window.speechSynthesis.speak(uttr);
         }
 
@@ -321,3 +325,4 @@
     </script>
 </body>
 </html>
+
