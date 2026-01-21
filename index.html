@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kingtex JPNote V6.1</title>
+    <title>JPNote</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .card-flip { perspective: 1000px; }
@@ -13,7 +13,6 @@
         .card-back { transform: rotateY(180deg); }
         .bg-glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         
-        /* 標籤樣式 */
         .btn-inactive { background-color: white; border: 1px solid #e2e8f0; color: #64748b; }
         .lesson-active { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
         .type-active { background-color: #ec4899 !important; color: white !important; border-color: #ec4899 !important; }
@@ -32,13 +31,19 @@
             display: none; width: 22px; height: 22px; background-color: #ef4444; color: white;
             border-radius: 999px; font-size: 10px; font-weight: bold; justify-content: center; align-items: center;
         }
+        
+        /* 編輯彈窗樣式 */
+        .modal-overlay { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(4px); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900">
 
     <div class="sticky top-0 z-50 bg-glass border-b border-slate-200">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-            <h1 class="text-lg font-black text-indigo-600">Kingtex JPNote</h1>
+            <div class="flex items-center gap-2">
+                <img src="https://images.vocus.cc/c49f8600-4786-44c1-9d22-19f85c490264.png" alt="Logo" class="h-6 object-contain">
+                <h1 class="text-xl font-black text-slate-800 tracking-tighter">JPNote</h1>
+            </div>
             <div class="flex items-center gap-2">
                 <button onclick="toggleImportArea()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">批量</button>
                 <button onclick="exportCSV()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">匯出</button>
@@ -48,8 +53,7 @@
         
         <div class="max-w-md mx-auto px-4 pb-3">
             <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Lesson (複選)</p>
-            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="lesson-filter-container">
-                </div>
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="lesson-filter-container"></div>
 
             <p class="text-[9px] font-bold text-slate-400 uppercase mb-1 mt-1">詞性 (複選)</p>
             <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="type-filter">
@@ -91,11 +95,10 @@
                 <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none">
                 
                 <div class="mb-4">
-                    <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase">單語課數 (單選)</p>
-                    <div id="newLessonBtnContainer" class="flex flex-wrap gap-2 mb-4">
-                        </div>
+                    <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">單語課數 (單選)</p>
+                    <div id="newLessonBtnContainer" class="flex flex-wrap gap-2 mb-4"></div>
 
-                    <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase">選擇詞性 (單選)</p>
+                    <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">選擇詞性 (單選)</p>
                     <div id="newCategoryContainer" class="flex flex-wrap gap-2">
                         <button type="button" onclick="selectNewCategory(this, 'n.')" class="new-cat-btn active-new-cat border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">n.</button>
                         <button type="button" onclick="selectNewCategory(this, 'v.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">v.</button>
@@ -112,6 +115,46 @@
         </section>
 
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
+    </div>
+
+    <div id="edit-modal" class="fixed inset-0 z-[110] modal-overlay hidden flex flex-col items-center justify-center p-6">
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl relative">
+            <h2 class="text-2xl font-black text-slate-800 mb-6">編輯單字</h2>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">單語</label>
+                        <input id="edit-word" type="text" class="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 ring-indigo-300">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">漢字</label>
+                        <input id="edit-reading" type="text" class="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 ring-indigo-300">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">中文意思</label>
+                    <input id="edit-meaning" type="text" class="w-full bg-slate-50 p-4 rounded-2xl border-none outline-none focus:ring-2 ring-indigo-300">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">課數</label>
+                        <select id="edit-lesson" class="w-full bg-slate-50 p-4 rounded-2xl outline-none text-sm font-bold"></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">詞性</label>
+                        <select id="edit-category" class="w-full bg-slate-50 p-4 rounded-2xl outline-none text-sm font-bold">
+                            <option value="n.">n.</option><option value="v.">v.</option><option value="adj.">adj.</option>
+                            <option value="數字">數字</option><option value="時間">時間</option><option value="期間">期間</option>
+                            <option value="量詞">量詞</option><option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="closeEditModal()" class="flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl font-bold">取消</button>
+                    <button onclick="saveEdit()" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200">更新單字</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="quiz-overlay" class="fixed inset-0 z-[100] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">
@@ -165,145 +208,139 @@
         const vocabsCol = collection(db, "vocabs");
 
         window.vocabs = [];
-        window.selectedLessons = []; // 頂端複選課數
-        window.selectedTypes = [];    // 頂端複選詞性
-        window.selectedNewLesson = 'L1';  // 下方新增單選課數
-        window.selectedNewCategory = 'n.'; // 下方新增單選詞性
+        window.selectedLessons = [];
+        window.selectedTypes = [];
+        window.selectedNewLesson = 'L1';
+        window.selectedNewCategory = 'n.';
+        window.currentEditId = null;
 
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snapshot) => {
             window.vocabs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderList();
         });
 
-        // 初始化 L1-L12 的按鈕 (包含頂端篩選與下方新增)
+        // 初始化
         const lessonFilter = document.getElementById('lesson-filter-container');
         const lessonNewBtnContainer = document.getElementById('newLessonBtnContainer');
+        const editLessonSelect = document.getElementById('edit-lesson');
 
         for(let i=1; i<=12; i++) {
             const lessonLabel = `L${i}`;
-            
-            // 頂端篩選按鈕 (複選)
             const btnF = document.createElement('button');
             btnF.className = "lesson-btn btn-inactive whitespace-nowrap px-4 py-1 rounded-lg text-[11px] font-bold shadow-sm";
             btnF.innerText = lessonLabel;
             btnF.onclick = () => toggleLessonFilter(lessonLabel);
             lessonFilter.appendChild(btnF);
 
-            // 下方新增按鈕 (單選)
             const btnN = document.createElement('button');
             btnN.className = `new-lesson-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold ${i===1 ? 'active-new-cat' : ''}`;
             btnN.innerText = lessonLabel;
             btnN.onclick = () => selectNewLesson(btnN, lessonLabel);
             lessonNewBtnContainer.appendChild(btnN);
+
+            const opt = document.createElement('option');
+            opt.value = lessonLabel; opt.innerText = lessonLabel;
+            editLessonSelect.appendChild(opt);
         }
 
         window.addWordToCloud = async () => {
             const w = document.getElementById('word');
             const r = document.getElementById('reading');
             const m = document.getElementById('meaning');
-            if (!w.value.trim() || !m.value.trim()) return alert("請輸入單語與中文");
+            if (!w.value.trim() || !m.value.trim()) return alert("請輸入內容");
             try {
                 await addDoc(vocabsCol, {
-                    word: w.value.trim(),
-                    reading: r.value.trim(),
-                    meaning: m.value.trim(),
-                    category: window.selectedNewCategory,
-                    lesson: window.selectedNewLesson,
-                    wrongCount: 0,
-                    createdAt: new Date()
+                    word: w.value.trim(), reading: r.value.trim(), meaning: m.value.trim(),
+                    category: window.selectedNewCategory, lesson: window.selectedNewLesson,
+                    wrongCount: 0, createdAt: new Date()
                 });
-                w.value = r.value = m.value = '';
-                toggleInputSection();
+                w.value = r.value = m.value = ''; toggleInputSection();
             } catch (e) { alert("同步錯誤"); }
         };
 
-        window.bulkImport = async () => {
-            const text = document.getElementById('import-text').value.trim();
-            const lines = text.split('\n');
-            const batch = writeBatch(db);
-            lines.forEach(line => {
-                const [w, r, m, c, l] = line.split(',').map(s => s?.trim());
-                if (w && m) batch.set(doc(vocabsCol), { 
-                    word: w, reading: r || "", meaning: m, 
-                    category: c || "n.", lesson: l || 'L1', 
-                    wrongCount: 0, createdAt: new Date() 
-                });
-            });
-            await batch.commit();
-            alert("成功"); toggleImportArea();
-        };
+        // 編輯儲存功能
+        window.saveEdit = async () => {
+            if(!window.currentEditId) return;
+            const w = document.getElementById('edit-word').value.trim();
+            const r = document.getElementById('edit-reading').value.trim();
+            const m = document.getElementById('edit-meaning').value.trim();
+            const l = document.getElementById('edit-lesson').value;
+            const c = document.getElementById('edit-category').value;
 
-        window.updateWordStats = async (id, isCorrect) => {
-            await updateDoc(doc(db, "vocabs", id), { wrongCount: isCorrect ? increment(0) : increment(1) });
+            try {
+                await updateDoc(doc(db, "vocabs", window.currentEditId), {
+                    word: w, reading: r, meaning: m, lesson: l, category: c
+                });
+                closeEditModal();
+            } catch (e) { alert("更新失敗"); }
         };
 
         window.deleteWord = async (id) => {
             if (confirm("確定刪除？")) await deleteDoc(doc(db, "vocabs", id));
         };
+
+        window.updateWordStats = async (id, isCorrect) => {
+            await updateDoc(doc(db, "vocabs", id), { wrongCount: isCorrect ? increment(0) : increment(1) });
+        };
     </script>
 
     <script>
-        // 頂端篩選邏輯 (複選課數)
         function toggleLessonFilter(lesson) {
             const index = window.selectedLessons.indexOf(lesson);
             if(index > -1) window.selectedLessons.splice(index, 1);
             else window.selectedLessons.push(lesson);
-            
-            updateFilterUI();
-            renderList();
+            updateFilterUI(); renderList();
         }
 
-        // 頂端篩選邏輯 (複選詞性)
         function toggleType(type) {
             const index = window.selectedTypes.indexOf(type);
             if(index > -1) window.selectedTypes.splice(index, 1);
             else window.selectedTypes.push(type);
-            
-            updateFilterUI();
-            renderList();
+            updateFilterUI(); renderList();
         }
 
         function updateFilterUI() {
-            document.querySelectorAll('.lesson-btn').forEach(b => {
-                const isActive = window.selectedLessons.includes(b.innerText);
-                b.classList.toggle('lesson-active', isActive);
-                b.classList.toggle('btn-inactive', !isActive);
-            });
-            document.querySelectorAll('.type-btn').forEach(b => {
-                const isActive = window.selectedTypes.includes(b.innerText);
-                b.classList.toggle('type-active', isActive);
-                b.classList.toggle('btn-inactive', !isActive);
-            });
+            document.querySelectorAll('.lesson-btn').forEach(b => b.classList.toggle('lesson-active', window.selectedLessons.includes(b.innerText)));
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('type-active', window.selectedTypes.includes(b.innerText)));
         }
 
-        // 下方新增單選邏輯
         function selectNewLesson(btn, lesson) {
             window.selectedNewLesson = lesson;
-            document.querySelectorAll('.new-lesson-btn').forEach(b => b.classList.remove('active-new-cat'));
-            btn.classList.add('active-new-cat');
+            document.querySelectorAll('.new-lesson-btn').forEach(b => b.classList.toggle('active-new-cat', b === btn));
         }
 
         function selectNewCategory(btn, cat) {
             window.selectedNewCategory = cat;
-            document.querySelectorAll('.new-cat-btn').forEach(b => b.classList.remove('active-new-cat'));
-            btn.classList.add('active-new-cat');
+            document.querySelectorAll('.new-cat-btn').forEach(b => b.classList.toggle('active-new-cat', b === btn));
         }
+
+        // 編輯彈窗控制
+        function openEditModal(id) {
+            const v = window.vocabs.find(item => item.id === id);
+            if(!v) return;
+            window.currentEditId = id;
+            document.getElementById('edit-word').value = v.word;
+            document.getElementById('edit-reading').value = v.reading;
+            document.getElementById('edit-meaning').value = v.meaning;
+            document.getElementById('edit-lesson').value = v.lesson || 'L1';
+            document.getElementById('edit-category').value = v.category || 'n.';
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); window.currentEditId = null; }
 
         function renderList() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const listEl = document.getElementById('vocab-list');
-            
             window.filteredPool = window.vocabs.filter(v => {
                 const matchLesson = window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
                 const matchType = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
                 const matchSearch = v.word.includes(search) || v.meaning.includes(search) || (v.reading && v.reading.includes(search));
                 return matchLesson && matchType && matchSearch;
             });
-
             document.getElementById('clearSearch').style.display = search.length > 0 ? 'flex' : 'none';
-
             listEl.innerHTML = window.filteredPool.map(v => `
-                <li class="bg-white p-5 rounded-3xl flex justify-between items-center shadow-sm border border-slate-100">
+                <li class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100">
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-md">${v.lesson || 'L1'}</span>
@@ -314,8 +351,9 @@
                         <div class="text-slate-500 text-sm mt-0.5">${v.meaning}</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="speak('${v.word}')" class="w-12 h-12 flex items-center justify-center bg-slate-50 rounded-full text-xl active:scale-90">🔊</button>
-                        <button onclick="deleteWord('${v.id}')" class="w-12 h-12 flex items-center justify-center text-slate-200">✕</button>
+                        <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-lg">🔊</button>
+                        <button onclick="openEditModal('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-xs">✏️</button>
+                        <button onclick="deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200">✕</button>
                     </div>
                 </li>
             `).join('');
@@ -328,15 +366,13 @@
             document.getElementById('quiz-content').classList.add('hidden');
             document.getElementById('quiz-overlay').classList.remove('hidden');
         }
-
         function startQuiz(mode) {
             quizPool = mode === 'all' ? [...window.vocabs] : [...window.filteredPool];
-            if (quizPool.length === 0) return alert("沒有單字可以測試！");
+            if (quizPool.length === 0) return alert("無單字");
             document.getElementById('quiz-setup').classList.add('hidden');
             document.getElementById('quiz-content').classList.remove('hidden');
             nextQuestion();
         }
-
         function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
         let currentQuizWord = null;
         function nextQuestion() {
@@ -350,12 +386,12 @@
                 document.getElementById('q-meaning').innerText = currentQuizWord.meaning;
             }, 150);
         }
-
         async function handleResult(isCorrect) {
             await window.updateWordStats(currentQuizWord.id, isCorrect);
             nextQuestion();
         }
 
+        // 系統功能
         function toggleInputSection() {
             document.getElementById('input-section').classList.toggle('show');
             document.getElementById('toggleBtn').innerText = document.getElementById('input-section').classList.contains('show') ? '✕ 關閉' : '＋ 新增單字';
@@ -365,8 +401,7 @@
         function speak(text) {
             window.speechSynthesis.cancel();
             const uttr = new SpeechSynthesisUtterance(text);
-            uttr.lang = 'ja-JP';
-            uttr.rate = 1.0;
+            uttr.lang = 'ja-JP'; uttr.rate = 1.0;
             window.speechSynthesis.speak(uttr);
         }
         function exportCSV() {
@@ -374,9 +409,7 @@
             const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category},${v.lesson},${v.wrongCount}`).join("\n");
             const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `JPNote_Backup.csv`;
-            link.click();
+            link.href = URL.createObjectURL(blob); link.download = `JPNote_Backup.csv`; link.click();
         }
     </script>
 </body>
