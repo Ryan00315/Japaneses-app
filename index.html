@@ -15,6 +15,22 @@
         .active-cat { background-color: #4f46e5 !important; color: white !important; }
         ::-webkit-scrollbar { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* 強化清除按鈕樣式 */
+        #clearSearch {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background-color: #ef4444; /* 紅色背景 */
+            color: white; /* 白色叉叉 */
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: bold;
+            z-index: 60;
+            line-height: 1;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900">
@@ -45,7 +61,7 @@
             <div class="relative mt-1">
                 <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋內容..." 
                        class="w-full p-3 pr-10 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
-                <button id="clearSearch" onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 font-bold p-1 hidden">✕</button>
+                <button id="clearSearch" onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2">✕</button>
             </div>
         </div>
     </div>
@@ -200,9 +216,12 @@
             const search = input.value.toLowerCase();
             const clearBtn = document.getElementById('clearSearch');
             
-            // 判斷是否顯示 X
-            if (search.length > 0) clearBtn.classList.remove('hidden');
-            else clearBtn.classList.add('hidden');
+            // 判斷是否顯示 X：有字才顯示
+            if (search.length > 0) {
+                clearBtn.style.display = 'flex';
+            } else {
+                clearBtn.style.display = 'none';
+            }
 
             const listEl = document.getElementById('vocab-list');
             const filtered = window.vocabs.filter(v => 
