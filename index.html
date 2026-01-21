@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JPNote</title>
+    <link rel="icon" type="image/png" href="https://images.vocus.cc/c49f8600-4786-44c1-9d22-19f85c490264.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .card-flip { perspective: 1000px; }
@@ -32,7 +34,6 @@
             border-radius: 999px; font-size: 10px; font-weight: bold; justify-content: center; align-items: center;
         }
         
-        /* 編輯彈窗樣式 */
         .modal-overlay { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(4px); }
     </style>
 </head>
@@ -41,13 +42,13 @@
     <div class="sticky top-0 z-50 bg-glass border-b border-slate-200">
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <img src="https://images.vocus.cc/c49f8600-4786-44c1-9d22-19f85c490264.png" alt="Logo" class="h-6 object-contain">
+                <img src="https://images.vocus.cc/c49f8600-4786-44c1-9d22-19f85c490264.png" alt="Logo" class="h-6 w-auto object-contain">
                 <h1 class="text-xl font-black text-slate-800 tracking-tighter">JPNote</h1>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="toggleImportArea()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">批量</button>
                 <button onclick="exportCSV()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">匯出</button>
-                <button onclick="openQuiz()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200">隨機測試</button>
+                <button onclick="openQuiz()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200 active:scale-95">隨機測試</button>
             </div>
         </div>
         
@@ -77,11 +78,11 @@
 
     <div class="max-w-md mx-auto p-4">
         <div class="flex justify-start mb-4">
-            <button onclick="toggleInputSection()" id="toggleBtn" class="bg-indigo-50 text-indigo-600 px-6 py-2 rounded-full text-sm font-bold border border-indigo-100">＋ 新增單字</button>
+            <button onclick="toggleInputSection()" id="toggleBtn" class="bg-indigo-50 text-indigo-600 px-6 py-2 rounded-full text-sm font-bold border border-indigo-100 shadow-sm active:scale-95">＋ 新增單字</button>
         </div>
 
         <section id="import-area" class="hidden bg-slate-900 rounded-3xl p-5 mb-6 text-white shadow-xl">
-            <h3 class="font-bold mb-2">批量匯入 (CSV)</h3>
+            <h3 class="font-bold mb-2 text-sm uppercase tracking-widest">批量匯入 (CSV)</h3>
             <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="單語,漢字,中文,分類,課數(L1-L12)"></textarea>
             <button onclick="bulkImport()" class="w-full bg-indigo-500 py-3 rounded-xl font-bold">開始匯入</button>
         </section>
@@ -89,10 +90,10 @@
         <section id="input-section" class="bg-white rounded-3xl shadow-sm border border-slate-200 px-5 transition-all">
             <div class="py-5">
                 <div class="grid grid-cols-2 gap-3 mb-4">
-                    <input id="word" type="text" placeholder="單語" class="bg-slate-50 p-4 rounded-2xl outline-none">
-                    <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none">
+                    <input id="word" type="text" placeholder="單語" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
+                    <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
                 </div>
-                <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none">
+                <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none focus:ring-2 ring-indigo-300">
                 
                 <div class="mb-4">
                     <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">單語課數 (單選)</p>
@@ -110,7 +111,7 @@
                         <button type="button" onclick="selectNewCategory(this, '其他')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">其他</button>
                     </div>
                 </div>
-                <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl">同步到雲端</button>
+                <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">同步到雲端</button>
             </div>
         </section>
 
@@ -151,7 +152,7 @@
                 </div>
                 <div class="flex gap-3 mt-4">
                     <button onclick="closeEditModal()" class="flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl font-bold">取消</button>
-                    <button onclick="saveEdit()" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200">更新單字</button>
+                    <button onclick="saveEdit()" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg">更新內容</button>
                 </div>
             </div>
         </div>
@@ -161,18 +162,18 @@
         <div class="w-full max-w-md flex flex-col h-full" id="quiz-setup">
             <h2 class="text-3xl font-black mb-10">選擇測試範圍</h2>
             <button onclick="startQuiz('filtered')" class="w-full py-8 bg-indigo-600 rounded-[30px] mb-4 text-2xl font-bold">目前篩選範圍</button>
-            <button onclick="startQuiz('all')" class="w-full py-8 bg-slate-800 border-2 border-slate-700 rounded-[30px] text-2xl font-bold">全部單字隨機</button>
+            <button onclick="startQuiz('all')" class="w-full py-8 bg-slate-800 border-2 border-slate-700 rounded-[30px] text-2xl font-bold">全部隨機</button>
             <button onclick="closeQuiz()" class="mt-10 text-slate-500 font-bold">取消</button>
         </div>
         
         <div class="w-full max-w-md flex flex-col h-full hidden" id="quiz-content">
             <div class="flex justify-between items-center text-white/50 mb-8">
-                <span id="quiz-label" class="text-xs font-mono tracking-widest uppercase">測試進行中</span>
+                <span id="quiz-label" class="text-xs font-mono tracking-widest uppercase">Random Test</span>
                 <button onclick="closeQuiz()" class="text-2xl">✕</button>
             </div>
             <div class="card-flip flex-1 w-full relative mb-10 text-slate-900">
                 <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full">
-                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 shadow-2xl text-center">
+                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 shadow-2xl">
                         <span id="q-word" class="text-6xl font-black mb-6 tracking-tighter"></span>
                         <button onclick="event.stopPropagation(); speak(document.getElementById('q-word').innerText)" class="bg-white/20 p-5 rounded-full">🔊</button>
                     </div>
@@ -183,8 +184,8 @@
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4 mb-8">
-                <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black text-xl">加強</button>
-                <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black text-xl shadow-lg">下一個</button>
+                <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black text-xl active:scale-95">加強</button>
+                <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black text-xl shadow-lg active:scale-95">下一個</button>
             </div>
         </div>
     </div>
@@ -193,6 +194,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // 已套用金鑰
         const firebaseConfig = {
             apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4",
             authDomain: "jpnote-5f436.firebaseapp.com",
@@ -219,7 +221,6 @@
             renderList();
         });
 
-        // 初始化
         const lessonFilter = document.getElementById('lesson-filter-container');
         const lessonNewBtnContainer = document.getElementById('newLessonBtnContainer');
         const editLessonSelect = document.getElementById('edit-lesson');
@@ -255,21 +256,18 @@
                     wrongCount: 0, createdAt: new Date()
                 });
                 w.value = r.value = m.value = ''; toggleInputSection();
-            } catch (e) { alert("同步錯誤"); }
+            } catch (e) { alert("失敗"); }
         };
 
-        // 編輯儲存功能
         window.saveEdit = async () => {
             if(!window.currentEditId) return;
-            const w = document.getElementById('edit-word').value.trim();
-            const r = document.getElementById('edit-reading').value.trim();
-            const m = document.getElementById('edit-meaning').value.trim();
-            const l = document.getElementById('edit-lesson').value;
-            const c = document.getElementById('edit-category').value;
-
             try {
                 await updateDoc(doc(db, "vocabs", window.currentEditId), {
-                    word: w, reading: r, meaning: m, lesson: l, category: c
+                    word: document.getElementById('edit-word').value,
+                    reading: document.getElementById('edit-reading').value,
+                    meaning: document.getElementById('edit-meaning').value,
+                    lesson: document.getElementById('edit-lesson').value,
+                    category: document.getElementById('edit-category').value
                 });
                 closeEditModal();
             } catch (e) { alert("更新失敗"); }
@@ -285,36 +283,44 @@
     </script>
 
     <script>
+        function toggleInputSection() {
+            const section = document.getElementById('input-section');
+            const btn = document.getElementById('toggleBtn');
+            section.classList.toggle('show');
+            btn.innerText = section.classList.contains('show') ? '✕ 關閉新增' : '＋ 新增單字';
+            btn.classList.toggle('bg-slate-200', section.classList.contains('show'));
+        }
+
+        function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
+        function setCategory(cat) { window.currentCategory = cat; renderList(); }
+        function selectNewLesson(btn, lesson) {
+            window.selectedNewLesson = lesson;
+            document.querySelectorAll('.new-lesson-btn').forEach(b => b.classList.remove('active-new-cat'));
+            btn.classList.add('active-new-cat');
+        }
+        function selectNewCategory(btn, cat) {
+            window.selectedNewCategory = cat;
+            document.querySelectorAll('.new-cat-btn').forEach(b => b.classList.remove('active-new-cat'));
+            btn.classList.add('active-new-cat');
+        }
         function toggleLessonFilter(lesson) {
-            const index = window.selectedLessons.indexOf(lesson);
-            if(index > -1) window.selectedLessons.splice(index, 1);
+            const idx = window.selectedLessons.indexOf(lesson);
+            if(idx > -1) window.selectedLessons.splice(idx, 1);
             else window.selectedLessons.push(lesson);
             updateFilterUI(); renderList();
         }
-
         function toggleType(type) {
-            const index = window.selectedTypes.indexOf(type);
-            if(index > -1) window.selectedTypes.splice(index, 1);
+            const idx = window.selectedTypes.indexOf(type);
+            if(idx > -1) window.selectedTypes.splice(idx, 1);
             else window.selectedTypes.push(type);
             updateFilterUI(); renderList();
         }
-
         function updateFilterUI() {
             document.querySelectorAll('.lesson-btn').forEach(b => b.classList.toggle('lesson-active', window.selectedLessons.includes(b.innerText)));
             document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('type-active', window.selectedTypes.includes(b.innerText)));
         }
+        function clearSearch() { document.getElementById('searchInput').value = ''; renderList(); }
 
-        function selectNewLesson(btn, lesson) {
-            window.selectedNewLesson = lesson;
-            document.querySelectorAll('.new-lesson-btn').forEach(b => b.classList.toggle('active-new-cat', b === btn));
-        }
-
-        function selectNewCategory(btn, cat) {
-            window.selectedNewCategory = cat;
-            document.querySelectorAll('.new-cat-btn').forEach(b => b.classList.toggle('active-new-cat', b === btn));
-        }
-
-        // 編輯彈窗控制
         function openEditModal(id) {
             const v = window.vocabs.find(item => item.id === id);
             if(!v) return;
@@ -326,17 +332,23 @@
             document.getElementById('edit-category').value = v.category || 'n.';
             document.getElementById('edit-modal').classList.remove('hidden');
         }
+        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
 
-        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); window.currentEditId = null; }
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = 'ja-JP'; uttr.rate = 1.0;
+            window.speechSynthesis.speak(uttr);
+        }
 
         function renderList() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const listEl = document.getElementById('vocab-list');
             window.filteredPool = window.vocabs.filter(v => {
-                const matchLesson = window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
-                const matchType = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
-                const matchSearch = v.word.includes(search) || v.meaning.includes(search) || (v.reading && v.reading.includes(search));
-                return matchLesson && matchType && matchSearch;
+                const matchL = window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
+                const matchT = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
+                const matchS = v.word.includes(search) || v.meaning.includes(search);
+                return matchL && matchT && matchS;
             });
             document.getElementById('clearSearch').style.display = search.length > 0 ? 'flex' : 'none';
             listEl.innerHTML = window.filteredPool.map(v => `
@@ -345,7 +357,6 @@
                         <div class="flex items-center gap-2">
                             <span class="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-md">${v.lesson || 'L1'}</span>
                             <span class="text-[9px] font-black bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md uppercase">${v.category || 'n.'}</span>
-                            ${v.wrongCount > 0 ? `<span class="text-[9px] font-black bg-rose-50 text-rose-500 px-2 py-0.5 rounded-md">加強: ${v.wrongCount}</span>` : ''}
                         </div>
                         <div class="text-xl font-bold text-slate-800 mt-1">${v.word} <span class="text-xs font-normal text-slate-400">【${v.reading}】</span></div>
                         <div class="text-slate-500 text-sm mt-0.5">${v.meaning}</div>
@@ -353,14 +364,12 @@
                     <div class="flex gap-2">
                         <button onclick="speak('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-lg">🔊</button>
                         <button onclick="openEditModal('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-full text-xs">✏️</button>
-                        <button onclick="deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200">✕</button>
+                        <button onclick="deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200 hover:text-red-500 transition-all text-xl">✕</button>
                     </div>
                 </li>
             `).join('');
         }
 
-        // 測試模式
-        let quizPool = [];
         function openQuiz() {
             document.getElementById('quiz-setup').classList.remove('hidden');
             document.getElementById('quiz-content').classList.add('hidden');
@@ -374,7 +383,7 @@
             nextQuestion();
         }
         function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
-        let currentQuizWord = null;
+        let quizPool = []; let currentQuizWord = null;
         function nextQuestion() {
             document.getElementById('quiz-card').classList.remove('is-flipped');
             let weightedPool = [];
@@ -387,23 +396,9 @@
             }, 150);
         }
         async function handleResult(isCorrect) {
-            await window.updateWordStats(currentQuizWord.id, isCorrect);
-            nextQuestion();
+            await window.updateWordStats(currentQuizWord.id, isCorrect); nextQuestion();
         }
 
-        // 系統功能
-        function toggleInputSection() {
-            document.getElementById('input-section').classList.toggle('show');
-            document.getElementById('toggleBtn').innerText = document.getElementById('input-section').classList.contains('show') ? '✕ 關閉' : '＋ 新增單字';
-        }
-        function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
-        function clearSearch() { document.getElementById('searchInput').value = ''; renderList(); }
-        function speak(text) {
-            window.speechSynthesis.cancel();
-            const uttr = new SpeechSynthesisUtterance(text);
-            uttr.lang = 'ja-JP'; uttr.rate = 1.0;
-            window.speechSynthesis.speak(uttr);
-        }
         function exportCSV() {
             const header = "\uFEFF單語,漢字,中文,詞性,課數,錯誤計數\n";
             const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category},${v.lesson},${v.wrongCount}`).join("\n");
