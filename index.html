@@ -13,13 +13,11 @@
         .card-back { transform: rotateY(180deg); }
         .bg-glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         
-        /* 標籤狀態顏色 */
         .lesson-active { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
         .book-active { background-color: #1e293b !important; color: white !important; border-color: #1e293b !important; }
         .type-active { background-color: #ec4899 !important; color: white !important; border-color: #ec4899 !important; }
         .active-new-cat { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
         
-        /* 橫向選單拖拽優化 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; cursor: grab; user-select: none; }
         .no-scrollbar:active { cursor: grabbing; }
@@ -187,8 +185,9 @@
         window.selectedNewCategory = 'n.';
         window.currentEditId = null;
 
+        // 更新 BOOK_MAP：第一冊最後也加入「附錄」
         const BOOK_MAP = {
-            1: ["未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"],
+            1: ["未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "附錄"],
             2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "附錄"]
         };
 
@@ -228,7 +227,6 @@
             });
         };
 
-        // 滑鼠拖拽滾動實作
         const initDragScroll = (id) => {
             const el = document.getElementById(id);
             let isDown = false; let startX; let scrollLeft;
