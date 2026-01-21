@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kingtex JPNote</title>
+    <title>Kingtex JPNote V6.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .card-flip { perspective: 1000px; }
@@ -11,36 +11,28 @@
         .card-inner.is-flipped { transform: rotateY(180deg); }
         .card-front, .card-back { backface-visibility: hidden; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .card-back { transform: rotateY(180deg); }
-        .bg-glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
-        .active-cat { background-color: #4f46e5 !important; color: white !important; }
+        .bg-glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        /* 標籤樣式 */
+        .btn-inactive { background-color: white; border: 1px solid #e2e8f0; color: #64748b; }
+        .lesson-active { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
+        .type-active { background-color: #ec4899 !important; color: white !important; border-color: #ec4899 !important; }
         .active-new-cat { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
+
         ::-webkit-scrollbar { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
 
         #input-section {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            transition: max-height 0.4s ease, opacity 0.3s ease;
             opacity: 0;
         }
-        #input-section.show {
-            max-height: 600px;
-            opacity: 1;
-            margin-bottom: 1.5rem;
-        }
+        #input-section.show { max-height: 800px; opacity: 1; margin-bottom: 1.5rem; }
 
         #clearSearch {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            width: 22px;
-            height: 22px;
-            background-color: #ef4444;
-            color: white;
-            border-radius: 999px;
-            font-size: 10px;
-            font-weight: bold;
-            z-index: 60;
+            display: none; width: 22px; height: 22px; background-color: #ef4444; color: white;
+            border-radius: 999px; font-size: 10px; font-weight: bold; justify-content: center; align-items: center;
         }
     </style>
 </head>
@@ -50,27 +42,32 @@
         <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
             <h1 class="text-lg font-black text-indigo-600">Kingtex JPNote</h1>
             <div class="flex items-center gap-2">
-                <button onclick="toggleImportArea()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-full font-bold">批量匯入</button>
-                <button onclick="exportCSV()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-full font-bold">匯出 CSV</button>
-                <button onclick="openQuiz()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200 active:scale-95">隨機測試</button>
+                <button onclick="toggleImportArea()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">批量</button>
+                <button onclick="exportCSV()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">匯出</button>
+                <button onclick="openQuiz()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200">隨機測試</button>
             </div>
         </div>
         
         <div class="max-w-md mx-auto px-4 pb-3">
-            <div class="flex gap-2 overflow-x-auto py-2 no-scrollbar">
-                <button onclick="setCategory('全部')" class="cat-btn active-cat whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">全部</button>
-                <button onclick="setCategory('n.')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">n.</button>
-                <button onclick="setCategory('v.')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">v.</button>
-                <button onclick="setCategory('adj.')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">adj.</button>
-                <button onclick="setCategory('數字')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">數字</button>
-                <button onclick="setCategory('時間')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">時間</button>
-                <button onclick="setCategory('期間')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">期間</button>
-                <button onclick="setCategory('量詞')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">量詞</button>
-                <button onclick="setCategory('其他')" class="cat-btn whitespace-nowrap px-4 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold shadow-sm">其他</button>
+            <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Lesson (單選)</p>
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="lesson-filter">
+                <button onclick="setLesson('All')" class="lesson-btn lesson-active whitespace-nowrap px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm">全部</button>
+                </div>
+
+            <p class="text-[9px] font-bold text-slate-400 uppercase mb-1 mt-1">Type (複選)</p>
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="type-filter">
+                <button onclick="toggleType('n.')" class="type-btn btn-inactive whitespace-nowrap px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm">n.</button>
+                <button onclick="toggleType('v.')" class="type-btn btn-inactive whitespace-nowrap px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm">v.</button>
+                <button onclick="toggleType('adj.')" class="type-btn btn-inactive whitespace-nowrap px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm">adj.</button>
+                <button onclick="toggleType('數字')" class="type-btn btn-inactive whitespace-nowrap px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm">數字</button>
+                <button onclick="toggleType('時間')" class="type-btn btn-inactive whitespace-nowrap px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm">時間</button>
+                <button onclick="toggleType('期間')" class="type-btn btn-inactive whitespace-nowrap px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm">期間</button>
+                <button onclick="toggleType('量詞')" class="type-btn btn-inactive whitespace-nowrap px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm">量詞</button>
+                <button onclick="toggleType('其他')" class="type-btn btn-inactive whitespace-nowrap px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm">其他</button>
             </div>
             
             <div class="relative mt-1">
-                <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋內容..." 
+                <input type="text" id="searchInput" oninput="renderList()" placeholder="🔍 搜尋單語、漢字或中文..." 
                        class="w-full p-3 pr-10 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
                 <button id="clearSearch" onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2">✕</button>
             </div>
@@ -79,67 +76,75 @@
 
     <div class="max-w-md mx-auto p-4">
         <div class="flex justify-start mb-4">
-            <button onclick="toggleInputSection()" id="toggleBtn" class="bg-indigo-50 text-indigo-600 px-6 py-2 rounded-full text-sm font-bold border border-indigo-100 active:scale-95 shadow-sm transition-all">＋ 新增單字</button>
+            <button onclick="toggleInputSection()" id="toggleBtn" class="bg-indigo-50 text-indigo-600 px-6 py-2 rounded-full text-sm font-bold border border-indigo-100">＋ 新增單字</button>
         </div>
 
         <section id="import-area" class="hidden bg-slate-900 rounded-3xl p-5 mb-6 text-white shadow-xl">
-            <h3 class="font-bold mb-2">批量匯入 (CSV 格式)</h3>
-            <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="單語,漢字,中文,分類"></textarea>
-            <div class="flex gap-2">
-                <button onclick="bulkImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">開始匯入</button>
-                <button onclick="toggleImportArea()" class="px-5 bg-slate-700 rounded-xl font-bold text-sm">取消</button>
-            </div>
+            <h3 class="font-bold mb-2">批量匯入 (CSV)</h3>
+            <textarea id="import-text" rows="5" class="w-full bg-slate-800 rounded-xl p-3 text-sm outline-none mb-3" placeholder="單語,漢字,中文,分類,課數(1-12)"></textarea>
+            <button onclick="bulkImport()" class="w-full bg-indigo-500 py-3 rounded-xl font-bold">開始匯入</button>
         </section>
 
         <section id="input-section" class="bg-white rounded-3xl shadow-sm border border-slate-200 px-5 transition-all">
             <div class="py-5">
                 <div class="grid grid-cols-2 gap-3 mb-4">
-                    <input id="word" type="text" placeholder="單語" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
-                    <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none focus:ring-2 ring-indigo-300">
+                    <input id="word" type="text" placeholder="單語" class="bg-slate-50 p-4 rounded-2xl outline-none">
+                    <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none">
                 </div>
-                <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none focus:ring-2 ring-indigo-300">
+                <input id="meaning" type="text" placeholder="中文" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none">
                 
                 <div class="mb-4">
-                    <p class="text-[10px] font-bold text-slate-400 mb-2 ml-1 uppercase">選擇分類</p>
+                    <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase">單語課數</p>
+                    <select id="newLesson" class="w-full bg-slate-50 p-3 rounded-xl text-sm font-bold outline-none mb-4 border border-slate-100">
+                        </select>
+
+                    <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase">選擇詞性</p>
                     <div id="newCategoryContainer" class="flex flex-wrap gap-2">
-                        <button type="button" onclick="selectNewCategory(this, 'n.')" class="new-cat-btn active-new-cat border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">n.</button>
-                        <button type="button" onclick="selectNewCategory(this, 'v.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">v.</button>
-                        <button type="button" onclick="selectNewCategory(this, 'adj.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">adj.</button>
-                        <button type="button" onclick="selectNewCategory(this, '數字')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">數字</button>
-                        <button type="button" onclick="selectNewCategory(this, '時間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">時間</button>
-                        <button type="button" onclick="selectNewCategory(this, '期間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">期間</button>
-                        <button type="button" onclick="selectNewCategory(this, '量詞')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">量詞</button>
-                        <button type="button" onclick="selectNewCategory(this, '其他')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all">其他</button>
+                        <button type="button" onclick="selectNewCategory(this, 'n.')" class="new-cat-btn active-new-cat border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">n.</button>
+                        <button type="button" onclick="selectNewCategory(this, 'v.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">v.</button>
+                        <button type="button" onclick="selectNewCategory(this, 'adj.')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">adj.</button>
+                        <button type="button" onclick="selectNewCategory(this, '數字')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">數字</button>
+                        <button type="button" onclick="selectNewCategory(this, '時間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">時間</button>
+                        <button type="button" onclick="selectNewCategory(this, '期間')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">期間</button>
+                        <button type="button" onclick="selectNewCategory(this, '量詞')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">量詞</button>
+                        <button type="button" onclick="selectNewCategory(this, '其他')" class="new-cat-btn border border-slate-200 px-3 py-1.5 rounded-xl text-[11px] font-bold">其他</button>
                     </div>
                 </div>
-                <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">同步到雲端</button>
+                <button onclick="addWordToCloud()" id="addBtn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95">同步到雲端</button>
             </div>
         </section>
 
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
-    <div id="quiz-overlay" class="fixed inset-0 z-[100] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white">
-        <div class="w-full max-w-md flex flex-col h-full">
+    <div id="quiz-overlay" class="fixed inset-0 z-[100] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">
+        <div class="w-full max-w-md flex flex-col h-full" id="quiz-setup">
+            <h2 class="text-3xl font-black mb-10">選擇測試範圍</h2>
+            <button onclick="startQuiz('filtered')" class="w-full py-8 bg-indigo-600 rounded-[30px] mb-4 text-2xl font-bold">目前篩選範圍</button>
+            <button onclick="startQuiz('all')" class="w-full py-8 bg-slate-800 border-2 border-slate-700 rounded-[30px] text-2xl font-bold">全部單字隨機</button>
+            <button onclick="closeQuiz()" class="mt-10 text-slate-500 font-bold">取消</button>
+        </div>
+        
+        <div class="w-full max-w-md flex flex-col h-full hidden" id="quiz-content">
             <div class="flex justify-between items-center text-white/50 mb-8">
-                <span class="text-xs font-mono tracking-widest uppercase">Random Test</span>
+                <span id="quiz-label" class="text-xs font-mono tracking-widest uppercase">測試進行中</span>
                 <button onclick="closeQuiz()" class="text-2xl">✕</button>
             </div>
             <div class="card-flip flex-1 w-full relative mb-10 text-slate-900">
                 <div id="quiz-card" onclick="this.classList.toggle('is-flipped')" class="card-inner w-full h-full">
-                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center shadow-2xl">
+                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-10 shadow-2xl">
                         <span id="q-word" class="text-6xl font-black mb-6 tracking-tighter"></span>
                         <button onclick="event.stopPropagation(); speak(document.getElementById('q-word').innerText)" class="bg-white/20 p-5 rounded-full">🔊</button>
                     </div>
-                    <div class="card-back bg-white rounded-[40px] flex flex-col items-center justify-center p-10 text-center shadow-2xl">
+                    <div class="card-back bg-white rounded-[40px] flex flex-col items-center justify-center p-10 shadow-2xl text-center">
                         <p id="q-reading" class="text-indigo-500 font-bold text-xl mb-2"></p>
                         <p id="q-meaning" class="text-4xl font-black text-slate-800"></p>
                     </div>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4 mb-8">
-                <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black text-xl active:scale-95">加強</button>
-                <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black text-xl shadow-lg active:scale-95">下一個</button>
+                <button onclick="handleResult(false)" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black text-xl">加強</button>
+                <button onclick="handleResult(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black text-xl shadow-lg">下一個</button>
             </div>
         </div>
     </div>
@@ -148,7 +153,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy, increment, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase 配置 (已套用記憶金鑰)
         const firebaseConfig = {
             apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4",
             authDomain: "jpnote-5f436.firebaseapp.com",
@@ -164,7 +168,8 @@
         const vocabsCol = collection(db, "vocabs");
 
         window.vocabs = [];
-        window.currentCategory = '全部';
+        window.currentLesson = 'All';
+        window.selectedTypes = [];
         window.selectedNewCategory = 'n.';
 
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snapshot) => {
@@ -172,10 +177,27 @@
             renderList();
         });
 
+        // 初始化 L1-L12 的按鈕
+        const lessonFilter = document.getElementById('lesson-filter');
+        const lessonSelect = document.getElementById('newLesson');
+        for(let i=1; i<=12; i++) {
+            const btn = document.createElement('button');
+            btn.className = "lesson-btn btn-inactive whitespace-nowrap px-4 py-1 rounded-lg text-[11px] font-bold shadow-sm";
+            btn.innerText = `L${i}`;
+            btn.onclick = () => setLesson(`L${i}`);
+            lessonFilter.appendChild(btn);
+
+            const opt = document.createElement('option');
+            opt.value = `L${i}`;
+            opt.innerText = `第 ${i} 課`;
+            lessonSelect.appendChild(opt);
+        }
+
         window.addWordToCloud = async () => {
             const w = document.getElementById('word');
             const r = document.getElementById('reading');
             const m = document.getElementById('meaning');
+            const l = document.getElementById('newLesson').value;
             if (!w.value.trim() || !m.value.trim()) return alert("請輸入單語與中文");
             try {
                 await addDoc(vocabsCol, {
@@ -183,6 +205,7 @@
                     reading: r.value.trim(),
                     meaning: m.value.trim(),
                     category: window.selectedNewCategory,
+                    lesson: l,
                     wrongCount: 0,
                     createdAt: new Date()
                 });
@@ -196,12 +219,15 @@
             const lines = text.split('\n');
             const batch = writeBatch(db);
             lines.forEach(line => {
-                const [w, r, m, c] = line.split(',').map(s => s?.trim());
-                if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "其他", wrongCount: 0, createdAt: new Date() });
+                const [w, r, m, c, l] = line.split(',').map(s => s?.trim());
+                if (w && m) batch.set(doc(vocabsCol), { 
+                    word: w, reading: r || "", meaning: m, 
+                    category: c || "n.", lesson: l ? (l.startsWith('L') ? l : 'L'+l) : 'L1', 
+                    wrongCount: 0, createdAt: new Date() 
+                });
             });
             await batch.commit();
-            alert("匯入成功");
-            toggleImportArea();
+            alert("成功"); toggleImportArea();
         };
 
         window.updateWordStats = async (id, isCorrect) => {
@@ -214,106 +240,126 @@
     </script>
 
     <script>
-        function toggleInputSection() {
-            const section = document.getElementById('input-section');
-            const btn = document.getElementById('toggleBtn');
-            section.classList.toggle('show');
-            btn.innerText = section.classList.contains('show') ? '✕ 關閉新增' : '＋ 新增單字';
-            btn.classList.toggle('bg-slate-200', section.classList.contains('show'));
-        }
-
-        function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
-        function setCategory(cat) {
-            window.currentCategory = cat;
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active-cat', b.innerText === cat));
+        function setLesson(lesson) {
+            window.currentLesson = lesson;
+            document.querySelectorAll('.lesson-btn').forEach(b => {
+                b.classList.toggle('lesson-active', b.innerText === (lesson === 'All' ? '全部' : lesson));
+                b.classList.toggle('btn-inactive', b.innerText !== (lesson === 'All' ? '全部' : lesson));
+            });
             renderList();
         }
-        function selectNewCategory(btn, cat) {
-            window.selectedNewCategory = cat;
-            document.querySelectorAll('.new-cat-btn').forEach(b => b.classList.remove('active-new-cat'));
-            btn.classList.add('active-new-cat');
-        }
-        function clearSearch() {
-            const input = document.getElementById('searchInput');
-            input.value = '';
-            renderList();
-            input.focus();
-        }
 
-        function speak(text) {
-            if (!text) return;
-            window.speechSynthesis.cancel();
-            const uttr = new SpeechSynthesisUtterance(text);
-            const voices = window.speechSynthesis.getVoices();
-            let targetVoice = voices.find(v => v.lang.includes('ja') && (v.name.includes('Premium') || v.name.includes('Google') || v.name.includes('Kyoko')));
-            if (!targetVoice) targetVoice = voices.find(v => v.lang.includes('ja'));
-            uttr.voice = targetVoice;
-            uttr.lang = 'ja-JP';
-            uttr.rate = 1.0;
-            uttr.pitch = 1.0;
-            window.speechSynthesis.speak(uttr);
+        function toggleType(type) {
+            const index = window.selectedTypes.indexOf(type);
+            if(index > -1) window.selectedTypes.splice(index, 1);
+            else window.selectedTypes.push(type);
+            
+            document.querySelectorAll('.type-btn').forEach(b => {
+                const isActive = window.selectedTypes.includes(b.innerText);
+                b.classList.toggle('type-active', isActive);
+                b.classList.toggle('btn-inactive', !isActive);
+            });
+            renderList();
         }
 
         function renderList() {
-            const input = document.getElementById('searchInput');
-            const search = input.value.toLowerCase();
-            const clearBtn = document.getElementById('clearSearch');
-            clearBtn.style.display = search.length > 0 ? 'flex' : 'none';
-
+            const search = document.getElementById('searchInput').value.toLowerCase();
             const listEl = document.getElementById('vocab-list');
-            const filtered = window.vocabs.filter(v => 
-                (window.currentCategory === '全部' || v.category === window.currentCategory) &&
-                (v.word.includes(search) || v.meaning.includes(search))
-            );
-            listEl.innerHTML = filtered.map(v => `
+            
+            window.filteredPool = window.vocabs.filter(v => {
+                const matchLesson = window.currentLesson === 'All' || v.lesson === window.currentLesson;
+                const matchType = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
+                const matchSearch = v.word.includes(search) || v.meaning.includes(search) || (v.reading && v.reading.includes(search));
+                return matchLesson && matchType && matchSearch;
+            });
+
+            document.getElementById('clearSearch').style.display = search.length > 0 ? 'flex' : 'none';
+
+            listEl.innerHTML = window.filteredPool.map(v => `
                 <li class="bg-white p-5 rounded-3xl flex justify-between items-center shadow-sm border border-slate-100">
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-md uppercase">${v.category || 'n.'}</span>
+                            <span class="text-[9px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-md">${v.lesson || 'L1'}</span>
+                            <span class="text-[9px] font-black bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md uppercase">${v.category || 'n.'}</span>
                             ${v.wrongCount > 0 ? `<span class="text-[9px] font-black bg-rose-50 text-rose-500 px-2 py-0.5 rounded-md">加強: ${v.wrongCount}</span>` : ''}
                         </div>
                         <div class="text-xl font-bold text-slate-800 mt-1">${v.word} <span class="text-xs font-normal text-slate-400">【${v.reading}】</span></div>
                         <div class="text-slate-500 text-sm mt-0.5">${v.meaning}</div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="speak('${v.word}')" class="w-12 h-12 flex items-center justify-center bg-slate-50 rounded-full text-xl active:scale-90 transition-all">🔊</button>
-                        <button onclick="deleteWord('${v.id}')" class="w-12 h-12 flex items-center justify-center text-slate-200 hover:text-red-500 transition-all text-xl">✕</button>
+                        <button onclick="speak('${v.word}')" class="w-12 h-12 flex items-center justify-center bg-slate-50 rounded-full text-xl active:scale-90">🔊</button>
+                        <button onclick="deleteWord('${v.id}')" class="w-12 h-12 flex items-center justify-center text-slate-200">✕</button>
                     </div>
                 </li>
             `).join('');
         }
 
+        // 測試模式邏輯
+        let quizPool = [];
         function openQuiz() {
-            const pool = window.vocabs.filter(v => window.currentCategory === '全部' || v.category === window.currentCategory);
-            if (pool.length < 1) return alert("無單字");
+            document.getElementById('quiz-setup').classList.remove('hidden');
+            document.getElementById('quiz-content').classList.add('hidden');
             document.getElementById('quiz-overlay').classList.remove('hidden');
+        }
+
+        function startQuiz(mode) {
+            quizPool = mode === 'all' ? [...window.vocabs] : [...window.filteredPool];
+            if (quizPool.length === 0) return alert("沒有單字可以測試！");
+            
+            document.getElementById('quiz-label').innerText = mode === 'all' ? "測試範圍：全部" : `測試範圍：目前篩選 (${quizPool.length})`;
+            document.getElementById('quiz-setup').classList.add('hidden');
+            document.getElementById('quiz-content').classList.remove('hidden');
             nextQuestion();
         }
+
         function closeQuiz() { document.getElementById('quiz-overlay').classList.add('hidden'); }
+        
         let currentQuizWord = null;
         function nextQuestion() {
             document.getElementById('quiz-card').classList.remove('is-flipped');
-            const pool = window.vocabs.filter(v => window.currentCategory === '全部' || v.category === window.currentCategory);
+            // 加權
             let weightedPool = [];
-            pool.forEach(v => { for(let i=0; i < (1 + (v.wrongCount || 0)); i++) weightedPool.push(v); });
+            quizPool.forEach(v => { for(let i=0; i < (1 + (v.wrongCount || 0)); i++) weightedPool.push(v); });
             currentQuizWord = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+            
             setTimeout(() => {
                 document.getElementById('q-word').innerText = currentQuizWord.word;
                 document.getElementById('q-reading').innerText = currentQuizWord.reading;
                 document.getElementById('q-meaning').innerText = currentQuizWord.meaning;
             }, 150);
         }
+
         async function handleResult(isCorrect) {
             await window.updateWordStats(currentQuizWord.id, isCorrect);
             nextQuestion();
         }
+
+        // 其他功能
+        function toggleInputSection() {
+            document.getElementById('input-section').classList.toggle('show');
+            document.getElementById('toggleBtn').innerText = document.getElementById('input-section').classList.contains('show') ? '✕ 關閉' : '＋ 新增單字';
+        }
+        function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
+        function selectNewCategory(btn, cat) {
+            window.selectedNewCategory = cat;
+            document.querySelectorAll('.new-cat-btn').forEach(b => b.classList.remove('active-new-cat'));
+            btn.classList.add('active-new-cat');
+        }
+        function clearSearch() { document.getElementById('searchInput').value = ''; renderList(); }
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = 'ja-JP';
+            uttr.rate = 1.0;
+            window.speechSynthesis.speak(uttr);
+        }
         function exportCSV() {
-            const header = "\uFEFF單語,漢字,中文,分類,錯誤計數\n";
-            const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category},${v.wrongCount}`).join("\n");
+            const header = "\uFEFF單語,漢字,中文,分類,課數,錯誤計數\n";
+            const rows = window.vocabs.map(v => `${v.word},${v.reading},${v.meaning},${v.category},${v.lesson},${v.wrongCount}`).join("\n");
             const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `Kingtex_JP_Backup.csv`;
+            link.download = `JPNote_Backup.csv`;
             link.click();
         }
     </script>
