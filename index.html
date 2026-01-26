@@ -35,9 +35,9 @@
             <div class="flex items-center justify-between">
                 <h1 class="text-2xl font-black text-indigo-600 tracking-tighter">Kingtex JPNote</h1>
                 <div class="flex items-center gap-2">
-                    <button onclick="window.toggleStats(true)" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">進度</button>
+                    <button onclick="window.showStatsModal()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">進度</button>
                     <button onclick="window.toggleImport(true)" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">批量</button>
-                    <button id="quiz-btn-main" onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">隨機測試</button>
+                    <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">隨機測試</button>
                 </div>
             </div>
         </div>
@@ -66,24 +66,20 @@
                 <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none">
             </div>
             <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none">
-            <div class="relative mb-4">
-                <textarea id="example" placeholder="例句" class="w-full bg-slate-50 p-4 pr-16 rounded-2xl outline-none text-sm" rows="2"></textarea>
-                <button onclick="window.findExample()" class="absolute right-3 top-3 bg-indigo-100 text-indigo-600 px-2 py-1 rounded-md text-[10px] font-bold">🔍 找例句</button>
-            </div>
-            <button onclick="window.submitNewWord()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl">同步到公共庫</button>
+            <button onclick="window.submitNewWord()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95">同步到公共庫</button>
         </section>
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
-    <div id="quiz-overlay" class="fixed inset-0 z-[100] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">
+    <div id="quiz-overlay" class="fixed inset-0 z-[110] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">
         <div id="quiz-setup" class="w-full max-w-md">
-            <h2 class="text-2xl font-black mb-6">測試設定</h2>
+            <h2 class="text-2xl font-black mb-6">練習設定</h2>
             <div id="quiz-range-info" class="bg-slate-800 p-6 rounded-[32px] mb-8 text-left space-y-2 border border-white/10 text-xs"></div>
             <div class="flex gap-2 justify-center mb-6">
                 <button id="modeStdBtn" onclick="window.setQuizMode('standard')" class="px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border border-indigo-600">單字卡測試</button>
                 <button id="modeHearBtn" onclick="window.setQuizMode('hearing')" class="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300 border border-slate-600">聽力模式</button>
             </div>
-            <div class="flex items-center justify-center gap-2 mb-8 bg-slate-800 p-4 rounded-2xl text-sm">
+            <div class="flex items-center justify-center gap-2 mb-8 bg-slate-800 p-4 rounded-2xl text-sm font-bold">
                 <input type="checkbox" id="spelling-mode" class="w-5 h-5"> <label for="spelling-mode">開啟拼寫模式</label>
             </div>
             <button onclick="window.startQuiz()" class="w-full py-6 bg-indigo-600 rounded-3xl mb-4 font-bold text-xl active:scale-95 shadow-xl">開始練習</button>
@@ -105,13 +101,12 @@
                         <p id="q-word-answer" class="text-indigo-600 font-black text-4xl mb-4"></p>
                         <p id="q-reading-back" class="text-slate-400 font-bold text-lg mb-2"></p>
                         <p id="q-meaning-back" class="text-xl font-bold text-slate-500 mb-4"></p>
-                        <p id="q-example-back" class="text-[10px] text-indigo-400 italic mb-6 px-4"></p>
                         <button id="quizSpeakBtn" onclick="window.playCurrentWord(event)" class="audio-btn bg-slate-50 p-5 rounded-full text-3xl shadow-inner active:scale-90">🔊</button>
                     </div>
                 </div>
             </div>
             <div id="spelling-input-area" class="mb-4 hidden">
-                <input type="text" id="spelling-input" placeholder="輸入日文後按 Enter..." class="w-full p-4 bg-white/10 border-2 border-white/20 rounded-2xl text-center text-xl font-bold outline-none text-white focus:border-indigo-400">
+                <input type="text" id="spelling-input" placeholder="輸入日文後 Enter..." class="w-full p-4 bg-white/10 border-2 border-white/20 rounded-2xl text-center text-xl font-bold outline-none text-white focus:border-indigo-400">
                 <p id="feedback-msg" class="mt-2 text-[10px] font-bold h-5"></p>
             </div>
             <div class="grid grid-cols-2 gap-4 mb-4">
@@ -121,10 +116,11 @@
         </div>
     </div>
 
-    <div id="stats-modal" class="fixed inset-0 z-[120] modal-overlay hidden flex flex-col items-center justify-center p-4">
+    <div id="stats-modal" class="fixed inset-0 z-[150] modal-overlay hidden flex flex-col items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl">
-            <h2 class="text-xl font-black mb-4 text-indigo-600 text-center">進度統計</h2>
-            <div id="devil-list" class="space-y-2 p-2"></div>
+            <h2 class="text-xl font-black mb-4 text-indigo-600 text-center">個人弱點排行</h2>
+            <div id="devil-list" class="space-y-2 p-2 max-h-60 overflow-y-auto">
+                </div>
             <button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button>
         </div>
     </div>
@@ -140,9 +136,9 @@
         </div>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 z-[150] modal-overlay hidden flex flex-col items-center justify-center p-4">
+    <div id="edit-modal" class="fixed inset-0 z-[160] modal-overlay hidden flex flex-col items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl">
-            <h2 class="text-xl font-black text-slate-800 mb-6 text-center border-b pb-4">編輯單字</h2>
+            <h2 class="text-xl font-black text-slate-800 mb-6 text-center border-b pb-4">編輯</h2>
             <div class="space-y-4">
                 <input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none">
                 <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none">
@@ -165,36 +161,50 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
-        // 全域狀態掛載
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
-        const LESSON_ORDER = ["未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "附錄"];
         const BOOK_MAP = { 1: ["未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "附錄"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "附錄"] };
+        const LESSON_ORDER = ["未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "附錄"];
 
-        // --- iOS 專用解鎖邏輯 ---
-        let isAudioUnlocked = false;
-        window.initAudioOnFirstClick = () => {
-            if (!isAudioUnlocked) {
-                const u = new SpeechSynthesisUtterance(" ");
-                window.speechSynthesis.speak(u);
-                isAudioUnlocked = true;
-                console.log("Audio Unlocked for iOS");
-            }
-        };
+        // --- 語音系統 ---
+        let audioUnlocked = false;
+        window.initAudioOnFirstClick = () => { if (!audioUnlocked) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } };
+        window.speakAction = (text) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.rate = 0.5; window.speechSynthesis.speak(u); };
 
-        window.speakAction = (text) => {
-            window.speechSynthesis.cancel(); // 先清空舊聲音
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'ja-JP';
-            u.rate = 0.5; // 極慢速
-            window.speechSynthesis.speak(u);
-        };
-
-        // --- 資料連動 ---
+        // --- 資料同步 ---
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); window.renderLessonUI(); window.renderList(); });
-        onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => { window.userProgress = {}; snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); }); window.renderList(); });
+        onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => { window.userProgress = {}; snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); }); });
+
+        // --- 進度彈窗修正邏輯 ---
+        window.showStatsModal = () => {
+            const listDiv = document.getElementById('devil-list');
+            listDiv.innerHTML = '<p class="text-center text-slate-400 py-4 text-xs">載入中...</p>';
+            
+            // 排序錯題
+            const sortedProgress = Object.values(window.userProgress)
+                .filter(p => p.wrongCount > 0)
+                .sort((a, b) => b.wrongCount - a.wrongCount)
+                .slice(0, 15);
+
+            if (sortedProgress.length === 0) {
+                listDiv.innerHTML = '<p class="text-center text-slate-400 py-8 text-sm font-bold">🎉 目前沒有錯誤記錄！</p>';
+            } else {
+                listDiv.innerHTML = sortedProgress.map(p => {
+                    const vocab = window.vocabs.find(v => v.id === p.vocabId);
+                    if (!vocab) return '';
+                    return `<div class="flex justify-between items-center border-b border-slate-50 py-3">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-slate-700">${vocab.word}</span>
+                            <span class="text-[10px] text-slate-400">${vocab.meaning}</span>
+                        </div>
+                        <span class="bg-rose-50 text-rose-500 text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter">錯 ${p.wrongCount} 次</span>
+                    </div>`;
+                }).join('');
+            }
+            window.toggleStats(true);
+        };
 
         window.renderList = () => {
             const search = document.getElementById('searchInput').value.toLowerCase();
@@ -218,9 +228,9 @@
                         <div class="text-slate-500 text-sm mt-0.5">${v.meaning}</div>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="window.speakAction('${v.word}')" class="tap-target w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full">🔊</button>
+                        <button onclick="window.speakAction('${v.word}')" class="tap-target w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl audio-btn">🔊</button>
                         <button onclick="window.openEditAction('${v.id}')" class="tap-target w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 rounded-full text-sm">✏️</button>
-                        <button onclick="window.deleteWord('${v.id}')" class="tap-target w-10 h-10 flex items-center justify-center text-slate-200">✕</button>
+                        <button onclick="window.deleteWord('${v.id}')" class="tap-target w-10 h-10 flex items-center justify-center text-slate-200 text-lg">✕</button>
                     </div>
                 </li>`;
             }).join('');
@@ -242,7 +252,7 @@
         window.addNewUserAction = () => { const n = prompt("輸入使用者:"); if(n && n.trim()){ const name = n.trim(); if(!userHistory.includes(name)) userHistory.unshift(name); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(name); } };
         window.switchUser = (name) => { localStorage.setItem('jp_user_shared', name); location.reload(); };
 
-        // --- 測試核心 ---
+        // --- 測試系統 ---
         window.openQuizSetup = () => {
             const activePool = window.vocabs.filter(v => (window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson)) && (window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category)));
             if(activePool.length === 0) return alert("範圍內無單字");
@@ -252,7 +262,7 @@
             document.getElementById('quiz-overlay').classList.remove('hidden');
         };
 
-        window.setQuizMode = (m) => { window.quizMode = m; document.getElementById('modeStdBtn').className = m==='standard'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300'; document.getElementById('modeHearBtn').className = m==='hearing'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300'; };
+        window.setQuizMode = (m) => { window.quizMode = m; document.getElementById('modeStdBtn').className = m==='standard'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300'; document.getElementById('modeHearBtn').className = m==='hearing'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300'; };
 
         window.startQuiz = () => {
             window.remainingPool = [...window.quizPool].map(v => ({ v, w: Math.random() * (1 + (window.userProgress[v.id]?.wrongCount || 0) * 1.5) })).sort((a,b) => b.w - a.w).map(i => i.v);
@@ -276,7 +286,6 @@
             document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
             document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
             document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
-            document.getElementById('q-example-back').innerText = window.currentQuizWord.example || '';
             
             if(isHear) setTimeout(() => { if(window.quizMode === 'hearing') window.speakAction(window.currentQuizWord.word); }, 1200);
             if(!document.getElementById('spelling-input-area').classList.contains('hidden')) setTimeout(() => document.getElementById('spelling-input').focus(), 400);
@@ -315,7 +324,7 @@
             }
         });
 
-        // 啟動與基礎功能
+        // 基礎維護功能
         window.submitNewWord = async () => {
             const w = document.getElementById('word').value, r = document.getElementById('reading').value, m = document.getElementById('meaning').value;
             if (!w || !m) return alert("填寫內容");
