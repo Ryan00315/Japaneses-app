@@ -14,15 +14,12 @@
         
         .sticky-header { z-index: 100 !important; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); }
         .lesson-active, .type-active, .active-new-cat { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
-        
-        /* 滑動容器優化 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; display: flex; gap: 0.5rem; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         
         #input-section { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; opacity: 0; }
         #input-section.show { max-height: 2000px; opacity: 1; margin-bottom: 1.5rem; }
         .modal-overlay { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(4px); }
-        
         .list-audio-btn { z-index: 10; position: relative; }
         .quiz-audio-btn { pointer-events: auto !important; z-index: 50; position: relative; }
     </style>
@@ -35,7 +32,7 @@
                 <div class="flex items-center gap-1.5 flex-nowrap">
                     <span class="text-[10px] font-bold text-slate-400 whitespace-nowrap">👤 使用者:</span>
                     <div id="user-history-list" class="flex gap-1.5"></div>
-                    <button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold border border-slate-200 active:bg-slate-200">+ 新增</button>
+                    <button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold border border-slate-200">+ 新增</button>
                 </div>
             </div>
             <div class="flex items-center justify-between">
@@ -43,17 +40,17 @@
                 <div class="flex items-center gap-2">
                     <button onclick="window.showStatsModal()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">進度</button>
                     <button onclick="window.toggleImport(true)" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">批量</button>
-                    <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200">隨機測試</button>
+                    <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">隨機測試</button>
                 </div>
             </div>
         </div>
         <div class="max-w-md mx-auto px-4 pb-3">
             <div class="flex gap-2 mb-2">
-                <button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border border-slate-200 py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
-                <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border border-slate-200 py-1.5 rounded-xl text-xs font-bold transition-all">第二冊</button>
+                <button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border border-slate-200 py-1.5 rounded-xl text-xs font-bold">第一冊</button>
+                <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border border-slate-200 py-1.5 rounded-xl text-xs font-bold">第二冊</button>
             </div>
-            <div class="no-scrollbar pb-2" id="lesson-filter-container"></div>
-            <div class="no-scrollbar pb-2" id="type-filter">
+            <div class="flex gap-2 no-scrollbar pb-2" id="lesson-filter-container"></div>
+            <div class="flex gap-2 no-scrollbar pb-2" id="type-filter">
                 <button onclick="window.toggleType('n.', this)" class="type-btn border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold bg-white">n.</button>
                 <button onclick="window.toggleType('v.', this)" class="type-btn border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold bg-white">v.</button>
                 <button onclick="window.toggleType('adj.', this)" class="type-btn border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold bg-white">adj.</button>
@@ -68,7 +65,7 @@
     </div>
 
     <div class="max-w-md mx-auto p-4">
-        <button onclick="document.getElementById('input-section').classList.toggle('show')" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-1.5 rounded-full text-xs font-bold border border-indigo-100 w-full active:scale-95 transition-all">＋ 新增單語</button>
+        <button onclick="document.getElementById('input-section').classList.toggle('show')" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-1.5 rounded-full text-xs font-bold border border-indigo-100 w-full active:scale-95">＋ 新增單語</button>
         
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all">
              <div class="grid grid-cols-2 gap-3 mb-4">
@@ -81,7 +78,7 @@
                 <button id="new-book1-btn" onclick="window.setNewBook(1)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第一冊</button>
                 <button id="new-book2-btn" onclick="window.setNewBook(2)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第二冊</button>
             </div>
-            <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2"></div>
+            <div id="new-lesson-container" class="flex gap-2 no-scrollbar pb-3 overflow-x-auto"></div>
 
             <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6">
                 <button onclick="window.setNewCategory('n.', this)" class="new-cat-btn border px-3 py-1 rounded-lg text-[10px] font-bold bg-white active-new-cat text-white">n.</button>
@@ -99,13 +96,72 @@
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
-    <div id="quiz-overlay" class="fixed inset-0 z-[150] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">...</div>
-    <div id="stats-modal" class="fixed inset-0 z-[200] modal-overlay hidden flex flex-col items-center justify-center p-4">...</div>
-    <div id="import-overlay" class="fixed inset-0 z-[110] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">...</div>
+    <div id="quiz-overlay" class="fixed inset-0 z-[150] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">
+        <div id="quiz-setup" class="w-full max-w-md">
+            <h2 class="text-2xl font-black mb-6">練習設定</h2>
+            <div id="quiz-range-info" class="bg-slate-800 p-6 rounded-[32px] mb-8 text-left space-y-2 border border-white/10 text-[11px]"></div>
+            <div class="flex gap-2 justify-center mb-6">
+                <button id="modeStdBtn" onclick="window.setQuizMode('standard')" class="px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border border-indigo-600">單字卡測試</button>
+                <button id="modeHearBtn" onclick="window.setQuizMode('hearing')" class="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300 border border-slate-600">聽力模式</button>
+            </div>
+            <div class="flex items-center justify-center gap-2 mb-8 bg-slate-800 p-4 rounded-2xl text-sm font-bold">
+                <input type="checkbox" id="spelling-mode" class="w-5 h-5"> <label for="spelling-mode">開啟拼寫模式</label>
+            </div>
+            <button onclick="window.startQuiz()" class="w-full py-6 bg-indigo-600 rounded-3xl mb-4 font-bold text-xl active:scale-95 shadow-xl">開始練習</button>
+            <button onclick="document.getElementById('quiz-overlay').classList.add('hidden')" class="text-slate-500 font-bold">返回</button>
+        </div>
+        <div id="quiz-content" class="w-full max-w-md flex flex-col h-full hidden">
+            <div class="flex justify-between items-center mb-6">
+                <span id="quiz-progress-display" class="text-[10px] bg-white/10 px-3 py-1 rounded-full font-bold text-indigo-300 uppercase"></span>
+                <button onclick="location.reload()" class="text-2xl text-white">✕</button>
+            </div>
+            <div id="quiz-card-container" onclick="window.handleCardClick(event)" class="card-flip flex-1 w-full relative mb-6">
+                <div id="quiz-card" class="card-inner">
+                    <div class="card-front bg-indigo-600 text-white shadow-2xl">
+                        <p id="q-meaning-front" class="text-4xl font-black text-center"></p>
+                        <div id="hear-icon" class="text-6xl hidden">🎧</div>
+                    </div>
+                    <div class="card-back bg-white text-slate-900 shadow-2xl text-center">
+                        <p id="q-word-answer" class="text-indigo-600 font-black text-4xl mb-4"></p>
+                        <p id="q-reading-back" class="text-slate-400 font-bold text-lg mb-2"></p>
+                        <p id="q-meaning-back" class="text-xl font-bold text-slate-500 mb-4"></p>
+                        <button id="quizSpeakBtn" onclick="window.playCurrentWord(event)" class="quiz-audio-btn bg-slate-50 p-5 rounded-full text-3xl shadow-inner">🔊</button>
+                    </div>
+                </div>
+            </div>
+            <div id="spelling-input-area" class="mb-4 hidden">
+                <input type="text" id="spelling-input" placeholder="輸入日文後按 Enter..." class="w-full p-4 bg-white/10 border-2 border-white/20 rounded-2xl text-center text-xl font-bold outline-none text-white focus:border-indigo-400">
+                <p id="feedback-msg" class="mt-2 text-[10px] font-bold h-5"></p>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <button onclick="window.quizFail()" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black">加強 (Shift+←)</button>
+                <button onclick="window.quizPass()" class="bg-emerald-500 text-white py-6 rounded-3xl font-black shadow-lg active:scale-95">下一個 (Shift+→)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="stats-modal" class="fixed inset-0 z-[200] modal-overlay hidden flex flex-col items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl">
+            <h2 class="text-xl font-black mb-4 text-indigo-600 text-center">個人弱點排行</h2>
+            <div id="devil-list" class="space-y-2 p-2 max-h-60 overflow-y-auto"></div>
+            <button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button>
+        </div>
+    </div>
+
+    <div id="import-overlay" class="fixed inset-0 z-[110] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
+        <div class="w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4">批量同步 (CSV)</h3>
+            <textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea>
+            <div class="flex gap-2">
+                <button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button>
+                <button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">匯入</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4", authDomain: "jpnote-5f436.firebaseapp.com", projectId: "jpnote-5f436", storageBucket: "jpnote-5f436.firebasestorage.app", messagingSenderId: "881660892658", appId: "1:881660892658:web:9d88f9b2332aa9e2b3076b", measurementId: "G-QV2NRXQSY7" };
         const app = initializeApp(firebaseConfig);
@@ -119,7 +175,6 @@
         window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
-        
         const BOOK_MAP = { 1: ["未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "附錄"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "附錄"] };
         const LESSON_ORDER = ["未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "附錄"];
 
@@ -130,16 +185,26 @@
 
         // --- 資料連動 ---
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); window.renderLessonUI(); window.renderNewLessonUI(); window.renderList(); });
-        onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => { window.userProgress = {}; snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); }); window.renderList(); });
+        onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => { window.userProgress = {}; snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); }); });
 
-        // --- 新增單語 UI & 邏輯 ---
+        // --- 新增單語邏輯修正 ---
         window.setNewBook = (b) => { window.newWordBook = b; window.selectedNewLesson = '未分類'; window.renderNewLessonUI(); };
-        window.setNewLesson = (l) => { window.selectedNewLesson = l; window.renderNewLessonUI(); };
-        window.setNewCategory = (cat, btnEl) => { window.selectedNewCat = cat; document.querySelectorAll('.new-cat-btn').forEach(b => b.classList.remove('active-new-cat', 'text-white')); btnEl.classList.add('active-new-cat', 'text-white'); };
+        window.setNewLesson = (l) => { 
+            window.selectedNewLesson = l; 
+            document.querySelectorAll('.new-ls-btn').forEach(b => {
+                b.classList.toggle('lesson-active', b.innerText === l);
+                b.classList.toggle('text-white', b.innerText === l);
+            });
+        };
+        window.setNewCategory = (cat, btnEl) => {
+            window.selectedNewCat = cat;
+            document.querySelectorAll('.new-cat-btn').forEach(b => b.classList.remove('active-new-cat', 'text-white'));
+            btnEl.classList.add('active-new-cat', 'text-white');
+        };
 
         window.renderNewLessonUI = () => {
             const container = document.getElementById('new-lesson-container');
-            container.innerHTML = BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.setNewLesson('${l}')" class="px-4 py-1 border rounded-lg text-[10px] font-bold whitespace-nowrap ${window.selectedNewLesson === l ? 'lesson-active text-white' : 'bg-white'}">${l}</button>`).join('');
+            container.innerHTML = BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.setNewLesson('${l}')" class="new-ls-btn px-4 py-1 border rounded-lg text-[10px] font-bold whitespace-nowrap ${window.selectedNewLesson === l ? 'lesson-active text-white' : 'bg-white'}">${l}</button>`).join('');
             document.getElementById('new-book1-btn').className = `flex-1 border py-1.5 rounded-xl text-[10px] font-bold ${window.newWordBook === 1 ? 'lesson-active text-white' : 'bg-white'}`;
             document.getElementById('new-book2-btn').className = `flex-1 border py-1.5 rounded-xl text-[10px] font-bold ${window.newWordBook === 2 ? 'lesson-active text-white' : 'bg-white'}`;
         };
@@ -152,7 +217,7 @@
             alert("同步成功！");
         };
 
-        // --- 首頁篩選 UI & 邏輯 ---
+        // --- 篩選與渲染 ---
         window.toggleType = (t, btnEl) => {
             const idx = window.selectedTypes.indexOf(t);
             if (idx > -1) { window.selectedTypes.splice(idx, 1); btnEl.classList.remove('type-active', 'text-white'); } 
@@ -188,21 +253,91 @@
 
         window.renderLessonUI = () => {
             const container = document.getElementById('lesson-filter-container');
-            container.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="px-4 py-1 border rounded-lg text-[11px] font-bold whitespace-nowrap ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join('');
+            container.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="px-4 py-1 border rounded-lg text-[11px] font-bold whitespace-nowrap ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white text-slate-500 border-slate-200'}">${l}</button>`).join('');
             document.getElementById('book1-btn').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.currentBook === 1 ? 'lesson-active text-white' : 'bg-white'}`;
             document.getElementById('book2-btn').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.currentBook === 2 ? 'lesson-active text-white' : 'bg-white'}`;
         };
 
-        // 按鈕穩定綁定
+        // --- 其餘按鈕邏輯保持 ---
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = []; window.renderLessonUI(); window.renderList(); };
         window.toggleLesson = (l) => { const i = window.selectedLessons.indexOf(l); if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l); window.renderLessonUI(); window.renderList(); };
-        window.showStatsModal = () => { /* 排行榜邏輯 */ window.toggleStats(true); };
         window.toggleStats = (s) => document.getElementById('stats-modal').classList.toggle('hidden', !s);
         window.toggleImport = (s) => document.getElementById('import-overlay').classList.toggle('hidden', !s);
         window.addNewUserAction = () => { const n = prompt("輸入使用者:"); if(n && n.trim()){ const name = n.trim(); if(!userHistory.includes(name)) userHistory.unshift(name); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(name); } };
         window.switchUser = (name) => { localStorage.setItem('jp_user_shared', name); location.reload(); };
 
-        // 啟動
+        // 隨機測試邏輯補完
+        window.openQuizSetup = () => {
+            const activePool = window.vocabs.filter(v => (window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson)) && (window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category)));
+            if(activePool.length === 0) return alert("範圍內無單字");
+            const stats = {}; activePool.forEach(v => { stats[v.lesson] = (stats[v.lesson] || 0) + 1; });
+            document.getElementById('quiz-range-info').innerHTML = Object.entries(stats).map(([l, count]) => `<div class="flex justify-between border-b border-slate-700 py-1"><span>${l}</span><span class="font-bold">${count} 題</span></div>`).join('') + `<div class="mt-4 pt-2 border-t border-slate-600 text-right font-black">總量：${activePool.length}</div>`;
+            window.quizPool = activePool;
+            document.getElementById('quiz-overlay').classList.remove('hidden');
+        };
+
+        window.setQuizMode = (m) => { window.quizMode = m; document.getElementById('modeStdBtn').className = m==='standard'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300'; document.getElementById('modeHearBtn').className = m==='hearing'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300'; };
+
+        window.startQuiz = () => {
+            window.remainingPool = [...window.quizPool].map(v => ({ v, w: Math.random() * (1 + (window.userProgress[v.id]?.wrongCount || 0) * 1.5) })).sort((a,b) => b.w - a.w).map(i => i.v);
+            document.getElementById('spelling-input-area').classList.toggle('hidden', !document.getElementById('spelling-mode').checked);
+            document.getElementById('quiz-setup').classList.add('hidden');
+            document.getElementById('quiz-content').classList.remove('hidden');
+            window.nextQuestion();
+        };
+
+        window.nextQuestion = () => {
+            if (window.remainingPool.length === 0) { alert("此輪練習完成！"); return location.reload(); }
+            document.getElementById('quiz-card').classList.remove('is-flipped');
+            document.getElementById('spelling-input').value = ''; document.getElementById('feedback-msg').innerText = '';
+            window.currentQuizWord = window.remainingPool.shift();
+            document.getElementById('quiz-progress-display').innerText = `題數：${window.quizPool.length - window.remainingPool.length} / ${window.quizPool.length}`;
+            const isHear = window.quizMode === 'hearing';
+            document.getElementById('q-meaning-front').classList.toggle('hidden', isHear);
+            document.getElementById('hear-icon').classList.toggle('hidden', !isHear);
+            if(!isHear) document.getElementById('q-meaning-front').innerText = window.currentQuizWord.meaning;
+            document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
+            document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
+            document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
+            if(isHear) setTimeout(() => { if(window.quizMode === 'hearing') window.speakAction(window.currentQuizWord.word); }, 1200);
+            if(!document.getElementById('spelling-input-area').classList.contains('hidden')) setTimeout(() => document.getElementById('spelling-input').focus(), 400);
+        };
+
+        window.handleCardClick = (e) => { if(e.target.closest('#quizSpeakBtn')) return; document.getElementById('quiz-card').classList.toggle('is-flipped'); };
+        window.playCurrentWord = (e) => { e.stopPropagation(); window.speakAction(window.currentQuizWord.word); };
+
+        const updateProg = async (id, correct) => {
+            const docId = `${currentUser}_${id}`;
+            const existing = window.userProgress[id] || { wrongCount: 0 };
+            await setDoc(doc(db, "user_progress", docId), { uid: currentUser, vocabId: id, wrongCount: correct ? existing.wrongCount : (existing.wrongCount + 1), lastUpdate: new Date() });
+        };
+
+        window.quizPass = async () => { await updateProg(window.currentQuizWord.id, true); window.nextQuestion(); };
+        window.quizFail = async () => { await updateProg(window.currentQuizWord.id, false); window.nextQuestion(); };
+
+        document.getElementById('spelling-input').onkeypress = async (e) => {
+            if(e.key === 'Enter') {
+                const ok = e.target.value.trim() === window.currentQuizWord.word;
+                document.getElementById('quiz-card').classList.add('is-flipped');
+                document.getElementById('feedback-msg').innerText = ok ? "正解！🎉" : "❌ 錯誤，答案：" + window.currentQuizWord.word;
+                document.getElementById('feedback-msg').className = ok ? "mt-2 text-[10px] font-bold text-emerald-400" : "mt-2 text-[10px] font-bold text-rose-400";
+                if(!ok) await updateProg(window.currentQuizWord.id, false);
+                e.target.blur();
+            }
+        };
+
+        // 鍵盤快捷鍵
+        window.addEventListener('keydown', (e) => {
+            if (document.getElementById('quiz-content').classList.contains('hidden')) return;
+            if (document.activeElement.id === 'spelling-input' && e.key !== 'Enter') return; 
+            if (e.shiftKey) {
+                if (e.key === 'ArrowRight') window.quizPass();
+                else if (e.key === 'ArrowLeft') window.quizFail();
+                else if (e.key === 'ArrowUp') document.getElementById('quiz-card').classList.toggle('is-flipped');
+            }
+        });
+
+        // 啟動執行
         document.getElementById('user-history-list').innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('');
         window.renderLessonUI();
         window.renderNewLessonUI();
