@@ -36,7 +36,7 @@
                 <div class="flex items-center gap-2">
                     <button onclick="window.showStatsModal()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">進度</button>
                     <button onclick="window.toggleImport(true)" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">批量</button>
-                    <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200">隨機測試</button>
+                    <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">隨機測試</button>
                 </div>
             </div>
         </div>
@@ -57,7 +57,7 @@
              <div class="grid grid-cols-2 gap-3 mb-4">
                 <input id="word" type="text" placeholder="單語" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm"><input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm">
             </div>
-            <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none text-sm text-[11px]">
+            <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none text-sm">
             <div class="flex gap-2 mb-3">
                 <button id="new-book1-btn" onclick="window.setNewBook(1)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第一冊</button>
                 <button id="new-book2-btn" onclick="window.setNewBook(2)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第二冊</button>
@@ -71,10 +71,9 @@
                 <button onclick="window.setNewCategory('時間', this)" class="new-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">時間</button>
                 <button onclick="window.setNewCategory('量詞', this)" class="new-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">量詞</button>
                 <button onclick="window.setNewCategory('期間', this)" class="new-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">期間</button>
-                <button onclick="window.setNewCategory('時刻', this)" class="new-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">時刻</button>
                 <button onclick="window.setNewCategory('其他', this)" class="new-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">其他</button>
             </div>
-            <button onclick="window.submitNewWord()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95">同步到公共庫</button>
+            <button onclick="window.submitNewWord()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl">同步到公共庫</button>
         </section>
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
@@ -86,10 +85,7 @@
                 <input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-meaning" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
-                <div class="flex gap-2">
-                    <button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第一冊</button>
-                    <button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第二冊</button>
-                </div>
+                <div class="flex gap-2"><button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第一冊</button><button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第二冊</button></div>
                 <div id="edit-lesson-container" class="no-scrollbar pb-3"></div>
                 <div id="edit-category-picker" class="flex flex-wrap gap-2">
                     <button onclick="window.setEditCategory('n.', this)" class="edit-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">n.</button>
@@ -99,7 +95,6 @@
                     <button onclick="window.setEditCategory('時間', this)" class="edit-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">時間</button>
                     <button onclick="window.setEditCategory('量詞', this)" class="edit-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">量詞</button>
                     <button onclick="window.setEditCategory('期間', this)" class="edit-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">期間</button>
-                    <button onclick="window.setEditCategory('時刻', this)" class="edit-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">時刻</button>
                     <button onclick="window.setEditCategory('其他', this)" class="edit-cat-btn ls-btn-style border px-3 py-1 rounded-lg bg-white">其他</button>
                 </div>
                 <div class="flex gap-3 pt-4"><button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 bg-slate-100 py-3 rounded-2xl font-bold">取消</button><button onclick="window.saveWordEdit()" class="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold">更新</button></div>
@@ -140,10 +135,10 @@
     </div>
 
     <div id="stats-modal" class="fixed inset-0 z-[250] modal-overlay hidden flex flex-col items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人練習排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase">個人弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
     </div>
     <div id="import-overlay" class="fixed inset-0 z-[110] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
-        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight">批量同步 (CSV)</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步</button></div></div>
+        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight">批量同步</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步</button></div></div>
     </div>
 
     <script type="module">
@@ -167,7 +162,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"];
 
-        // --- 全能滑動算法 ---
+        // --- 滑動與點擊判定 ---
         const setupDraggable = () => {
             document.querySelectorAll('.no-scrollbar').forEach(el => {
                 let isDown = false, startX, scrollLeft, moveDist = 0;
@@ -179,8 +174,8 @@
         };
 
         // --- 語音系統 ---
-        let audio解鎖 = false;
-        window.initAudioOnFirstClick = () => { if (!audio解鎖) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audio解鎖 = true; } };
+        let audioUnlocked = false;
+        window.initAudioOnFirstClick = () => { if (!audioUnlocked) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } };
         window.speakAction = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.5; window.speechSynthesis.speak(u); };
 
         // --- 資料同步 ---
@@ -194,10 +189,11 @@
             list.innerHTML = html; setupDraggable();
         };
 
+        // --- 首頁過濾：智慧分類列 ---
         window.renderTypeUI = () => {
             const container = document.getElementById('type-filter'); if(!container) return;
             const hasAppendix = window.selectedLessons.includes('附錄');
-            const types = hasAppendix ? ['數字', '時間', '量詞', '期間', '時刻'] : ['n.', 'v.', 'adj.', '其他'];
+            const types = hasAppendix ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他'];
             container.innerHTML = types.map(t => `<button onclick="window.toggleType('${t}', this)" class="type-btn ls-btn-style border px-3 py-1 rounded-lg ${window.selectedTypes.includes(t)?'type-active text-white':'bg-white'}">${t}</button>`).join('');
             setupDraggable();
         };
@@ -218,7 +214,7 @@
         window.setNewLesson = (l) => { window.selectedNewLesson = l; window.renderNewLessonUI(); };
         window.setNewCategory = (cat, btn) => { 
             window.selectedNewCat = cat;
-            const appx = ['數字', '時間', '量詞', '期間', '時刻'];
+            const appx = ['數字', '時間', '量詞', '期間'];
             if (appx.includes(cat)) { window.newWordBook = 1; window.selectedNewLesson = '附錄'; } 
             else { window.selectedNewLesson = '未分類'; }
             window.renderNewLessonUI();
@@ -233,16 +229,16 @@
         };
         window.submitNewWord = async () => {
             const w = document.getElementById('word').value, r = document.getElementById('reading').value, m = document.getElementById('meaning').value;
-            if (!w || !m) return alert("填寫內容");
+            if (!w || !m) return alert("內容不全");
             await addDoc(vocabsCol, { word: w.trim(), reading: r.trim(), meaning: m.trim(), lesson: window.selectedNewLesson, category: window.selectedNewCat, createdAt: new Date() });
             document.getElementById('word').value = document.getElementById('reading').value = document.getElementById('meaning').value = ""; alert("同步成功");
         };
 
-        // --- 編輯功能：智慧連動 (核心新增) ---
+        // --- 編輯功能：智慧連動 ---
         window.openEditAction = (id) => {
             window.currentEditId = id; const v = window.vocabs.find(x => x.id === id);
             document.getElementById('edit-word').value = v.word; document.getElementById('edit-reading').value = v.reading; document.getElementById('edit-meaning').value = v.meaning;
-            window.editWordBook = (LESSON_ORDER.indexOf(v.lesson) <= 13 && v.lesson !== 'L13') ? 1 : 2;
+            window.editWordBook = (LESSON_ORDER.indexOf(v.lesson) <= 12 && v.lesson !== 'L13') ? 1 : 2;
             window.selectedEditLesson = v.lesson; window.selectedEditCat = v.category || 'n.';
             window.renderEditLessonUI();
             document.querySelectorAll('.edit-cat-btn').forEach(b => { const act = b.innerText === window.selectedEditCat; b.classList.toggle('active-edit-cat', act); b.classList.toggle('text-white', act); });
@@ -252,7 +248,7 @@
         window.setEditLesson = (l) => { window.selectedEditLesson = l; window.renderEditLessonUI(); };
         window.setEditCategory = (cat, btn) => { 
             window.selectedEditCat = cat;
-            const appx = ['數字', '時間', '量詞', '期間', '時刻'];
+            const appx = ['數字', '時間', '量詞', '期間'];
             if (appx.includes(cat)) { window.editWordBook = 1; window.selectedEditLesson = '附錄'; } 
             else { window.selectedEditLesson = '未分類'; }
             window.renderEditLessonUI();
@@ -270,7 +266,7 @@
             document.getElementById('edit-modal').classList.add('hidden');
         };
 
-        // --- 隨機測試核心 ---
+        // --- 隨機測試引擎 ---
         window.startQuiz = () => {
             window.remainingPool = [...window.quizPool].map(v => ({ v, w: Math.random() * (1 + (window.userProgress[v.id]?.wrongCount || 0) * 1.5) })).sort((a,b) => b.w - a.w).map(i => i.v);
             document.getElementById('spelling-input-area').classList.toggle('hidden', !document.getElementById('spelling-mode').checked);
@@ -307,6 +303,17 @@
                 else if (e.key === 'ArrowUp') { e.preventDefault(); document.getElementById('quiz-card').classList.toggle('is-flipped'); if(document.getElementById('quiz-card').classList.contains('is-flipped')) window.speakAction(window.currentQuizWord.word); }
             }
         });
+
+        document.getElementById('spelling-input').onkeypress = async (e) => {
+            if(e.key === 'Enter') {
+                const ok = e.target.value.trim() === window.currentQuizWord.word;
+                document.getElementById('quiz-card').classList.add('is-flipped');
+                document.getElementById('feedback-msg').innerText = ok ? "正解！🎉" : "❌ 錯誤，答案：" + window.currentQuizWord.word;
+                document.getElementById('feedback-msg').className = ok ? "text-emerald-400" : "text-rose-400";
+                window.speakAction(window.currentQuizWord.word);
+                if(!ok) await updateProg(window.currentQuizWord.id, false); e.target.blur();
+            }
+        };
 
         window.renderList = () => {
             const search = document.getElementById('searchInput').value.toLowerCase();
@@ -349,19 +356,7 @@
         window.addNewUserAction = () => { const n = prompt("使用者:"); if(n && n.trim()){ const name = n.trim(); if(!userHistory.includes(name)) userHistory.unshift(name); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(name); } };
         window.deleteWord = async (id) => { if(confirm("刪除？")) await deleteDoc(doc(vocabsCol, id)); };
         window.startImport = async () => { const text = document.getElementById('import-text').value.trim(); if(!text) return; const batch = writeBatch(db); text.split('\n').forEach(line => { const [w, r, m, c, l] = line.split(',').map(s => s?.trim()); if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "n.", lesson: l || '未分類', createdAt: new Date() }); }); await batch.commit(); window.toggleImport(false); alert("完成"); };
-        
-        window.setQuizMode = (m) => { window.quizMode = m; document.getElementById('modeStdBtn').className = m==='standard'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700'; document.getElementById('modeHearBtn').className = m==='hearing'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700'; };
-
-        document.getElementById('spelling-input').onkeypress = async (e) => {
-            if(e.key === 'Enter') {
-                const ok = e.target.value.trim() === window.currentQuizWord.word;
-                document.getElementById('quiz-card').classList.add('is-flipped');
-                document.getElementById('feedback-msg').innerText = ok ? "正解！🎉" : "❌ 錯誤，答案：" + window.currentQuizWord.word;
-                document.getElementById('feedback-msg').className = ok ? "text-emerald-400" : "text-rose-400";
-                window.speakAction(window.currentQuizWord.word);
-                if(!ok) await updateProg(window.currentQuizWord.id, false); e.target.blur();
-            }
-        };
+        window.setQuizMode = (m) => { window.quizMode = m; document.getElementById('modeStdBtn').className = m==='standard'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border border-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700'; document.getElementById('modeHearBtn').className = m==='hearing'?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border border-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700'; };
 
         window.renderUserHistory();
         window.renderTypeUI();
