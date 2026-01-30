@@ -78,7 +78,7 @@
             </div>
             <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2"></div>
             <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6 no-scrollbar"></div>
-            <button onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 block">儲存到單字冊</button>
+            <button onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl active:scale-95 block">儲存到單字冊</button>
         </section>
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
@@ -124,7 +124,7 @@
             <div class="space-y-4">
                 <input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
-                <input id="edit-meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
+                <input id="edit-meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm font-bold">
                 <div class="flex gap-2">
                     <button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">第一冊</button>
                     <button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">第二冊</button>
@@ -140,22 +140,11 @@
     </div>
 
     <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[80vh]">
-            <h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2>
-            <div id="devil-list" class="space-y-2 p-2"></div>
-            <button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button>
-        </div>
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[80vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
     </div>
 
     <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
-        <div class="w-full max-w-md">
-            <h3 class="text-xl font-bold mb-4 tracking-tight uppercase">批量同步單字庫 (CSV)</h3>
-            <textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea>
-            <div class="flex gap-2">
-                <button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button>
-                <button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button>
-            </div>
-        </div>
+        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 tracking-tight uppercase">批量同步單字庫 (CSV)</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
     </div>
 
     <script type="module">
@@ -168,6 +157,7 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
+        // 全域狀態
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; window.editWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
@@ -180,6 +170,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"];
 
+        // --- 功能模組 ---
         window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.className = "show"; setTimeout(() => t.className = "", 2000); };
         window.autoTranslate = async () => { const w = document.getElementById('word').value.trim(); if(!w) return; try { const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&q=${encodeURIComponent(w)}`; const res = await fetch(url); const data = await res.json(); if(data?.[0]?.[0]) document.getElementById('meaning').value = data[0][0][0]; } catch(e){ console.error(e); } };
 
@@ -256,12 +247,11 @@
             filtered.sort((a,b) => {
                 const lDiff = LESSON_ORDER.indexOf(a.lesson) - LESSON_ORDER.indexOf(b.lesson);
                 if(lDiff !== 0) return lDiff;
-                const tA = a.createdAt?.seconds || 0; const tB = b.createdAt?.seconds || 0;
-                return window.sortOrder === 'desc' ? tB - tA : tA - tB;
+                const timeA = a.createdAt?.seconds || 0; const timeB = b.createdAt?.seconds || 0;
+                return window.sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
             });
             document.getElementById('vocab-list').innerHTML = filtered.map(v => {
                 const prog = window.userProgress[v.id] || { wrongCount: 0 };
-                // 修改：底下的中文意思 (v.meaning) 字體調整為 text-xs 與漢字同步大小
                 return `<li class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100">
                     <div class="flex-1 pr-4">
                         <div class="flex gap-1.5 mb-1 flex-wrap text-[9px] font-black uppercase"><span class="bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-md">${v.lesson}</span><span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span><span class="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-md">錯 ${prog.wrongCount}</span></div>
