@@ -140,7 +140,7 @@
     </div>
 
     <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
-        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 tracking-tight uppercase">批量同步</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
+        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight uppercase">批量同步</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
     </div>
 
     <script type="module">
@@ -153,7 +153,6 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
-        // 全域狀態
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; window.editWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
@@ -166,7 +165,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"];
 
-        // --- 🚀 功能核心：智慧翻譯 + 漢字過濾 ---
+        // --- 🚀 功能升級：排除拼音 + 智慧翻譯 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
@@ -186,6 +185,7 @@
             }
 
             try {
+                // dt=rm 是回傳音譯的關鍵，我們保留它來做對照但嚴格過濾字母
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&q=${encodeURIComponent(w)}`;
                 const res = await fetch(url);
                 const data = await res.json();
@@ -197,16 +197,19 @@
                     if (data[0][1] && data[0][1][3]) suggestedKanji = data[0][1][3];
                     else if (w !== data[0][0][1]) suggestedKanji = data[0][0][1];
 
-                    // 核心邏輯：如果回傳的漢字與原始單語相同，則不填入漢字欄位
-                    if (suggestedKanji && suggestedKanji !== w) {
+                    // 核心修正：判斷 suggestedKanji 是否含有英文字母 (Ototoi 這種情況)
+                    const hasEnglish = /[a-zA-Z]/.test(suggestedKanji);
+
+                    if (suggestedKanji && suggestedKanji !== w && !hasEnglish) {
                         document.getElementById('reading').value = suggestedKanji;
                     } else {
-                        document.getElementById('reading').value = ""; // 清空
+                        document.getElementById('reading').value = ""; // 只要有英文字母或是跟單語一樣，就清空
                     }
                 }
-            } catch(e) { console.error("翻譯引擎忙碌"); }
+            } catch(e) { console.error("翻譯忙碌中"); }
         };
 
+        // --- 其餘完整邏輯 ---
         window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.className = "show"; setTimeout(() => t.className = "", 2000); };
         const setupDraggable = () => {
             document.querySelectorAll('.no-scrollbar').forEach(el => {
@@ -252,7 +255,6 @@
             filtered.sort((a,b) => { const lDiff = LESSON_ORDER.indexOf(a.lesson) - LESSON_ORDER.indexOf(b.lesson); if(lDiff !== 0) return lDiff; const tA = a.createdAt?.seconds || 0; const tB = b.createdAt?.seconds || 0; return window.sortOrder === 'desc' ? tB - tA : tA - tB; });
             document.getElementById('vocab-list').innerHTML = filtered.map(v => {
                 const prog = window.userProgress[v.id] || { wrongCount: 0 };
-                // 核心視覺邏輯：如果 reading 為空，則不顯示【】括號
                 const readingHTML = v.reading ? `<span class="text-xs font-normal text-slate-400 ml-1">【${v.reading}】</span>` : "";
                 return `<li class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100">
                     <div class="flex-1 pr-4 text-left">
@@ -280,7 +282,7 @@
             const idx = LESSON_ORDER.indexOf(v.lesson); window.editWordBook = (idx >= 0 && idx <= 11) ? 1 : 2; window.selectedEditLesson = v.lesson; window.selectedEditCat = v.category || (v.lesson==='附錄'?'數字':'n.');
             window.renderEditLessonUI(); window.renderEditCategoryUI(); document.getElementById('edit-modal').classList.remove('hidden');
         };
-        window.saveWordEdit = async () => { await updateDoc(doc(db, "vocabs", window.currentEditId), { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat }); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 已更新"); };
+        window.saveWordEdit = async () => { await updateDoc(doc(db, "vocabs", window.currentEditId), { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat }); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 更新成功"); };
 
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = []; window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
         window.renderLessonUI = () => { const c = document.getElementById('lesson-filter-container'); c.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join(''); document.getElementById('book1-btn').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`; document.getElementById('book2-btn').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500'}`; setupDraggable(); };
