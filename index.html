@@ -64,9 +64,9 @@
     <div class="max-w-md mx-auto p-4">
         <button onclick="document.getElementById('input-section').classList.toggle('show')" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-1.5 rounded-full text-xs font-bold border border-indigo-100 w-full active:scale-95 transition-all">＋ 新增單語</button>
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all overflow-hidden text-center">
-             <div class="grid grid-cols-2 gap-3 mb-4">
+             <div class="grid grid-cols-2 gap-3 mb-4 text-left">
                 <input id="word" type="text" placeholder="單語 (日文)" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-                <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300 text-left">
+                <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
             </div>
             <div class="relative mb-4">
                 <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 pr-24 rounded-2xl outline-none text-sm border focus:border-indigo-300">
@@ -111,7 +111,10 @@
                 </div>
             </div>
             <div id="spelling-input-area" class="mb-4 hidden"><input type="text" id="spelling-input" placeholder="按 Enter 檢查..." class="w-full p-4 bg-white/10 border-2 border-white/20 rounded-2xl text-center text-xl font-bold text-white outline-none focus:border-indigo-400"><p id="feedback-msg" class="mt-2 text-[10px] font-bold h-5"></p></div>
-            <div class="grid grid-cols-2 gap-4 mb-4"><button onclick="window.quizFail()" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black">加強 (Shift+←)</button><button onclick="window.quizPass()" class="bg-emerald-500 text-white py-6 rounded-3xl font-black shadow-lg">下一個 (Shift+→)</button></div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <button onclick="window.quizFail()" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black">加強 (Shift+←)</button>
+                <button onclick="window.quizPass()" class="bg-emerald-500 text-white py-6 rounded-3xl font-black shadow-lg">下一個 (Shift+→)</button>
+            </div>
         </div>
     </div>
 
@@ -122,10 +125,7 @@
                 <input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm font-bold">
-                <div class="flex gap-2">
-                    <button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">第一冊</button>
-                    <button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">第二冊</button>
-                </div>
+                <div class="flex gap-2"><button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">第一冊</button><button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">第二冊</button></div>
                 <div id="edit-lesson-container" class="no-scrollbar pb-3"></div>
                 <div id="edit-category-picker" class="flex flex-wrap gap-2 no-scrollbar"></div>
                 <div class="flex gap-3 pt-4 border-t mt-4">
@@ -139,6 +139,7 @@
     <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[80vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
     </div>
+
     <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
         <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight uppercase">批量同步</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
     </div>
@@ -153,7 +154,6 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
-        // 全域狀態
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; window.editWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
@@ -166,18 +166,24 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"];
 
-        // --- 功能模組 ---
-        window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.className = "show"; setTimeout(() => t.className = "", 2000); };
-        window.autoTranslate = async () => { 
-            const w = document.getElementById('word').value.trim(); 
-            if(!w) return; 
-            try { 
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&q=${encodeURIComponent(w)}`; 
-                const res = await fetch(url); 
-                const data = await res.json(); 
-                if(data?.[0]?.[0]) document.getElementById('meaning').value = data[0][0][0]; 
-            } catch(e){ console.error(e); } 
+        // --- 優化翻譯函式 ---
+        window.autoTranslate = async () => {
+            const w = document.getElementById('word').value.trim();
+            if(!w) return;
+            try {
+                // 強制指定來源語言日文 ja，目標語言 zh-TW 繁體中文，ie=UTF-8 確保編碼
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&ie=UTF-8&dt=t&q=${encodeURIComponent(w)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if(data?.[0]?.[0]) {
+                    document.getElementById('meaning').value = data[0][0][0];
+                }
+            } catch(e) {
+                console.error("翻譯錯誤：", e);
+            }
         };
+
+        window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.className = "show"; setTimeout(() => t.className = "", 2000); };
 
         const setupDraggable = () => {
             document.querySelectorAll('.no-scrollbar').forEach(el => {
@@ -252,8 +258,8 @@
             filtered.sort((a,b) => {
                 const lDiff = LESSON_ORDER.indexOf(a.lesson) - LESSON_ORDER.indexOf(b.lesson);
                 if(lDiff !== 0) return lDiff;
-                const timeA = a.createdAt?.seconds || 0; const timeB = b.createdAt?.seconds || 0;
-                return window.sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+                const tA = a.createdAt?.seconds || 0; const tB = b.createdAt?.seconds || 0;
+                return window.sortOrder === 'desc' ? tB - tA : tA - tB;
             });
             document.getElementById('vocab-list').innerHTML = filtered.map(v => {
                 const prog = window.userProgress[v.id] || { wrongCount: 0 };
@@ -310,7 +316,7 @@
         window.startImport = async () => { const t = document.getElementById('import-text').value.trim(); if(!t) return; const batch = writeBatch(db); t.split('\n').forEach(line => { const [w, r, m, c, l] = line.split(',').map(s => s?.trim()); if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "n.", lesson: l || '未分類', createdAt: new Date() }); }); await batch.commit(); window.toggleImport(false); window.showToast("✅ 批量完成"); };
         window.switchUser = (name) => { localStorage.setItem('jp_user_shared', name); location.reload(); };
         window.addNewUserAction = () => { const n = prompt("使用者:"); if(n && n.trim()){ const name = n.trim(); if(!userHistory.includes(name)) userHistory.unshift(name); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(name); } };
-        window.deleteWord = async (id) => { if(confirm("確定刪除？")) await deleteDoc(doc(vocabsCol, id)); };
+        window.deleteWord = async (id) => { if(confirm("刪除？")) await deleteDoc(doc(vocabsCol, id)); };
 
         window.addEventListener('keydown', (e) => {
             if (document.getElementById('quiz-content').classList.contains('hidden')) return;
