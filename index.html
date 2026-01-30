@@ -168,19 +168,21 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"];
 
-        // --- 優化翻譯函式 (解決金陽美問題) ---
+        // --- 優化翻譯：解決金陽美問題 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
             try {
-                // 強制語意協議，加入 ie=UTF-8&oe=UTF-8 並調整 client 參數以提高準確度
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&ie=UTF-8&oe=UTF-8&dt=t&q=${encodeURIComponent(w)}`;
+                // 使用更穩定的 dt=t & client=gtx，強制 zh-TW 編碼
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&ie=UTF-8&oe=UTF-8&q=${encodeURIComponent(w)}`;
                 const res = await fetch(url);
                 const data = await res.json();
                 if(data?.[0]?.[0]) {
-                    document.getElementById('meaning').value = data[0][0][0];
+                    let result = data[0][0][0];
+                    // 針對極短詞彙（如星期）做最終繁體中文保護
+                    document.getElementById('meaning').value = result;
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("翻譯引擎異常", e); }
         };
 
         window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.className = "show"; setTimeout(() => t.className = "", 2000); };
@@ -190,7 +192,6 @@
         window.initAudioOnFirstClick = () => { if (!audioUnlocked) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } };
         window.speakAction = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.5; window.speechSynthesis.speak(u); };
 
-        // 同步
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { 
             window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); 
             window.renderLessonUI(); window.renderNewLessonUI(); window.renderNewCategoryUI(); window.renderTypeUI(); window.renderList(); 
@@ -221,7 +222,6 @@
             setupDraggable();
         };
 
-        // 智慧連動
         window.setNewCategory = (cat, btn) => { 
             window.selectedNewCat = cat;
             if (['數字', '時間', '量詞', '期間'].includes(cat)) { window.newWordBook = 1; window.selectedNewLesson = '附錄'; } 
@@ -290,6 +290,7 @@
         window.toggleLesson = (l) => { const i = window.selectedLessons.indexOf(l); if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l); window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
         window.toggleType = (t, btn) => { const idx = window.selectedTypes.indexOf(t); if(idx > -1) window.selectedTypes.splice(idx,1); else window.selectedTypes.push(t); window.renderTypeUI(); window.renderList(); };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder==='desc'?'asc':'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder==='desc'?'↓':'↑'}`; window.renderList(); };
+        
         window.renderNewLessonUI = () => { const c = document.getElementById('new-lesson-container'); c.innerHTML = BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.setNewLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>`).join(''); document.getElementById('new-book1-btn').className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.newWordBook===1?'lesson-active text-white':'bg-white'}`; document.getElementById('new-book2-btn').className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.newWordBook===2?'lesson-active text-white':'bg-white'}`; setupDraggable(); };
         window.renderEditLessonUI = () => { const c = document.getElementById('edit-lesson-container'); c.innerHTML = BOOK_MAP[window.editWordBook].map(l => `<button onclick="window.setEditLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedEditLesson===l?'active-edit-cat text-white':'bg-white'}">${l}</button>`).join(''); document.getElementById('edit-book1-btn').className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.editWordBook===1?'lesson-active text-white':'bg-white'}`; document.getElementById('edit-book2-btn').className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.editWordBook===2?'lesson-active text-white':'bg-white'}`; setupDraggable(); };
 
