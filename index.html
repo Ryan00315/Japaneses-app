@@ -100,9 +100,9 @@
         </div>
     </div>
 
-    <div id="quiz-overlay" class="fixed inset-0 z-[400] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">...</div>
-    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">...</div>
-    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">...</div>
+    <div id="quiz-overlay" class="fixed inset-0 z-[400] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center"></div>
+    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4"></div>
+    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -114,6 +114,7 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
+        // 全域狀態
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; window.editWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
@@ -126,31 +127,44 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"];
 
-        // --- 智慧翻譯 + 漢字過濾 + 星期保護 ---
+        // --- 🚀 功能核心：加強版智慧翻譯 + 精準校正 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
+
+            // 1. 手動校正庫 (針對 あさって、なんようび 等常出錯的組合)
             const manualLibrary = {
-                "なんようび": ["星期幾", "何曜日"], "なんさい": ["幾歲", "何歳"], "なんじ": ["幾點", "何時"],
-                "げつようび": ["星期一", "月曜日"], "かようび": ["星期二", "火曜日"], "すいようび": ["星期三", "水曜日"],
-                "もくようび": ["星期四", "木曜日"], "きんようび": ["星期五", "金曜日"], "どようび": ["星期六", "土曜日"],
-                "にchようび": ["星期日", "日曜日"]
+                "あさって": ["後天", "明後日"],
+                "あさってのあさ": ["後天的早上", "明後日の朝"],
+                "おととい": ["前天", "一昨日"],
+                "きのう": ["昨天", "昨日"],
+                "きょう": ["今天", "今日"],
+                "あした": ["明天", "明日"],
+                "なんようび": ["星期幾", "何曜日"],
+                "きんようび": ["星期五", "金曜日"],
+                "なんさい": ["幾歲", "何歳"]
             };
-            const lowerW = w.toLowerCase();
+
+            const lowerW = w.toLowerCase().replace(/\s+/g, ''); // 移除空格再比對
             if(manualLibrary[lowerW]) {
                 document.getElementById('meaning').value = manualLibrary[lowerW][0];
                 document.getElementById('reading').value = manualLibrary[lowerW][1];
                 return;
             }
+
             try {
+                // 2. 調用翻譯接口
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&q=${encodeURIComponent(w)}`;
                 const res = await fetch(url);
                 const data = await res.json();
+                
                 if(data && data[0] && data[0][0]) {
                     document.getElementById('meaning').value = data[0][0][0];
+                    
                     let suggestedKanji = "";
                     if (data[0][1] && data[0][1][3]) suggestedKanji = data[0][1][3];
                     else if (w !== data[0][0][1]) suggestedKanji = data[0][0][1];
+
                     const hasEnglish = /[a-zA-Z]/.test(suggestedKanji);
                     if (suggestedKanji && suggestedKanji !== w && !hasEnglish) {
                         document.getElementById('reading').value = suggestedKanji;
@@ -158,7 +172,7 @@
                         document.getElementById('reading').value = ""; 
                     }
                 }
-            } catch(e) { console.error("翻譯引擎忙碌"); }
+            } catch(e) { console.error("翻譯忙碌中"); }
         };
 
         window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.className = "show"; setTimeout(() => t.className = "", 2000); };
@@ -233,7 +247,7 @@
             const idx = LESSON_ORDER.indexOf(v.lesson); window.editWordBook = (idx >= 0 && idx <= 11) ? 1 : 2; window.selectedEditLesson = v.lesson; window.selectedEditCat = v.category || (v.lesson==='附錄'?'數字':'n.');
             window.renderEditLessonUI(); window.renderEditCategoryUI(); document.getElementById('edit-modal').classList.remove('hidden');
         };
-        window.saveWordEdit = async () => { await updateDoc(doc(db, "vocabs", window.currentEditId), { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat }); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 已更新"); };
+        window.saveWordEdit = async () => { await updateDoc(doc(db, "vocabs", window.currentEditId), { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat }); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 更新成功"); };
 
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = []; window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
         window.renderLessonUI = () => { const c = document.getElementById('lesson-filter-container'); c.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join(''); document.getElementById('book1-btn').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`; document.getElementById('book2-btn').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500'}`; setupDraggable(); };
