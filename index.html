@@ -49,7 +49,7 @@
             
             <div class="flex gap-2">
                 <input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
-                <button id="sort-btn" onclick="window.toggleSort()" class="bg-white border border-slate-200 px-4 rounded-2xl text-[10px] font-bold text-slate-500 whitespace-nowrap">⏳ 晚 ➔ 早</button>
+                <button id="sort-btn" onclick="window.toggleSort()" class="bg-white border border-slate-200 px-4 rounded-2xl text-[11px] font-bold text-slate-600 whitespace-nowrap shadow-sm">排序 ↓</button>
             </div>
         </div>
     </div>
@@ -60,7 +60,7 @@
              <div class="grid grid-cols-2 gap-3 mb-4">
                 <input id="word" type="text" placeholder="單語" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm"><input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm">
             </div>
-            <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none text-sm text-[11px]">
+            <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none text-sm">
             <div class="flex gap-2 mb-3">
                 <button id="new-book1-btn" onclick="window.setNewBook(1)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第一冊</button>
                 <button id="new-book2-btn" onclick="window.setNewBook(2)" class="flex-1 border py-1.5 rounded-xl text-[10px] font-bold">第二冊</button>
@@ -136,7 +136,7 @@
     </div>
 
     <div id="stats-modal" class="fixed inset-0 z-[250] modal-overlay hidden flex flex-col items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase">個人練習排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase">個人排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
     </div>
     <div id="import-overlay" class="fixed inset-0 z-[110] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
         <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight">批量同步</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步</button></div></div>
@@ -152,27 +152,25 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
-        // 狀態管理
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; window.editWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
         window.selectedEditCat = 'n.'; window.selectedEditLesson = '未分類';
-        window.sortOrder = 'desc'; // 預設 晚 -> 早
+        window.sortOrder = 'desc'; 
         window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"];
 
-        // --- 排序切換功能 ---
+        // --- 排序功能：名稱更新 ---
         window.toggleSort = () => {
             window.sortOrder = window.sortOrder === 'desc' ? 'asc' : 'desc';
             const btn = document.getElementById('sort-btn');
-            btn.innerText = window.sortOrder === 'desc' ? '⏳ 晚 ➔ 早' : '⌛ 早 ➔ 晚';
+            btn.innerText = window.sortOrder === 'desc' ? '排序 ↓' : '排序 ↑';
             window.renderList();
         };
 
-        // --- 滑動與語音基礎 ---
         const setupDraggable = () => {
             document.querySelectorAll('.no-scrollbar').forEach(el => {
                 let isDown = false, startX, scrollLeft, moveDist = 0;
@@ -186,7 +184,6 @@
         window.initAudioOnFirstClick = () => { if (!audio解鎖) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audio解鎖 = true; } };
         window.speakAction = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.5; window.speechSynthesis.speak(u); };
 
-        // --- 資料連動 ---
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); window.renderLessonUI(); window.renderNewLessonUI(); window.renderTypeUI(); window.renderList(); setTimeout(setupDraggable, 300); });
         onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => { window.userProgress = {}; snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); }); window.renderList(); });
 
@@ -214,7 +211,6 @@
                 return matchL && matchT && matchS;
             });
 
-            // 核心排序：先按課數排序，相同課數則按時間排序
             filtered.sort((a,b) => {
                 const lessonDiff = LESSON_ORDER.indexOf(a.lesson) - LESSON_ORDER.indexOf(b.lesson);
                 if(lessonDiff !== 0) return lessonDiff;
@@ -236,7 +232,6 @@
             }).join('');
         };
 
-        // --- 其餘按鈕邏輯維持昨日完整版 ---
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = []; window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
         window.renderLessonUI = () => {
             const container = document.getElementById('lesson-filter-container');
