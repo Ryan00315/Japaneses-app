@@ -28,25 +28,28 @@
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
 
-    <div id="toast">✅ 已儲存</div>
+    <div id="toast">✅ 操作成功</div>
 
     <div class="sticky-header border-b border-slate-200">
         <div class="max-w-md mx-auto px-4 pt-4 pb-3">
             <div class="flex items-center mb-3">
                 <div class="flex items-center gap-1.5 no-scrollbar flex-1" id="user-history-list"></div>
+                <button onclick="window.speakAction('こんにちは')" class="ml-2 text-[10px] bg-yellow-400 text-white px-2 py-0.5 rounded-md font-bold shadow-sm">🔈 測試語音</button>
             </div>
             <div class="flex items-center justify-between">
                 <h1 class="text-2xl font-black text-indigo-600 tracking-tighter uppercase">Kingtex JPNote</h1>
                 <div class="flex items-center gap-2">
-                    <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">隨機測試</button>
+                    <button onclick="window.showStatsModal()" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">進度</button>
+                    <button onclick="window.toggleImport(true)" class="text-[10px] bg-slate-100 px-2 py-1.5 rounded-full font-bold">批量</button>
+                    <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-orange-200">隨機測試</button>
                 </div>
             </div>
         </div>
         <div class="max-w-md mx-auto px-4 pb-3">
             <div class="flex gap-2 mb-2">
-                <button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">個人筆記</button>
                 <button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第一冊</button>
                 <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第二冊</button>
+                <button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">個人筆記</button>
             </div>
             <div class="no-scrollbar pb-2" id="lesson-filter-container"></div>
             <div class="no-scrollbar pb-2" id="type-filter"></div>
@@ -65,14 +68,14 @@
                 <input id="word" type="text" placeholder="單語 (日文)" onkeydown="if(event.key==='Enter') window.autoTranslate()" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
                 <input id="reading" type="text" placeholder="漢字" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
             </div>
-            <div class="relative mb-4">
+            <div class="relative mb-4 text-left">
                 <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-                <button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-sm px-3 rounded-xl border border-slate-200 font-bold text-slate-500">👉 翻譯</button>
+                <button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[11px] px-3 rounded-xl border border-slate-200 font-bold text-slate-500">👉 翻譯(漢字、中文)</button>
             </div>
             <div class="flex gap-2 mb-3">
-                <button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">個人筆記</button>
                 <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">第一冊</button>
                 <button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">第二冊</button>
+                <button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-sm font-bold transition-all">個人筆記</button>
             </div>
             <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2"></div>
             <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6 no-scrollbar"></div>
@@ -81,8 +84,63 @@
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 z-[350] modal-overlay hidden flex flex-col items-center justify-center p-4"></div>
-    <div id="quiz-overlay" class="fixed inset-0 z-[400] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center"></div>
+    <div id="quiz-overlay" class="fixed inset-0 z-[400] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">
+        <div id="quiz-setup" class="w-full max-w-md">
+            <h2 class="text-2xl font-black mb-6 tracking-tighter uppercase">測試範圍設定</h2>
+            <div id="quiz-range-info" class="bg-slate-800 p-6 rounded-[32px] mb-8 text-left border border-white/10 text-xs">
+                <div id="quiz-range-list" class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto no-scrollbar py-2"></div>
+            </div>
+            <div class="flex gap-2 justify-center mb-6">
+                <button id="modeStdBtn" onclick="window.setQuizMode('standard')" class="px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border border-indigo-600">單字卡</button>
+                <button id="modeHearBtn" onclick="window.setQuizMode('hearing')" class="px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300 border border-slate-600">聽力模式</button>
+            </div>
+            <div class="mb-8 font-bold text-sm"><input type="checkbox" id="spelling-mode" class="w-4 h-4 mr-2">開啟拼寫模式</div>
+            <button onclick="window.startQuiz()" class="w-full py-6 bg-indigo-600 rounded-3xl mb-4 font-bold text-xl active:scale-95 shadow-xl">開始練習</button>
+            <button onclick="document.getElementById('quiz-overlay').classList.add('hidden')" class="text-slate-500 font-bold">返回首頁</button>
+        </div>
+        <div id="quiz-content" class="w-full max-w-md flex flex-col h-full hidden">
+            <div class="flex justify-between items-center mb-6"><span id="quiz-progress-display" class="text-[10px] text-indigo-300"></span><button onclick="location.reload()" class="text-2xl text-white">✕</button></div>
+            <div id="quiz-card-container" onclick="window.handleCardClick(event)" class="card-flip flex-1 w-full relative mb-6">
+                <div id="quiz-card" class="card-inner">
+                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex items-center justify-center p-4"><p id="q-meaning-front" class="text-4xl font-black text-center"></p><div id="hear-icon" class="text-6xl hidden">🎧</div></div>
+                    <div class="card-back bg-white text-slate-900 rounded-[40px] p-8 text-center flex flex-col items-center justify-center">
+                        <p id="q-word-answer" class="text-indigo-600 font-black text-4xl mb-4"></p>
+                        <p id="q-reading-back" class="text-slate-400 font-bold text-lg mb-2"></p>
+                        <p id="q-meaning-back" class="text-xl font-bold text-slate-500"></p>
+                        <div class="mt-8"><button onclick="window.playCurrentWord(event)" class="audio-btn bg-slate-50 p-5 rounded-full text-3xl shadow-inner active:scale-90">🔊</button></div>
+                    </div>
+                </div>
+            </div>
+            <div id="spelling-input-area" class="mb-4 hidden"><input type="text" id="spelling-input" placeholder="按 Enter 檢查..." class="w-full p-4 bg-white/10 border-2 border-white/20 rounded-2xl text-center text-xl font-bold text-white outline-none focus:border-indigo-400"><p id="feedback-msg" class="mt-2 text-[10px] font-bold h-5"></p></div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <button onclick="window.quizFail()" class="bg-rose-500/10 border-2 border-rose-500 text-rose-500 py-6 rounded-3xl font-black">加強 (Shift+←)</button>
+                <button onclick="window.quizPass()" class="bg-emerald-500 text-white py-6 rounded-3xl font-black shadow-lg">下一個 (Shift+→)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="fixed inset-0 z-[350] modal-overlay hidden flex flex-col items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h2 class="text-xl font-black mb-6 border-b pb-4 text-center text-indigo-600 uppercase">編輯單語</h2>
+            <div class="space-y-4">
+                <input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
+                <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
+                <input id="edit-meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm font-bold">
+                <div class="flex gap-2"><button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第一冊</button><button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第二冊</button></div>
+                <div id="edit-lesson-container" class="no-scrollbar pb-3"></div>
+                <div id="edit-category-picker" class="flex flex-wrap gap-2 no-scrollbar"></div>
+                <div class="flex gap-3 pt-4 border-t mt-4"><button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 bg-slate-100 py-3 rounded-2xl font-bold">取消</button><button onclick="window.saveWordEdit()" class="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold">更新保存</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[80vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
+    </div>
+
+    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
+        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight uppercase">批量同步</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -94,22 +152,26 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
+        // 全域狀態
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
-        window.currentBook = 'note'; // 預設開啟個人筆記
-        window.newWordBook = 'note'; 
-        window.selectedNewCat = 'n.'; window.selectedNewLesson = '個人筆記';
+        window.currentBook = 1; window.newWordBook = 1; 
+        window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
         window.sortOrder = 'desc'; 
+        window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
         
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
-        const LESSON_ORDER = ["個人筆記", "附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"];
+        const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 核心：智慧翻譯 (こんばん校正) ---
+        // --- 核心翻譯邏輯 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
-            const manualLibrary = { "こんばん": ["今天晚上", "今晩"], "まいあさ": ["每朝", "毎朝"], "まいばん": ["每晚", "毎晩"], "まいにち": ["每天", "毎日"] };
+            const manualLibrary = { 
+                "こんばん": ["今天晚上", "今晩"], "まいあさ": ["每朝", "毎朝"], "まいばん": ["每晚", "毎晩"], "まいにち": ["每天", "毎日"],
+                "なんようび": ["星期幾", "何曜日"], "あさってのあさ": ["後天早上", "明後日の朝"]
+            };
             const cleanW = w.toLowerCase().replace(/\s+/g, '');
             if(manualLibrary[cleanW]) {
                 document.getElementById('meaning').value = manualLibrary[cleanW][0];
@@ -142,19 +204,11 @@
         window.renderLessonUI = () => {
             const c = document.getElementById('lesson-filter-container');
             const b1 = document.getElementById('book1-btn'), b2 = document.getElementById('book2-btn'), bn = document.getElementById('book-note-btn');
-            
-            // UI 按鈕狀態
-            bn.className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook==='note'?'note-active':'bg-white text-slate-500'}`;
             b1.className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`;
             b2.className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500'}`;
-
-            if (window.currentBook === 'note') {
-                c.innerHTML = ""; // 個人筆記模式隱藏課數列
-            } else {
-                c.innerHTML = BOOK_MAP[window.currentBook].map(l => `
-                    <button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>
-                `).join('');
-            }
+            bn.className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook==='note'?'note-active':'bg-white text-slate-500'}`;
+            if (window.currentBook === 'note') c.innerHTML = "";
+            else c.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join('');
             setupDraggable();
         };
 
@@ -163,82 +217,63 @@
             window.newWordBook = b;
             window.selectedNewLesson = (b === 'note' ? '個人筆記' : (b === 1 ? '附錄' : 'L13'));
             window.selectedNewCat = (window.selectedNewLesson === '附錄' ? '數字' : 'n.');
-            window.renderNewLessonUI();
-            window.renderNewCategoryUI();
+            window.renderNewLessonUI(); window.renderNewCategoryUI();
         };
-
         window.renderNewLessonUI = () => {
             const c = document.getElementById('new-lesson-container');
             const submitBtn = document.getElementById('submit-btn');
             const tN = document.getElementById('new-note-tab'), t1 = document.getElementById('new-book1-tab'), t2 = document.getElementById('new-book2-tab');
-
-            tN.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.newWordBook==='note'?'note-active':'bg-white'}`;
             t1.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.newWordBook===1?'lesson-active text-white':'bg-white'}`;
             t2.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.newWordBook===2?'lesson-active text-white':'bg-white'}`;
-
+            tN.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.newWordBook==='note'?'note-active':'bg-white'}`;
             if (window.newWordBook === 'note') {
-                c.innerHTML = "";
-                submitBtn.innerText = "儲存個人單字";
+                c.innerHTML = ""; submitBtn.innerText = "儲存個人單字";
                 submitBtn.className = "w-3/4 mx-auto bg-orange-500 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm";
             } else {
-                c.innerHTML = BOOK_MAP[window.newWordBook].map(l => `
-                    <button onclick="window.setNewLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>
-                `).join('');
+                c.innerHTML = BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.setNewLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>`).join('');
                 submitBtn.innerText = "儲存到單字冊";
                 submitBtn.className = "w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm";
             }
             setupDraggable();
         };
 
-        // --- 列表渲染 (隔離邏輯) ---
+        // --- 數據渲染與隔離 ---
         window.renderList = () => {
             const search = document.getElementById('searchInput').value.toLowerCase();
             let filtered = window.vocabs.filter(v => {
-                // 隔離核心：個人筆記單字必須 uid 相符；公共單字不含 uid
-                if (v.lesson === '個人筆記') {
-                    if (v.uid !== currentUser) return false;
-                } else {
-                    if (v.uid) return false; 
-                }
-
+                if (v.lesson === '個人筆記') { if (v.uid !== currentUser) return false; }
+                else { if (v.uid) return false; }
                 const matchL = window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
                 const matchT = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
                 const matchS = search === "" || v.word.toLowerCase().includes(search) || (v.reading && v.reading.toLowerCase().includes(search)) || v.meaning.toLowerCase().includes(search);
                 return matchL && matchT && matchS;
             });
-
             filtered.sort((a,b) => {
                 const lA = LESSON_ORDER.indexOf(a.lesson), lB = LESSON_ORDER.indexOf(b.lesson);
                 if(lA !== lB) return lA - lB;
                 const tA = a.createdAt?.seconds || 0, tB = b.createdAt?.seconds || 0;
                 return window.sortOrder === 'desc' ? tB - tA : tA - tB;
             });
-
             document.getElementById('vocab-list').innerHTML = filtered.map(v => {
                 const prog = window.userProgress[v.id] || { wrongCount: 0 };
-                const isNote = v.lesson === '個人筆記';
                 return `<li class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100">
                     <div class="flex-1 pr-4 text-left">
                         <div class="flex gap-1.5 mb-1 flex-wrap text-[9px] font-black uppercase">
-                            <span class="${isNote?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span>
+                            <span class="${v.lesson==='個人筆記'?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span>
                             <span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span>
                             <span class="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-md">錯 ${prog.wrongCount}</span>
                         </div>
                         <div class="text-xl font-bold">${v.word}${v.reading?`<span class="text-xs text-slate-400 ml-1">【${v.reading}】</span>`:''}</div>
                         <div class="text-slate-500 text-xs mt-1 font-bold">${v.meaning}</div>
                     </div>
-                    <div class="flex gap-1">
-                        <button onclick="window.speakAction('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl">🔊</button>
-                        <button onclick="window.deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200">✕</button>
-                    </div>
+                    <div class="flex gap-1"><button onclick="window.speakAction('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl">🔊</button><button onclick="window.deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200">✕</button></div>
                 </li>`;
             }).join('');
         };
 
-        // --- 儲存邏輯 ---
         window.submitNewWord = async () => {
             const w = document.getElementById('word').value.trim(), r = document.getElementById('reading').value.trim(), m = document.getElementById('meaning').value.trim();
-            if (!w || !m) return alert("請填寫內容");
+            if (!w || !m) return alert("內容不完整");
             const data = { word: w, reading: r, meaning: m, lesson: window.selectedNewLesson, category: window.selectedNewCat, createdAt: new Date() };
             if (window.selectedNewLesson === '個人筆記') data.uid = currentUser;
             await addDoc(vocabsCol, data);
@@ -246,7 +281,7 @@
             window.showToast("✅ 已儲存");
         };
 
-        // --- 初始化與基礎函式 ---
+        // --- 基礎邏輯與彈窗控制 ---
         window.renderTypeUI = () => {
             const container = document.getElementById('type-filter');
             const types = window.selectedLessons.includes('附錄') ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他'];
@@ -267,18 +302,44 @@
         window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.className = "show"; setTimeout(() => t.className = "", 2000); };
         window.deleteWord = async (id) => { if(confirm("確定刪除？")) await deleteDoc(doc(db, "vocabs", id)); };
         window.switchUser = (name) => { localStorage.setItem('jp_user_shared', name); location.reload(); };
-        window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join(''); };
-        const setupDraggable = () => { document.querySelectorAll('.no-scrollbar').forEach(el => { let isDown = false, startX, scrollLeft; el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; }; el.onmouseleave = () => isDown = false; el.onmouseup = () => isDown = false; el.onmousemove = (e) => { if(!isDown) return; e.preventDefault(); const dist = e.pageX - el.offsetLeft - startX; el.scrollLeft = scrollLeft - dist; }; }); };
+        window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
+        window.addNewUserAction = () => { const n = prompt("使用者:"); if(n && n.trim()){ const name = n.trim(); if(!userHistory.includes(name)) userHistory.unshift(name); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(name); } };
+        const setupDraggable = () => { document.querySelectorAll('.no-scrollbar').forEach(el => { let isDown = false, startX, scrollLeft; el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; }; el.onmouseleave = () => isDown = false; el.onmouseup = () => isDown = false; el.onmousemove = (e) => { if(!isDown) return; e.preventDefault(); const x = e.pageX - el.offsetLeft; const dist = x - startX; el.scrollLeft = scrollLeft - dist; }; }); };
         
         let audioUnlocked = false;
         window.initAudioOnFirstClick = () => { if (!audioUnlocked) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } };
         window.speakAction = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.5; window.speechSynthesis.speak(u); };
 
+        // 測驗模組
+        window.toggleStats = (s) => document.getElementById('stats-modal').classList.toggle('hidden', !s);
+        window.showStatsModal = () => { const c = document.getElementById('devil-list'); const sorted = Object.values(window.userProgress).filter(p => p.wrongCount > 0).sort((a,b) => b.wrongCount - a.wrongCount).slice(0, 15); c.innerHTML = sorted.length ? sorted.map(p => { const v = window.vocabs.find(x => x.id === p.vocabId); return v ? `<div class="flex justify-between items-center border-b border-slate-100 py-3 font-bold"><div><span class="text-slate-800">${v.word}</span><span class="text-[9px] text-indigo-400 ml-2 uppercase">${v.lesson}</span></div><span class="text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full text-xs">錯 ${p.wrongCount} 次</span></div>` : ''; }).join('') : '<p class="text-center py-8">尚無紀錄</p>'; window.toggleStats(true); };
+        window.openQuizSetup = () => { 
+            const pool = window.vocabs.filter(v => {
+                if (v.lesson === '個人筆記') return v.uid === currentUser && (window.currentBook === 'note');
+                else return !v.uid && (window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson));
+            });
+            if(!pool.length) return alert("範圍內沒有單字可供測試");
+            window.quizPool = pool; document.getElementById('quiz-overlay').classList.remove('hidden');
+            const stats = {}; pool.forEach(v => stats[v.lesson] = (stats[v.lesson] || 0) + 1);
+            document.getElementById('quiz-range-list').innerHTML = Object.entries(stats).map(([l, c]) => `<div class="bg-white/5 p-2 rounded-lg border border-white/10 flex justify-between items-center"><span class="font-bold text-xs">${l}</span><span class="text-indigo-300 text-xs">${c} 題</span></div>`).join('');
+        };
+        window.setQuizMode = (m) => { window.quizMode = m; const isS = m==='standard'; document.getElementById('modeStdBtn').className = isS?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border border-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300'; document.getElementById('modeHearBtn').className = !isS?'px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border border-indigo-600':'px-4 py-2 rounded-xl text-sm font-bold bg-slate-700 text-slate-300'; };
+        window.startQuiz = () => { window.remainingPool = [...window.quizPool].map(v => ({ v, w: Math.random() * (1 + (window.userProgress[v.id]?.wrongCount || 0) * 1.5) })).sort((a,b) => b.w - a.w).map(i => i.v); document.getElementById('quiz-setup').classList.add('hidden'); document.getElementById('quiz-content').classList.remove('hidden'); window.nextQuestion(); };
+        window.nextQuestion = () => { if (!window.remainingPool.length) return location.reload(); document.getElementById('quiz-card').classList.remove('is-flipped'); window.currentQuizWord = window.remainingPool.shift(); document.getElementById('quiz-progress-display').innerText = `題數：${window.quizPool.length - window.remainingPool.length} / ${window.quizPool.length}`; const isH = window.quizMode === 'hearing'; document.getElementById('q-meaning-front').innerText = isH ? '' : window.currentQuizWord.meaning; document.getElementById('hear-icon').classList.toggle('hidden', !isH); document.getElementById('q-word-answer').innerText = window.currentQuizWord.word; document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || ''; document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning; if(isH) setTimeout(() => { if(window.quizMode==='hearing') window.speakAction(window.currentQuizWord.word); }, 600); };
+        window.handleCardClick = (e) => { if(e.target.closest('button')) return; const card = document.getElementById('quiz-card'); card.classList.toggle('is-flipped'); if(card.classList.contains('is-flipped')) window.speakAction(window.currentQuizWord.word); };
+        window.playCurrentWord = (e) => { e.stopPropagation(); window.speakAction(window.currentQuizWord.word); };
+        window.quizPass = async () => { await updateProg(window.currentQuizWord.id, true); window.nextQuestion(); };
+        window.quizFail = async () => { await updateProg(window.currentQuizWord.id, false); window.nextQuestion(); };
+        const updateProg = async (id, correct) => { const docId = `${currentUser}_${id}`; const ex = window.userProgress[id] || { wrongCount: 0 }; await setDoc(doc(progressCol, docId), { uid: currentUser, vocabId: id, wrongCount: correct ? ex.wrongCount : (ex.wrongCount + 1), lastUpdate: new Date() }); };
+
+        window.toggleImport = (s) => document.getElementById('import-overlay').classList.toggle('hidden', !s);
+        window.startImport = async () => { const t = document.getElementById('import-text').value.trim(); if(!t) return; const batch = writeBatch(db); t.split('\n').forEach(line => { const [w, r, m, c, l] = line.split(',').map(s => s?.trim()); if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "n.", lesson: l || '未分類', createdAt: new Date() }); }); await batch.commit(); window.toggleImport(false); window.showToast("✅ 批量完成"); };
+
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); window.renderList(); });
         onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => { window.userProgress = {}; snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); }); window.renderList(); });
 
         window.renderUserHistory();
-        window.switchBook('note'); // 初始進入個人筆記
+        window.switchBook(1); // 預設進入第一冊
         window.renderNewLessonUI();
         window.renderNewCategoryUI();
     </script>
