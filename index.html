@@ -124,12 +124,6 @@
         </div>
     </div>
 
-    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[80vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
-    </div>
-    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
-        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight uppercase">批量匯入</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
-    </div>
     <div id="edit-modal" class="fixed inset-0 z-[350] modal-overlay hidden flex flex-col items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
             <h2 class="text-xl font-black mb-6 border-b pb-4 text-center text-indigo-600 uppercase tracking-tighter">編輯單語</h2>
@@ -144,6 +138,12 @@
             </div>
         </div>
     </div>
+    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[80vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
+    </div>
+    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
+        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight uppercase">批量匯入</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -155,9 +155,9 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
+        // 全域狀態
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
-        window.currentBook = 1; window.newWordBook = 1; 
-        window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
+        window.currentBook = 1; window.newWordBook = 1; window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
         window.sortOrder = 'desc'; window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
@@ -165,46 +165,52 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 翻譯引擎 5.0：教材級時間與量詞對照 ---
+        // --- 🚀 終極量詞與單位字典 (專為《大家的日本語》優化) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
 
-            // 📍 數字與時間絕對字典 (針對教材常見純假名優化)
-            const timeLibrary = {
+            const unitLibrary = {
+                // 1. 時刻 (Time)
                 "いちじ": ["1點", "一時"], "にじ": ["2點", "二時"], "さんじ": ["3點", "三時"], "よじ": ["4點", "四時"],
                 "ごじ": ["5點", "五時"], "ろくじ": ["6點", "六時"], "しちじ": ["7點", "七時"], "はちじ": ["8點", "八時"],
                 "くじ": ["9點", "九時"], "じゅうじ": ["10點", "十時"], "じゅういちじ": ["11點", "十一時"], "じゅうにじ": ["12點", "十二時"],
                 "なんじ": ["幾點", "何時"], "いっぷん": ["1分", "一分"], "さんぷん": ["3分", "三分"], "はっぷん": ["8分", "八分"],
-                "なんぷん": ["幾分", "何分"], "はん": ["半", "半"], "まいしゅう": ["每週", "毎週"], "こんしゅう": ["這星期", "今週"],
-                "せんしゅう": ["上星期", "先週"], "らいしゅう": ["下星期", "来週"], "さらいしゅう": ["下下星期", "再来週"],
-                "まいつき": ["每個月", "毎月"], "こんげつ": ["這個月", "今月"], "せんげつ": ["上個月", "先月"],
-                "らいげつ": ["下個月", "来月"], "さらいげつ": ["下下個月", "再来月"], "まいねん": ["每年", "每年"],
-                "きのうのばん": ["昨天晚上", "昨日の晩"], "きょうのばん": ["今天晚上", "今日の晩"], "まいあさ": ["每天早上", "毎朝"],
-                "なんようび": ["星期幾", "何曜日"], "きんようび": ["星期五", "金曜日"], "せんせんげつ": ["上上個月", "先々月"]
+                "じゅっぷん": ["10分", "十分"], "なんぷん": ["幾分", "何分"], "はん": ["半", "半"],
+                // 2. 期間 (Duration)
+                "いちじかん": ["1小時", "一時間"], "なんじかん": ["幾小時", "何時間"],
+                "いっぷんかん": ["1分鐘", "一分間"], "なんぷんかん": ["幾分鐘", "何分間"],
+                "いちにち": ["1天/一號", "一日"], "なんにち": ["幾天/幾號", "何日"],
+                "いっしゅうかん": ["1星期", "一週間"], "なんしゅうかん": ["幾星期", "何週間"],
+                "いっかげつ": ["1個月", "一ヶ月"], "なにかげつ": ["幾個月", "何ヶ月"],
+                "いちねんかん": ["1年", "一年間"], "なんねん": ["幾年", "何年"],
+                // 3. 日期與週
+                "げつようび": ["星期一", "月曜日"], "かようび": ["星期二", "火曜日"], "すいようび": ["星期三", "水曜日"],
+                "もくようび": ["星期四", "木曜日"], "きんようび": ["星期五", "金曜日"], "どようび": ["星期六", "土曜日"], "にちようび": ["星期日", "日曜日"],
+                "なんようび": ["星期幾", "何曜日"],
+                "こんしゅう": ["這星期", "今週"], "せんしゅう": ["上星期", "先週"], "らいしゅう": ["下星期", "来週"],
+                "こんげつ": ["這個月", "今月"], "せんげつ": ["上個月", "先月"], "らいげつ": ["下個月", "来月"],
+                "ことし": ["今年", "今年"], "きょねん": ["去年", "去年"], "らいねん": ["明年", "来年"]
             };
 
             const cleanW = w.toLowerCase().replace(/\s+/g, '');
-            if(timeLibrary[cleanW]) {
-                document.getElementById('meaning').value = timeLibrary[cleanW][0];
-                document.getElementById('reading').value = timeLibrary[cleanW][1];
+            if(unitLibrary[cleanW]) {
+                document.getElementById('meaning').value = unitLibrary[cleanW][0];
+                document.getElementById('reading').value = unitLibrary[cleanW][1];
                 return;
             }
 
             try {
-                // 發送翻譯請求，附加 rm=dt 獲取備選漢字
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
                 const res = await fetch(url); const data = await res.json();
                 if(data && data[0] && data[0][0]) {
                     let resM = data[0][0][0];
-                    // 針對 Google 常見發音誤判進行「關鍵字過濾」
-                    if(resM.includes("多麼") || resM.includes("掌握") || resM.includes("老師") || resM.includes("淺泉") || resM.includes("橫幅")) {
-                        if(w.includes("しゅう")) resM = "週/星期";
-                        if(w.includes("じ")) resM = "時/點";
+                    // 關鍵字補償：防止 AI 將時間詞翻成奇怪的名詞
+                    if(resM.includes("掌握") || resM.includes("橫幅") || resM.includes("一次")) {
+                        if(w.endsWith("じ")) resM = "點";
+                        if(w.endsWith("しゅう")) resM = "週/星期";
                     }
                     document.getElementById('meaning').value = resM;
-
-                    // 深度漢字提取
                     let sugK = data[0][1] ? data[0][1][3] : "";
                     if (!sugK && data[5] && data[5][0] && data[5][0][2] && data[5][0][2][0]) sugK = data[5][0][2][0][0];
                     if (sugK && sugK !== w && !/[a-zA-Z]/.test(sugK)) document.getElementById('reading').value = sugK;
