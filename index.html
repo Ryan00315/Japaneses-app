@@ -62,7 +62,6 @@
 
     <div class="max-w-md mx-auto p-4">
         <button onclick="document.getElementById('input-section').classList.toggle('show'); window.fixScroll();" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full active:scale-95 transition-all shadow-sm">＋ 新增單語</button>
-        
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all overflow-hidden text-center">
              <div class="grid grid-cols-2 gap-3 mb-4 text-left">
                 <input id="word" type="text" placeholder="單語 (日文)" onfocus="window.fixScroll()" onkeydown="if(event.key==='Enter') { window.autoTranslate(); this.blur(); }" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
@@ -132,7 +131,7 @@
     </div>
     <div id="edit-modal" class="fixed inset-0 z-[350] modal-overlay hidden flex flex-col items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h2 class="text-xl font-black mb-6 border-b pb-4 text-center text-indigo-600 uppercase tracking-tighter">編輯單語</h2>
+            <h2 class="text-xl font-black mb-6 border-b pb-4 text-center text-indigo-600 uppercase">編輯單語</h2>
             <div class="space-y-4">
                 <input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
@@ -155,7 +154,6 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
-        // 全域狀態
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
@@ -166,42 +164,41 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 終極量詞與單位字典 6.0：鎖定「4月、日期、時間」 ---
+        // --- 🚀 終極阿拉伯數字量詞字典 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
 
-            const unitLibrary = {
+            const arabicLibrary = {
                 // 月份 (1-12月)
-                "いちがつ": ["1月", "一月"], "にがつ": ["2月", "二月"], "さんがつ": ["3月", "三月"], "しがつ": ["4月", "四月"],
-                "ごがつ": ["5月", "五月"], "ろくがつ": ["6月", "六月"], "しちがつ": ["7月", "七月"], "はちがつ": ["8月", "八月"],
-                "くがつ": ["9月", "九月"], "じゅうがつ": ["10月", "十月"], "じゅういちがつ": ["11月", "十一月"], "じゅうにがつ": ["12月", "十二月"],
-                "なんがつ": ["幾月", "何月"],
-                // 日期 (1-31日)
-                "ついたち": ["1號", "一日"], "ふつか": ["2號", "二日"], "みっか": ["3號", "三日"], "よっか": ["4號", "四日"],
-                "いつか": ["5號", "五日"], "むいか": ["6號", "六日"], "なのか": ["7號", "七日"], "ようか": ["8號", "八日"],
-                "ここのか": ["9號", "九日"], "とおか": ["10號", "十日"], "じゅうよっか": ["14號", "十四日"], "はつか": ["20號", "二十日"],
-                "にじゅうよっか": ["24號", "二十四日"],
-                // 分鐘 (時刻 & 期間)
-                "いっぷん": ["1分", "一分"], "にふん": ["2分", "二分"], "さんぷん": ["3分", "三分"], "よんぷん": ["4分", "四分"],
-                "ごふん": ["5分", "五分"], "ろっぷん": ["6分", "六分"], "ななふん": ["7分", "七分"], "はっぷん": ["8分", "八分"],
-                "きゅうふん": ["9分", "九分"], "じゅっぷん": ["10分", "十分"], "なんぷん": ["幾分", "何分"],
+                "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"],
+                "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"],
+                "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅう二がつ": ["12月", "12月"],
+                // 日期 (1-10, 14, 20, 24)
+                "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"],
+                "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"],
+                "こ心のか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅうよっか": ["14號", "14日"], "はつか": ["20號", "20日"], "にじゅうよっか": ["24號", "24日"],
+                // 時間 (1-12時)
+                "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"],
+                "ごじ": ["5點", "5時"], "ろくじ": ["6點", "6時"], "しちじ": ["7點", "7時"], "はちじ": ["8點", "8時"],
+                "くじ": ["9點", "9時"], "じゅうじ": ["10點", "10時"], "じゅういちじ": ["11點", "11時"], "じゅうにじ": ["12點", "12時"],
+                // 分鐘 (1-10分)
+                "いっぷん": ["1分", "1分"], "にふん": ["2分", "2分"], "さんぷん": ["3分", "3分"], "よんぷん": ["4分", "4分"],
+                "ごふん": ["5分", "5分"], "ろっぷん": ["6分", "6分"], "ななふん": ["7分", "7分"], "はっぷん": ["8分", "8分"],
+                "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"],
                 // 期間
-                "いちじかん": ["1小時", "一時間"], "にじかん": ["2小時", "二時間"], "なんじかん": ["幾小時", "何時間"],
-                "いっしゅうかん": ["1星期", "一週間"], "いっかげつ": ["1個月", "一ヶ月"], "いちねんかん": ["1年", "一年間"],
-                // 週與星期
-                "げつようび": ["星期一", "月曜日"], "かようび": ["星期二", "火曜日"], "すいようび": ["星期三", "水曜日"],
-                "もくようび": ["星期四", "木曜日"], "きんようび": ["星期五", "金曜日"], "どようび": ["星期六", "土曜日"], "にちようび": ["星期日", "日曜日"],
-                "こんしゅう": ["這星期", "今週"], "せんしゅう": ["上星期", "先週"], "らいしゅう": ["下星期", "来週"], "せんせんしゅう": ["上上星期", "先々週"],
-                "こんげつ": ["這個月", "今月"], "せんげつ": ["上個月", "先月"], "らいげつ": ["下個月", "来月"], "せんせんげつ": ["上上個月", "先々月"],
-                "ことし": ["今年", "今年"], "きょねん": ["去年", "去年"], "らいねん": ["明年", "来年"],
-                "いちじ": ["1點", "一時"], "にじ": ["2點", "二時"], "なんじ": ["幾點", "何時"], "はん": ["半", "半"]
+                "いちじかん": ["1小時", "1時間"], "にじかん": ["2小時", "2時間"], "いっぷんかん": ["1分鐘", "1分間"],
+                "いっしゅうかん": ["1星期", "1週間"], "いっかげつ": ["1個月", "1ヶ月"], "いちねんかん": ["1年", "1年間"],
+                // 常規時間詞
+                "まいしゅう": ["每週", "毎週"], "こんしゅう": ["這星期", "今週"], "せんしゅう": ["上星期", "先週"],
+                "らいしゅう": ["下星期", "来週"], "さらいしゅう": ["下下星期", "再来週"],
+                "まいあさ": ["每天早上", "毎朝"], "まいばん": ["每天晚上", "毎晩"], "まいにち": ["每天", "毎日"]
             };
 
             const cleanW = w.toLowerCase().replace(/\s+/g, '');
-            if(unitLibrary[cleanW]) {
-                document.getElementById('meaning').value = unitLibrary[cleanW][0];
-                document.getElementById('reading').value = unitLibrary[cleanW][1];
+            if(arabicLibrary[cleanW]) {
+                document.getElementById('meaning').value = arabicLibrary[cleanW][0];
+                document.getElementById('reading').value = arabicLibrary[arabicLibrary[cleanW][1] ? cleanW : ""] ? arabicLibrary[cleanW][1] : "";
                 return;
             }
 
@@ -210,9 +207,8 @@
                 const res = await fetch(url); const data = await res.json();
                 if(data && data[0] && data[0][0]) {
                     let resM = data[0][0][0];
-                    if(resM.includes("志賀") || resM.includes("掌握") || resM.includes("橫幅") || resM.includes("一次") || resM.includes("尼芬")) {
-                        if(w.endsWith("がつ")) resM = "月";
-                        if(w.endsWith("にち")) resM = "日";
+                    if(resM.includes("掌握") || resM.includes("橫幅") || resM.includes("一次") || resM.includes("志賀")) {
+                        if(w.endsWith("じ")) resM = "點";
                     }
                     document.getElementById('meaning').value = resM;
                     let sugK = data[0][1] ? data[0][1][3] : "";
