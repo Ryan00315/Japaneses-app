@@ -62,6 +62,7 @@
 
     <div class="max-w-md mx-auto p-4">
         <button onclick="document.getElementById('input-section').classList.toggle('show'); window.fixScroll();" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full active:scale-95 transition-all shadow-sm">＋ 新增單語</button>
+        
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all overflow-hidden text-center">
              <div class="grid grid-cols-2 gap-3 mb-4 text-left">
                 <input id="word" type="text" placeholder="單語 (日文)" onfocus="window.fixScroll()" onkeydown="if(event.key==='Enter') { window.autoTranslate(); this.blur(); }" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
@@ -154,6 +155,7 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
+        // 全域狀態
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
@@ -164,7 +166,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 終極阿拉伯數字量詞字典 ---
+        // --- 🚀 終極阿拉伯數字量詞字典 7.0：修正「じゅうしちにち = 17號」 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
@@ -173,11 +175,12 @@
                 // 月份 (1-12月)
                 "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"],
                 "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"],
-                "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅう二がつ": ["12月", "12月"],
-                // 日期 (1-10, 14, 20, 24)
+                "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"],
+                // 日期 (重點修正)
                 "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"],
                 "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"],
-                "こ心のか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅうよっか": ["14號", "14日"], "はつか": ["20號", "20日"], "にじゅうよっか": ["24號", "24日"],
+                "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅうよっか": ["14號", "14日"], 
+                "じゅうしちにち": ["17號", "17日"], "はつか": ["20號", "20日"], "にじゅうよっか": ["24號", "24日"], "なんにち": ["幾號", "何日"],
                 // 時間 (1-12時)
                 "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"],
                 "ごじ": ["5點", "5時"], "ろくじ": ["6點", "6時"], "しちじ": ["7點", "7時"], "はちじ": ["8點", "8時"],
@@ -188,17 +191,13 @@
                 "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"],
                 // 期間
                 "いちじかん": ["1小時", "1時間"], "にじかん": ["2小時", "2時間"], "いっぷんかん": ["1分鐘", "1分間"],
-                "いっしゅうかん": ["1星期", "1週間"], "いっかげつ": ["1個月", "1ヶ月"], "いちねんかん": ["1年", "1年間"],
-                // 常規時間詞
-                "まいしゅう": ["每週", "毎週"], "こんしゅう": ["這星期", "今週"], "せんしゅう": ["上星期", "先週"],
-                "らいしゅう": ["下星期", "来週"], "さらいしゅう": ["下下星期", "再来週"],
-                "まいあさ": ["每天早上", "毎朝"], "まいばん": ["每天晚上", "毎晩"], "まいにち": ["每天", "毎日"]
+                "いっしゅうかん": ["1星期", "1週間"], "いっかげつ": ["1個月", "1個月"], "いちねんかん": ["1年", "1年間"]
             };
 
             const cleanW = w.toLowerCase().replace(/\s+/g, '');
             if(arabicLibrary[cleanW]) {
                 document.getElementById('meaning').value = arabicLibrary[cleanW][0];
-                document.getElementById('reading').value = arabicLibrary[arabicLibrary[cleanW][1] ? cleanW : ""] ? arabicLibrary[cleanW][1] : "";
+                document.getElementById('reading').value = arabicLibrary[cleanW][1];
                 return;
             }
 
@@ -317,12 +316,6 @@
         window.deleteWord = async (id) => { if(confirm("確定刪除？")) await deleteDoc(doc(vocabsCol, id)); };
         window.openEditAction = (id) => { const v = window.vocabs.find(x => x.id === id); if(!v) return; window.currentEditId = id; document.getElementById('edit-word').value = v.word; document.getElementById('edit-reading').value = v.reading || ""; document.getElementById('edit-meaning').value = v.meaning; const idx = LESSON_ORDER.indexOf(v.lesson); window.editWordBook = (idx >= 0 && idx <= 15) ? 1 : 2; window.selectedEditLesson = v.lesson; window.selectedEditCat = v.category || (v.lesson==='附錄'?'數字':'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); document.getElementById('edit-modal').classList.remove('hidden'); };
         window.saveWordEdit = async () => { await updateDoc(doc(db, "vocabs", window.currentEditId), { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat }); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 已更新"); };
-        window.setEditBook = (b) => { window.editWordBook = b; window.selectedEditLesson = (b===1?'附錄':'L13'); window.selectedEditCat = (b===1?'數字':'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
-        window.renderEditLessonUI = () => { const c = document.getElementById('edit-lesson-container'); c.innerHTML = BOOK_MAP[window.editWordBook].map(l => `<button onclick="window.setEditLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedEditLesson===l?'active-edit-cat text-white':'bg-white'}">${l}</button>`).join(''); setupDraggable(); };
-        window.setEditLesson = (l) => { window.selectedEditLesson = l; window.selectedEditCat = (l === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
-        window.setEditCategory = (cat) => { window.selectedEditCat = cat; if (['數字', '時間', '量詞', '期間'].includes(cat)) { window.editWordBook = 1; window.selectedEditLesson = '附錄'; } else if(window.selectedEditLesson === '附錄') window.selectedEditLesson = '未分類'; window.renderEditLessonUI(); window.renderEditCategoryUI(); };
-        window.renderEditCategoryUI = () => { const container = document.getElementById('edit-category-picker'); if(!container) return; const types = window.selectedEditLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setEditCategory('${t}')" class="edit-cat-btn ls-btn-style border px-3 py-1 rounded-lg ${window.selectedEditCat === t ? 'active-edit-cat text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
-
         const setupDraggable = () => { document.querySelectorAll('.no-scrollbar').forEach(el => { let isDown = false, startX, scrollLeft; el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; }; el.onmouseleave = () => isDown = false; el.onmouseup = () => isDown = false; el.onmousemove = (e) => { if(!isDown) return; e.preventDefault(); const x = e.pageX - el.offsetLeft; const dist = x - startX; el.scrollLeft = scrollLeft - dist; }; }); };
         let audioUnlocked = false;
         window.initAudioOnFirstClick = () => { if (!audioUnlocked) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } };
