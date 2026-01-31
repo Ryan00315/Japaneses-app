@@ -65,11 +65,11 @@
         
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all overflow-hidden text-center">
              <div class="grid grid-cols-2 gap-3 mb-4 text-left">
-                <input id="word" type="text" placeholder="單語 (日文)" onfocus="window.fixScroll()" onkeydown="if(event.key==='Enter') { window.autoTranslate(); this.blur(); }" onblur="window.fixScroll()" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-                <input id="reading" type="text" placeholder="漢字" onfocus="window.fixScroll()" onblur="window.fixScroll()" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
+                <input id="word" type="text" placeholder="單語 (日文)" onfocus="this.scrollIntoView({behavior:'smooth', block:'start'})" onkeydown="if(event.key==='Enter') { window.autoTranslate(); this.blur(); }" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
+                <input id="reading" type="text" placeholder="漢字" onfocus="this.scrollIntoView({behavior:'smooth', block:'start'})" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
             </div>
             <div class="relative mb-4 text-left">
-                <input id="meaning" type="text" placeholder="中文意思" onfocus="window.fixScroll()" onblur="window.fixScroll()" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
+                <input id="meaning" type="text" placeholder="中文意思" onfocus="this.scrollIntoView({behavior:'smooth', block:'start'})" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
                 <button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[11px] px-3 rounded-xl border border-slate-200 font-bold text-slate-500">👉 翻譯(漢字、中文)</button>
             </div>
             <div class="flex gap-2 mb-3">
@@ -168,25 +168,6 @@
         
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
-
-        // --- 深度修復：手機輸入位置強制捲動至面板頂部 ---
-        window.fixScroll = () => {
-            // 使用 setTimeout 確保鍵盤收回後視窗尺寸恢復
-            setTimeout(() => {
-                const el = document.getElementById('input-section');
-                if(el && el.classList.contains('show')) {
-                    // 對齊新增面板的最頂部
-                    const headerHeight = 165; 
-                    const elementPosition = el.getBoundingClientRect().top;
-                    const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
-
-                    window.scrollTo({
-                        top: offsetPosition,
-                        behavior: 'smooth'
-                    });
-                }
-            }, 300);
-        };
 
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
