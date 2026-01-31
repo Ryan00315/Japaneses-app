@@ -86,7 +86,7 @@
 
     <div id="quiz-overlay" class="fixed inset-0 z-[400] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">
         <div id="quiz-setup" class="w-full max-w-md">
-            <h2 class="text-2xl font-black mb-6 tracking-tighter uppercase">測試範圍設定</h2>
+            <h2 class="text-2xl font-black mb-6 tracking-tighter uppercase">測試設定</h2>
             <div id="quiz-range-info" class="bg-slate-800 p-6 rounded-[32px] mb-8 text-left border border-white/10 text-xs"><div id="quiz-range-list" class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto no-scrollbar py-2"></div></div>
             <div class="flex gap-2 justify-center mb-6">
                 <button id="modeStdBtn" onclick="window.setQuizMode('standard')" class="px-4 py-2 rounded-xl text-sm font-bold bg-indigo-600 border border-indigo-600">單字卡</button>
@@ -126,7 +126,7 @@
 
     <div id="edit-modal" class="fixed inset-0 z-[350] modal-overlay hidden flex flex-col items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h2 class="text-xl font-black mb-6 border-b pb-4 text-center text-indigo-600 uppercase tracking-tighter">編輯單語</h2>
+            <h2 class="text-xl font-black mb-6 border-b pb-4 text-center text-indigo-600 uppercase">編輯單語</h2>
             <div class="space-y-4">
                 <input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
@@ -167,22 +167,25 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 功能核心：加固翻譯防線 ---
+        // --- 🚀 翻譯大師版：絕對字典 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
 
-            // 📍 絕對校正字典 (跳過 AI，直接回傳)
+            // 📍 核心校正字典：優先權最高
             const fixedLibrary = {
-                "きんようび": ["星期五", "金曜日"],
-                "なんようび": ["星期幾", "何曜日"],
+                "きのうのばん": ["昨天晚上", "昨日の晩"],
+                "きのうのよる": ["昨天晚上", "昨日の夜"],
+                "きょうのばん": ["今天晚上", "今日の晩"],
+                "きょうのよる": ["今天晚上", "今日の夜"],
+                "あさってのあさ": ["後天早上", "明後日の朝"],
+                "おとといのばん": ["前天晚上", "一昨日の晩"],
                 "まいあさ": ["每天早上", "毎朝"],
                 "まいばん": ["每天晚上", "毎晩"],
                 "まいにち": ["每天", "毎日"],
-                "こんばん": ["今天晚上", "今晩"],
-                "あさってのあさ": ["後天早上", "明後日の朝"],
-                "おとといのばん": ["前天晚上", "一昨日の晩"],
-                "おとといのよる": ["前天晚上", "一昨日の夜"]
+                "きんようび": ["星期五", "金曜日"],
+                "なんようび": ["星期幾", "何曜日"],
+                "こんばん": ["今天晚上", "今晩"]
             };
 
             const cleanW = w.toLowerCase().replace(/\s+/g, '');
@@ -197,7 +200,6 @@
                 const res = await fetch(url); const data = await res.json();
                 if(data && data[0] && data[0][0]) {
                     let resultMeaning = data[0][0][0];
-                    // 防止 AI 進入感嘆句模式
                     if(resultMeaning.includes("多麼")) {
                         if(w.includes("ようび")) resultMeaning = "星期幾";
                     }
@@ -209,7 +211,7 @@
             } catch(e) {}
         };
 
-        // --- 修正手機捲動與佈局 ---
+        // --- 修正手機捲動：偏移 280px ---
         window.fixScroll = () => {
             setTimeout(() => {
                 const section = document.getElementById('input-section');
@@ -292,12 +294,10 @@
         window.quizPass = async () => { await updateProg(window.currentQuizWord.id, true); window.nextQuestion(); };
         window.quizFail = async () => { await updateProg(window.currentQuizWord.id, false); window.nextQuestion(); };
         const updateProg = async (id, correct) => { const docId = `${currentUser}_${id}`; const ex = window.userProgress[id] || { wrongCount: 0 }; await setDoc(doc(progressCol, docId), { uid: currentUser, vocabId: id, wrongCount: correct ? ex.wrongCount : (ex.wrongCount + 1), lastUpdate: new Date() }); };
-
         window.toggleStats = (s) => document.getElementById('stats-modal').classList.toggle('hidden', !s);
         window.showStatsModal = () => { const c = document.getElementById('devil-list'); const sorted = Object.values(window.userProgress).filter(p => p.wrongCount > 0).sort((a,b) => b.wrongCount - a.wrongCount).slice(0, 15); c.innerHTML = sorted.length ? sorted.map(p => { const v = window.vocabs.find(x => x.id === p.vocabId); return v ? `<div class="flex justify-between items-center border-b border-slate-100 py-3 font-bold"><div><span class="text-slate-800">${v.word}</span><span class="text-[9px] text-indigo-400 ml-2 uppercase">${v.lesson}</span></div><span class="text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full text-xs">錯 ${p.wrongCount} 次</span></div>` : ''; }).join('') : '<p class="text-center py-8">尚無紀錄</p>'; window.toggleStats(true); };
         window.toggleImport = (s) => document.getElementById('import-overlay').classList.toggle('hidden', !s);
         window.startImport = async () => { const t = document.getElementById('import-text').value.trim(); if(!t) return; const batch = writeBatch(db); t.split('\n').forEach(line => { const [w, r, m, c, l] = line.split(',').map(s => s?.trim()); if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "n.", lesson: l || '未分類', createdAt: new Date() }); }); await batch.commit(); window.toggleImport(false); window.showToast("✅ 已同步匯入"); };
-
         window.renderTypeUI = () => { const container = document.getElementById('type-filter'); if(!container) return; const types = window.selectedLessons.includes('附錄') ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.toggleType('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedTypes.includes(t)?'type-active text-white':'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
         window.renderNewCategoryUI = () => { const container = document.getElementById('new-category-picker'); if(!container) return; const types = window.selectedNewLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setNewCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedNewCat === t ? 'active-new-cat text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
         window.toggleLesson = (l) => { const i = window.selectedLessons.indexOf(l); if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
