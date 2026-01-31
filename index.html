@@ -62,7 +62,6 @@
 
     <div class="max-w-md mx-auto p-4">
         <button onclick="document.getElementById('input-section').classList.toggle('show'); window.fixScroll();" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full active:scale-95 transition-all shadow-sm">＋ 新增單語</button>
-        
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all overflow-hidden text-center">
              <div class="grid grid-cols-2 gap-3 mb-4 text-left">
                 <input id="word" type="text" placeholder="單語 (日文)" onfocus="window.fixScroll()" onkeydown="if(event.key==='Enter') { window.autoTranslate(); this.blur(); }" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
@@ -156,29 +155,38 @@
         const progressCol = collection(db, "user_progress");
 
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
-        window.currentBook = 1; window.newWordBook = 1; window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
-        window.sortOrder = 'desc'; window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
+        window.currentBook = 1; window.newWordBook = 1; 
+        window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
+        window.sortOrder = 'desc'; 
+        window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
         
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 核心：翻譯防護字典 ---
+        // --- 🚀 終極翻譯加固字典 (大家的日本語專用) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
 
             const fixedLibrary = {
-                "まいしゅう": ["每週", "毎週"], "こんしゅう": ["這星期", "今週"], "せんしゅう": ["上星期", "先週"],
-                "らいしゅう": ["下星期", "来週"], "さらいしゅう": ["下下星期", "再来週"],
-                "まいつき": ["每個月", "毎月"], "こんげつ": ["這個月", "今月"], "せんげつ": ["上個月", "先月"],
-                "らいげつ": ["下個月", "来月"], "さらいげつ": ["下下個月", "再来月"],
-                "まいねん": ["每年", "毎年"], "ことし": ["今年", "今年"], "きょねん": ["去年", "去年"],
-                "らいねん": ["明年", "来年"], "さらいねん": ["後年", "再来年"],
-                "きんようび": ["星期五", "金曜日"], "なんようび": ["星期幾", "何曜日"],
+                // 週系列
+                "せんせんしゅう": ["上上星期", "先々週"], "せんしゅう": ["上星期", "先週"],
+                "こんしゅう": ["這星期", "今週"], "らいしゅう": ["下星期", "来週"],
+                "さらいしゅう": ["下下星期", "再来週"], "まいしゅう": ["每週", "毎週"],
+                // 月系列
+                "せんせんげつ": ["上上個月", "先々月"], "せんげつ": ["上個月", "先月"],
+                "こんげつ": ["這個月", "今月"], "らいげつ": ["下個月", "来月"],
+                "さらいげつ": ["下下個月", "再来月"], "まいつき": ["每個月", "毎月"],
+                // 年系列
+                "おととし": ["前年", "一昨年"], "きょねん": ["去年", "去年"],
+                "ことし": ["今年", "今年"], "らいねん": ["明年", "来年"],
+                "さらいねん": ["後年", "再来年"], "まいねん": ["每年", "毎年"],
+                // 其他時間詞
                 "きのうのばん": ["昨天晚上", "昨日の晩"], "きょうのばん": ["今天晚上", "今日の晩"],
                 "まいあさ": ["每天早上", "毎朝"], "まいばん": ["每天晚上", "毎晩"], "まいにち": ["每天", "毎日"],
+                "なんようび": ["星期幾", "何曜日"], "きんようび": ["星期五", "金曜日"],
                 "こんばん": ["今天晚上", "今晩"], "あさってのあさ": ["後天早上", "明後日の朝"]
             };
 
@@ -194,7 +202,7 @@
                 const res = await fetch(url); const data = await res.json();
                 if(data && data[0] && data[0][0]) {
                     let resM = data[0][0][0];
-                    if(resM.includes("多麼") || resM.includes("橫幅") || resM.includes("掌握") || resM.includes("老師")) {
+                    if(resM.includes("多麼") || resM.includes("橫幅") || resM.includes("掌握") || resM.includes("老師") || resM.includes("淺泉")) {
                         if(w.includes("しゅう")) resM = "週/星期";
                     }
                     document.getElementById('meaning').value = resM;
