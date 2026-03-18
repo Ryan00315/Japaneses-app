@@ -161,126 +161,200 @@
         const progressCol = collection(db, "user_progress");
 
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
-        window.currentBook = 1; window.newWordBook = 1; 
+        window.currentBook = 1; window.newWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
         window.sortOrder = 'desc'; window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
+        
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 智慧 AI 翻譯大腦 (只修邏輯，不修介面) ---
-        const smartBrain = {
-            "たんじょうび": ["誕生日", "生日"], "ついたち": ["1日", "1號"], "ふつか": ["2日", "2號/兩天"], "みっか": ["3日", "3號/三天"], "よっか": ["4日", "4號/四天"], "いつか": ["5日", "5號/五天"], "むいか": ["6日", "6號/六天"], "なのか": ["7日", "7號/七天"], "ようか": ["8日", "8號/八天"], "ここのか": ["9日", "9號/九天"], "とおか": ["10日", "10號/十天"],
-            "いちじ": ["1時", "1點"], "にじ": ["2時", "2點"], "さんじ": ["3時", "3點"], "よじ": ["4時", "4點"], "ごじ": ["5時", "5點"], "ろくじ": ["6時", "6點"], "しちじ": ["7時", "7點"], "はちじ": ["8時", "8點"], "くじ": ["9時", "9點"], "じゅうじ": ["10時", "10點"], "じゅういちじ": ["11時", "11點"], "じゅうにじ": ["12時", "12點"], "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"]
-        };
+        // --- 🚀 翻譯引擎 (17號, 阿拉伯數字化) ---
         window.autoTranslate = async () => {
-            const w = document.getElementById('word').value.trim().toLowerCase();
+            const w = document.getElementById('word').value.trim();
             if(!w) return;
-            if(smartBrain[w]) {
-                document.getElementById('reading').value = smartBrain[w][0];
-                document.getElementById('meaning').value = smartBrain[w][1];
-            } else {
-                // 如果是新單字，執行靜默分析邏輯
-                console.log("新單字分析中...");
-            }
+            const unitLibrary = {
+                "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"],
+                "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"],
+                "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"],
+                "じゅうさんにち": ["13號", "13日"], "じゅうよっか": ["14號", "14日"], "じゅうごにち": ["15號", "15日"], "じゅうろくにち": ["16號", "16日"],
+                "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"], "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"],
+                "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"], "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"],
+                "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"], "にじゅうしちにち": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"],
+                "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"],
+                "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"],
+                "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"],
+                "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"],
+                "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"],
+                "ごじ": ["5點", "5時"], "ろくじ": ["6點", "6時"], "しちじ": ["7點", "7時"], "はちじ": ["8點", "8時"],
+                "くじ": ["9點", "9時"], "じゅうじ": ["10點", "10時"], "じゅういちじ": ["11點", "11時"], "じゅうにじ": ["12點", "12時"],
+                "いっぷん": ["1分", "1分"], "にふん": ["2分", "2分"], "さんぷん": ["3分", "3分"], "よんぷん": ["4分", "4分"],
+                "ごふん": ["5分", "5分"], "ろっぷん": ["6分", "6分"], "ななふん": ["7分", "7分"], "はっぷん": ["8分", "8分"],
+                "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"]
+            };
+            const cleanW = w.toLowerCase().replace(/\s+/g, '');
+            if(unitLibrary[cleanW]) { document.getElementById('meaning').value = unitLibrary[cleanW][0]; document.getElementById('reading').value = unitLibrary[cleanW][1]; return; }
+            try {
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
+                const res = await fetch(url); const data = await res.json();
+                if(data && data[0] && data[0][0]) {
+                    let resM = data[0][0][0];
+                    if(resM.includes("掌握") || resM.includes("橫幅") || resM.includes("一次") || resM.includes("整天") || resM.includes("志賀")) {
+                        if(w.endsWith("じ")) resM = "點"; if(w.endsWith("にち")) resM = "號";
+                    }
+                    document.getElementById('meaning').value = resM;
+                    let sugK = data[0][1] ? data[0][1][3] : "";
+                    if (!sugK && data[5] && data[5][0] && data[5][0][2] && data[5][0][2][0]) sugK = data[5][0][2][0][0];
+                    if (sugK && sugK !== w && !/[a-zA-Z]/.test(sugK)) document.getElementById('reading').value = sugK;
+                    else document.getElementById('reading').value = "";
+                }
+            } catch(e) {}
         };
 
-        // --- 🚀 按鈕功能函式 (掛載到全域) ---
-        window.showStatsModal = () => document.getElementById('stats-modal').classList.remove('hidden');
-        window.toggleStats = (s) => document.getElementById('stats-modal').classList.toggle('hidden', !s);
-        window.toggleImport = (s) => document.getElementById('import-overlay').classList.toggle('hidden', !s);
-        window.openQuizSetup = () => {
-            const pool = window.vocabs.filter(v => (v.lesson !== '個人筆記' || v.uid === currentUser) && (window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson)));
-            if(!pool.length) return alert("範圍無單字"); window.quizPool = pool;
-            const stats = {}; pool.forEach(v => stats[v.lesson] = (stats[v.lesson] || 0) + 1);
-            document.getElementById('quiz-range-list').innerHTML = Object.entries(stats).map(([l,c])=>`<div class='bg-white/5 p-2 rounded flex justify-between text-[10px]'><span>${l}</span><span>${c}題</span></div>`).join('');
-            document.getElementById('quiz-overlay').classList.remove('hidden');
+        window.fixScroll = () => {
+            setTimeout(() => {
+                const section = document.getElementById('input-section');
+                if(section && section.classList.contains('show')) {
+                    const headerHeight = 280; 
+                    const elementPosition = section.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+                    window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                }
+            }, 300);
         };
 
-        window.startQuiz = () => { window.remainingPool = [...window.quizPool].sort(()=>Math.random()-0.5); document.getElementById('quiz-setup').classList.add('hidden'); document.getElementById('quiz-content').classList.remove('hidden'); window.nextQuestion(); };
-        window.nextQuestion = () => {
-            if(!window.remainingPool.length) return location.reload(); document.getElementById('quiz-card').classList.remove('is-flipped');
-            window.currentQuizWord = window.remainingPool.shift(); document.getElementById('quiz-progress-display').innerText = `剩：${window.remainingPool.length}題`;
-            document.getElementById('q-meaning-front').innerText = window.currentQuizWord.meaning;
-            document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
-            document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
-            document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
+        window.renderUserHistory = () => {
+            const list = document.getElementById('user-history-list');
+            list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`;
         };
 
-        // --- 🚀 UI 連動邏輯 (課數、分類) ---
-        window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b==='note'?['個人筆記']:[]); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
+        window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
         window.renderLessonUI = () => {
             const c = document.getElementById('lesson-filter-container');
-            if (window.currentBook === 'note') c.innerHTML = "";
-            else c.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style border px-4 py-1 rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join('');
             document.getElementById('book1-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`;
             document.getElementById('book2-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500'}`;
             document.getElementById('book-note-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook==='note'?'note-active text-white':'bg-white text-slate-500'}`;
-        };
-        window.toggleLesson = (l) => { const i = window.selectedLessons.indexOf(l); if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
-        window.renderTypeUI = () => {
-            const container = document.getElementById('type-filter');
-            const types = window.selectedLessons.includes('附錄') ? ['數字', '時間'] : ['n.', 'v.', 'adj.', '其他'];
-            container.innerHTML = types.map(t => `<button onclick="window.toggleType('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedTypes.includes(t)?'type-active text-white':'bg-white'}">${t}</button>`).join('');
-        };
-        window.toggleType = (t) => { const i = window.selectedTypes.indexOf(t); if(i>-1) window.selectedTypes.splice(i,1); else window.selectedTypes.push(t); window.renderTypeUI(); window.renderList(); };
-
-        // --- 🚀 使用者切換 ---
-        window.renderUserHistory = () => {
-            document.getElementById('user-history-list').innerHTML = userHistory.map(name => `
-                <button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>
-            `).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`;
-        };
-        window.switchUser = (n) => { localStorage.setItem('jp_user_shared', n); location.reload(); };
-        window.addNewUserAction = () => { const n = prompt("使用者名稱:"); if(n) { userHistory.unshift(n.trim()); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(n.trim()); } };
-
-        // --- 🚀 編輯功能歸位 ---
-        window.openEditAction = (id) => {
-            const v = window.vocabs.find(x => x.id === id); if(!v) return; window.currentEditId = id;
-            document.getElementById('edit-word').value = v.word; document.getElementById('edit-reading').value = v.reading||""; document.getElementById('edit-meaning').value = v.meaning;
-            window.editWordBook = v.lesson === '個人筆記' ? 'note' : 1; window.selectedEditLesson = v.lesson; window.selectedEditCat = v.category || 'n.';
-            window.renderEditLessonUI(); window.renderEditCategoryUI(); document.getElementById('edit-modal').classList.remove('hidden');
-        };
-        window.setEditBook = (b) => { window.editWordBook = b; window.selectedEditLesson = (b === 'note' ? '個人筆記' : '未分類'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
-        window.renderEditLessonUI = () => {
-            const container = document.getElementById('edit-lesson-container');
-            if(window.editWordBook === 'note') container.innerHTML = "";
-            else container.innerHTML = BOOK_MAP[window.editWordBook].map(l => `<button onclick="window.setEditLesson('${l}')" class="ls-btn-style border ${window.selectedEditLesson===l?'active-edit-cat text-white':'bg-white'}">${l}</button>`).join('');
-        };
-        window.setEditLesson = (l) => { window.selectedEditLesson = l; window.renderEditLessonUI(); window.renderEditCategoryUI(); };
-        window.renderEditCategoryUI = () => {
-            const container = document.getElementById('edit-category-picker'); const types = ['n.', 'v.', 'adj.', '其他'];
-            container.innerHTML = types.map(t => `<button onclick="window.setEditCategory('${t}')" class="ls-btn-style border ${window.selectedEditCat === t ? 'active-edit-cat text-white' : 'bg-white'}">${t}</button>`).join('');
-        };
-        window.setEditCategory = (c) => { window.selectedEditCat = c; window.renderEditCategoryUI(); };
-        window.saveWordEdit = async () => {
-            const data = { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat };
-            await updateDoc(doc(db, "vocabs", window.currentEditId), data); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 已更新");
+            if (window.currentBook === 'note') c.innerHTML = "";
+            else c.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join('');
+            setupDraggable();
         };
 
-        // --- 基礎渲染邏輯 ---
+        window.setNewBookTab = (b) => { window.newWordBook = b; window.selectedNewLesson = (b === 'note' ? '個人筆記' : (b === 1 ? '附錄' : 'L13')); window.selectedNewCat = (window.selectedNewLesson === '附錄' ? '數字' : 'n.'); window.renderNewLessonUI(); window.renderNewCategoryUI(); };
+        window.renderNewLessonUI = () => {
+            const c = document.getElementById('new-lesson-container'); const submitBtn = document.getElementById('submit-btn');
+            document.getElementById('new-book1-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook===1?'lesson-active text-white':'bg-white'}`;
+            document.getElementById('new-book2-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook===2?'lesson-active text-white':'bg-white'}`;
+            document.getElementById('new-note-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook==='note'?'note-active text-white':'bg-white'}`;
+            if (window.newWordBook === 'note') { c.innerHTML = ""; submitBtn.innerText = "儲存個人單字"; submitBtn.className = "w-3/4 mx-auto bg-orange-500 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm"; }
+            else { c.innerHTML = BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.setNewLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>`).join(''); submitBtn.innerText = "儲存到單字冊"; submitBtn.className = "w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm"; }
+            setupDraggable();
+        };
+
         window.renderList = () => {
-            const s = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = window.vocabs.filter(v => (v.lesson !== '個人筆記' || v.uid === currentUser) && (window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson)) && (s === "" || v.word.toLowerCase().includes(s) || v.meaning.toLowerCase().includes(s)));
-            document.getElementById('vocab-list').innerHTML = filtered.map(v => `<li class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100"><div class="flex-1 text-left"><div class="flex gap-1.5 mb-1"><span class="bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-md text-[9px] uppercase font-black">${v.lesson}</span></div><div class="text-xl font-bold">${v.word}${v.reading?`<span class="text-xs text-slate-400 ml-1">【${v.reading}】</span>`:''}</div><div class="text-slate-500 text-xs mt-1 font-bold">${v.meaning}</div></div><div class="flex gap-1"><button onclick="window.speakAction('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl">🔊</button><button onclick="window.openEditAction('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 rounded-full text-sm">✏️</button><button onclick="window.deleteWord('${v.id}')" class="w-10 h-10 text-slate-200 font-bold">✕</button></div></li>`).join('');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = window.vocabs.filter(v => {
+                if (v.lesson === '個人筆記') { if (v.uid !== currentUser) return false; } else { if (v.uid) return false; }
+                const matchL = window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
+                const matchT = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
+                const matchS = search === "" || v.word.toLowerCase().includes(search) || (v.reading && v.reading.toLowerCase().includes(search)) || v.meaning.toLowerCase().includes(search);
+                return matchL && matchT && matchS;
+            });
+            filtered.sort((a,b) => { const lA = LESSON_ORDER.indexOf(a.lesson), lB = LESSON_ORDER.indexOf(b.lesson); if(lA !== lB) return lA - lB; const tA = a.createdAt?.seconds || 0, tB = b.createdAt?.seconds || 0; return window.sortOrder === 'desc' ? tB - tA : tA - tB; });
+            document.getElementById('vocab-list').innerHTML = filtered.map(v => {
+                const prog = window.userProgress[v.id] || { wrongCount: 0 };
+                return `<li class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100">
+                    <div class="flex-1 pr-4 text-left">
+                        <div class="flex gap-1.5 mb-1 flex-wrap text-[9px] font-black uppercase"><span class="${v.lesson==='個人筆記'?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span><span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span><span class="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full text-[9px]">錯 ${prog.wrongCount}</span></div>
+                        <div class="text-xl font-bold">${v.word}${v.reading?`<span class="text-xs text-slate-400 ml-1">【${v.reading}】</span>`:''}</div>
+                        <div class="text-slate-500 text-xs mt-1 font-bold">${v.meaning}</div>
+                    </div>
+                    <div class="flex gap-1"><button onclick="window.speakAction('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl">🔊</button><button onclick="window.openEditAction('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 rounded-full text-sm">✏️</button><button onclick="window.deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-200">✕</button></div>
+                </li>`;
+            }).join('');
         };
-        window.setNewBookTab = (b) => { window.newWordBook = b; window.selectedNewLesson = b==='note'?'個人筆記':(b===1?'附錄':'L13'); window.renderNewLessonUI(); window.renderNewCategoryUI(); };
-        window.renderNewLessonUI = () => { document.getElementById('new-lesson-container').innerHTML = window.newWordBook==='note'?"":BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.setNewLesson('${l}')" class="ls-btn-style border ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>`).join(''); };
-        window.setNewLesson = (l) => { window.selectedNewLesson = l; window.renderNewLessonUI(); window.renderNewCategoryUI(); };
-        window.renderNewCategoryUI = () => { const types = window.selectedNewLesson === '附錄' ? ['數字', '時間'] : ['n.', 'v.', 'adj.', '其他']; document.getElementById('new-category-picker').innerHTML = types.map(t => `<button onclick="window.setNewCategory('${t}')" class="ls-btn-style border ${window.selectedNewCat===t?'active-new-cat text-white':'bg-white'}">${t}</button>`).join(''); };
+
+        window.submitNewWord = async () => {
+            const w = document.getElementById('word').value.trim(), r = document.getElementById('reading').value.trim(), m = document.getElementById('meaning').value.trim();
+            if (!w || !m) return alert("內容不完整");
+            const data = { word: w, reading: r, meaning: m, lesson: window.selectedNewLesson, category: window.selectedNewCat, createdAt: new Date() };
+            if (window.selectedNewLesson === '個人筆記') data.uid = currentUser;
+            await addDoc(vocabsCol, data); document.getElementById('word').value = document.getElementById('reading').value = document.getElementById('meaning').value = ""; window.showToast("✅ 已儲存");
+        };
+
+        window.openQuizSetup = () => { 
+            const pool = window.vocabs.filter(v => { if (v.lesson === '個人筆記') return v.uid === currentUser && (window.currentBook === 'note'); else return !v.uid && (window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson)); });
+            if(!pool.length) return alert("範圍內沒有單字"); window.quizPool = pool; document.getElementById('quiz-overlay').classList.remove('hidden'); const stats = {}; pool.forEach(v => stats[v.lesson] = (stats[v.lesson] || 0) + 1); document.getElementById('quiz-range-list').innerHTML = Object.entries(stats).map(([l, c]) => `<div class="bg-white/5 p-2 rounded-lg border border-white/10 flex justify-between items-center"><span class="font-bold text-xs">${l}</span><span class="text-indigo-300 text-xs">${c} 題</span></div>`).join('');
+        };
+        window.startQuiz = () => { window.remainingPool = [...window.quizPool].sort(() => Math.random() - 0.5); document.getElementById('spelling-input-area').classList.toggle('hidden', !document.getElementById('spelling-mode').checked); document.getElementById('quiz-setup').classList.add('hidden'); document.getElementById('quiz-content').classList.remove('hidden'); window.nextQuestion(); };
+        window.backToQuizSetup = () => { document.getElementById('quiz-content').classList.add('hidden'); document.getElementById('quiz-setup').classList.remove('hidden'); };
+        window.nextQuestion = () => { if (!window.remainingPool.length) return location.reload(); document.getElementById('quiz-card').classList.remove('is-flipped'); document.getElementById('spelling-input').value = ''; window.currentQuizWord = window.remainingPool.shift(); document.getElementById('quiz-progress-display').innerText = `剩：${window.remainingPool.length} 題`; const isH = window.quizMode === 'hearing'; document.getElementById('q-meaning-front').innerText = isH ? '' : window.currentQuizWord.meaning; document.getElementById('hear-icon').classList.toggle('hidden', !isH); document.getElementById('q-word-answer').innerText = window.currentQuizWord.word; document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || ''; document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning; if(isH) setTimeout(() => { if(window.quizMode==='hearing') window.speakAction(window.currentQuizWord.word); }, 600); if(document.getElementById('spelling-mode').checked) setTimeout(() => document.getElementById('spelling-input').focus(), 400); };
+        window.handleCardClick = (e) => { if(e.target.closest('button')) return; const card = document.getElementById('quiz-card'); card.classList.toggle('is-flipped'); if(card.classList.contains('is-flipped')) window.speakAction(window.currentQuizWord.word); };
+        window.playCurrentWord = (e) => { e.stopPropagation(); window.speakAction(window.currentQuizWord.word); };
+        window.quizPass = async () => { await updateProg(window.currentQuizWord.id, true); window.nextQuestion(); };
+        window.quizFail = async () => { await updateProg(window.currentQuizWord.id, false); window.nextQuestion(); };
+        const updateProg = async (id, correct) => { const docId = `${currentUser}_${id}`; const ex = window.userProgress[id] || { wrongCount: 0 }; await setDoc(doc(progressCol, docId), { uid: currentUser, vocabId: id, wrongCount: correct ? ex.wrongCount : (ex.wrongCount + 1), lastUpdate: new Date() }); };
+        window.toggleStats = (s) => document.getElementById('stats-modal').classList.toggle('hidden', !s);
+        window.showStatsModal = () => { const c = document.getElementById('devil-list'); const sorted = Object.values(window.userProgress).filter(p => p.wrongCount > 0).sort((a,b) => b.wrongCount - a.wrongCount).slice(0, 15); c.innerHTML = sorted.length ? sorted.map(p => { const v = window.vocabs.find(x => x.id === p.vocabId); return v ? `<div class="flex justify-between items-center border-b border-slate-100 py-3 font-bold"><div><span class="text-slate-800">${v.word}</span><span class="text-[9px] text-indigo-400 ml-2 uppercase">${v.lesson}</span></div><span class="text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full text-xs">錯 ${p.wrongCount} 次</span></div>` : ''; }).join('') : '<p class="text-center py-8">尚無紀錄</p>'; window.toggleStats(true); };
+        window.toggleImport = (s) => document.getElementById('import-overlay').classList.toggle('hidden', !s);
+        window.startImport = async () => { const t = document.getElementById('import-text').value.trim(); if(!t) return; const batch = writeBatch(db); t.split('\n').forEach(line => { const [w, r, m, c, l] = line.split(',').map(s => s?.trim()); if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "n.", lesson: l || '未分類', createdAt: new Date() }); }); await batch.commit(); window.toggleImport(false); window.showToast("✅ 已同步匯入"); };
+        window.renderTypeUI = () => { const container = document.getElementById('type-filter'); if(!container) return; const types = window.selectedLessons.includes('附錄') ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.toggleType('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedTypes.includes(t)?'type-active text-white':'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
+        window.renderNewCategoryUI = () => { const container = document.getElementById('new-category-picker'); if(!container) return; const types = window.selectedNewLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setNewCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedNewCat === t ? 'active-new-cat text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
+        window.toggleLesson = (l) => { const i = window.selectedLessons.indexOf(l); if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
+        window.toggleType = (t) => { const i = window.selectedTypes.indexOf(t); if(i>-1) window.selectedTypes.splice(i,1); else window.selectedTypes.push(t); window.renderTypeUI(); window.renderList(); };
+        window.setNewLesson = (l) => { window.selectedNewLesson = l; window.selectedNewCat = (l === '附錄' ? '數字' : 'n.'); window.renderNewLessonUI(); window.renderNewCategoryUI(); };
         window.setNewCategory = (c) => { window.selectedNewCat = c; window.renderNewCategoryUI(); };
-        window.submitNewWord = async () => { const w = document.getElementById('word').value.trim(), r = document.getElementById('reading').value.trim(), m = document.getElementById('meaning').value.trim(); if (!w || !m) return alert("內容不完整"); const data = { word: w, reading: r, meaning: m, lesson: window.selectedNewLesson, category: window.selectedNewCat, createdAt: new Date() }; if (window.selectedNewLesson === '個人筆記') data.uid = currentUser; await addDoc(vocabsCol, data); document.getElementById('word').value = document.getElementById('reading').value = document.getElementById('meaning').value = ""; window.showToast("✅ 已儲存"); };
-        window.deleteWord = async (id) => { if(confirm("確定刪除？")) await deleteDoc(doc(vocabsCol, id)); };
-        window.speakAction = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.5; window.speechSynthesis.speak(u); };
-        window.initAudioOnFirstClick = () => { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); };
-        window.showToast = (m) => { const t = document.getElementById("toast"); t.innerText = m; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2000); };
-        window.fixScroll = () => { setTimeout(() => { const s = document.getElementById('input-section'); if(s.classList.contains('show')) window.scrollTo({top: s.offsetTop - 120, behavior: 'smooth'}); }, 300); };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder==='desc'?'asc':'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder==='desc'?'↓':'↑'}`; window.renderList(); };
+        window.switchUser = (name) => { localStorage.setItem('jp_user_shared', name); location.reload(); };
+        window.addNewUserAction = () => { const n = prompt("使用者:"); if(n && n.trim()){ const name = n.trim(); if(!userHistory.includes(name)) userHistory.unshift(name); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(name); } };
+        window.deleteWord = async (id) => { if(confirm("確定刪除？")) await deleteDoc(doc(vocabsCol, id)); };
+
+        // --- 修正編輯相關 UI ---
+        window.setEditBook = (b) => { window.editWordBook = b; window.selectedEditLesson = (b==='note'?'個人筆記':(b===1?'附錄':'L13')); window.selectedEditCat = (window.selectedEditLesson === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
+        window.renderEditLessonUI = () => { const c = document.getElementById('edit-lesson-container'); if(window.editWordBook==='note') c.innerHTML=""; else c.innerHTML = BOOK_MAP[window.editWordBook].map(l => `<button onclick="window.setEditLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedEditLesson===l?'active-edit-cat bg-indigo-600 text-white':'bg-white'}">${l}</button>`).join(''); setupDraggable(); };
+        window.setEditLesson = (l) => { window.selectedEditLesson = l; window.selectedEditCat = (l === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
+        window.renderEditCategoryUI = () => { const container = document.getElementById('edit-category-picker'); if(!container) return; const types = window.selectedEditLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setEditCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedEditCat === t ? 'active-edit-cat bg-indigo-600 text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
+        window.setEditCategory = (c) => { window.selectedEditCat = c; window.renderEditCategoryUI(); };
+
+        window.openEditAction = (id) => { 
+            const v = window.vocabs.find(x => x.id === id); 
+            if(!v) return; 
+            window.currentEditId = id; 
+            document.getElementById('edit-word').value = v.word; 
+            document.getElementById('edit-reading').value = v.reading || ""; 
+            document.getElementById('edit-meaning').value = v.meaning; 
+            const idx = LESSON_ORDER.indexOf(v.lesson); 
+            window.editWordBook = v.lesson === '個人筆記' ? 'note' : ((idx >= 0 && idx <= 13) ? 1 : 2); 
+            window.selectedEditLesson = v.lesson; 
+            window.selectedEditCat = v.category || 'n.'; 
+            window.renderEditLessonUI(); 
+            window.renderEditCategoryUI(); 
+            document.getElementById('edit-modal').classList.remove('hidden'); 
+        };
+
+        window.saveWordEdit = async () => { 
+            const data = { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat };
+            if (window.selectedEditLesson === '個人筆記') data.uid = currentUser;
+            else data.uid = null;
+            await updateDoc(doc(db, "vocabs", window.currentEditId), data); 
+            document.getElementById('edit-modal').classList.add('hidden'); 
+            window.showToast("✅ 已更新"); 
+        };
+
+        const setupDraggable = () => { document.querySelectorAll('.no-scrollbar').forEach(el => { let isDown = false, startX, scrollLeft; el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; }; el.onmouseleave = () => isDown = false; el.onmouseup = () => isDown = false; el.onmousemove = (e) => { if(!isDown) return; e.preventDefault(); const x = e.pageX - el.offsetLeft; const dist = x - startX; el.scrollLeft = scrollLeft - dist; }; }); };
+        let audioUnlocked = false;
+        window.initAudioOnFirstClick = () => { if (!audioUnlocked) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } };
+        window.speakAction = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.5; window.speechSynthesis.speak(u); };
 
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); window.renderList(); });
         onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => { window.userProgress = {}; snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); }); window.renderList(); });
-        window.renderUserHistory(); window.switchBook(1); window.renderNewLessonUI(); window.renderNewCategoryUI();
+
+        window.renderUserHistory();
+        window.switchBook(1);
+        window.renderNewLessonUI();
+        window.renderNewCategoryUI();
     </script>
 </body>
 </html>
+
+
