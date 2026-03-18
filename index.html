@@ -13,21 +13,23 @@
         .sticky-header { z-index: 200 !important; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); position: sticky; top: 0; }
         #input-section { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.4s ease; }
         #input-section.show { max-height: 2000px; opacity: 1; margin-bottom: 1.5rem; }
-        .ls-btn-style { color: #64748b; font-weight: 700; font-size: 11px; border-color: #e2e8f0; white-space: nowrap; flex-shrink: 0; padding: 8px 14px; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); overflow-y: auto; }
-        #toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 2000; left: 50%; bottom: 80px; transform: translateX(-50%); font-weight: bold; }
+        .ls-btn-style { color: #64748b; font-weight: 700; font-size: 11px; border-color: #e2e8f0; white-space: nowrap; flex-shrink: 0; padding: 6px 14px; border-radius: 12px; border-width: 1px; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); overflow-y: auto; backdrop-filter: blur(5px); }
+        #toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 2000; left: 50%; bottom: 50px; transform: translateX(-50%); font-weight: bold; }
         #toast.show { visibility: visible; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900">
+<body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
 
     <div id="toast">✅ 已完成</div>
 
     <div class="sticky-header border-b border-slate-200">
         <div class="max-w-md mx-auto px-4 pt-4 pb-2">
             <div class="flex items-center mb-3">
-                <button onclick="window.switchUser()" id="user-display" class="bg-indigo-600 text-white px-3 py-1.5 rounded-full text-[11px] font-black mr-2 shadow-sm">👤 訪客</button>
-                <div class="flex-1"></div> </div>
+                <button onclick="window.switchUser()" id="user-display" class="bg-indigo-600 text-white px-3 py-1.5 rounded-full text-[10px] font-black mr-2">👤 訪客</button>
+                <div class="flex-1"></div>
+                <button onclick="window.speakAction('こんにちは')" class="text-[9px] bg-yellow-400 text-white px-2 py-1 rounded-md font-bold">🔈 測試</button>
+            </div>
             <div class="flex items-center justify-between gap-1">
                 <h1 class="text-lg font-black text-indigo-600 tracking-tighter">Kingtex JPNote</h1>
                 <div class="flex items-center gap-1">
@@ -39,21 +41,21 @@
         </div>
         <div class="max-w-md mx-auto px-4 pb-3">
             <div class="flex gap-2 mb-2">
-                <button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border py-2 rounded-xl text-xs font-bold">第一冊</button>
-                <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border py-2 rounded-xl text-xs font-bold">第二冊</button>
-                <button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold">個人筆記</button>
+                <button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第一冊</button>
+                <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第二冊</button>
+                <button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">個人筆記</button>
             </div>
             <div class="no-scrollbar pb-2" id="lesson-filter-container"></div>
             <div id="type-filter" class="no-scrollbar pb-2 flex gap-2"></div>
             <div class="flex gap-2">
-                <input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
+                <input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋單字..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
                 <button onclick="window.toggleSort()" id="sort-btn" class="bg-white border border-slate-200 px-4 rounded-2xl text-[11px] font-bold text-slate-600 shadow-sm">排序 ↓</button>
             </div>
         </div>
     </div>
 
     <div class="max-w-md mx-auto p-4">
-        <button onclick="document.getElementById('input-section').classList.toggle('show');" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full shadow-sm">＋ 新增單語</button>
+        <button id="toggle-input-btn" onclick="document.getElementById('input-section').classList.toggle('show');" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full shadow-sm">＋ 新增單語</button>
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm text-center">
              <div class="grid grid-cols-2 gap-3 mb-4 text-left">
                 <input id="word" type="text" placeholder="單語 (日文)" onblur="window.autoTranslate()" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
@@ -61,67 +63,56 @@
             </div>
             <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none text-sm border focus:border-indigo-300">
             <div class="flex gap-2 mb-3">
-                <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">第一冊</button>
-                <button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">第二冊</button>
-                <button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">個人筆記</button>
+                <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
+                <button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第二冊</button>
+                <button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">個人筆記</button>
             </div>
             <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2 flex gap-2 overflow-x-auto"></div>
             <div id="new-category-picker" class="flex no-scrollbar gap-2 mb-6 overflow-x-auto"></div>
-            <button id="save-btn" onclick="window.submitNewWord()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl block text-sm">儲存到單字冊</button>
+            <button id="save-btn" onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm active:scale-95 transition-transform">儲存到單字冊</button>
         </section>
-        <ul id="vocab-list" class="space-y-4 mt-4"></ul>
+        <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
-    <div id="import-modal" class="modal"><div class="bg-white m-10 p-6 rounded-3xl max-w-md mx-auto mt-20 shadow-2xl"><h2 class="font-bold mb-4 text-center">批量導入</h2><textarea id="import-area" class="w-full h-40 border p-3 rounded-xl text-sm" placeholder="單語 漢字 意思 (每行一個)"></textarea><div class="flex gap-2 mt-4"><button onclick="window.processImport()" class="bg-indigo-600 text-white flex-1 py-3 rounded-xl font-bold">導入</button><button onclick="window.toggleImport(false)" class="bg-slate-100 flex-1 py-3 rounded-xl font-bold">取消</button></div></div></div>
-    <div id="quiz-modal" class="modal"><div class="bg-white m-5 p-8 rounded-[40px] max-w-md mx-auto mt-20 text-center shadow-2xl"><div id="quiz-content"></div></div></div>
-
-    <script type="importmap"> { "imports": { "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js" } } </script>
+    <div id="import-modal" class="modal"><div class="bg-white m-10 p-5 rounded-3xl max-w-md mx-auto mt-20 shadow-2xl"><h2 class="font-bold mb-4 text-center">批量導入</h2><textarea id="import-area" class="w-full h-40 border p-3 rounded-xl text-sm" placeholder="日文 漢字 中文 (每行一個)"></textarea><div class="flex gap-2 mt-4"><button onclick="window.processImport()" class="bg-indigo-600 text-white flex-1 py-3 rounded-xl font-bold">確認</button><button onclick="window.toggleImport(false)" class="bg-slate-200 flex-1 py-3 rounded-xl font-bold">取消</button></div></div></div>
+    
+    <div id="quiz-modal" class="modal">
+        <div class="bg-white m-5 p-8 rounded-[40px] max-w-md mx-auto mt-20 text-center shadow-2xl relative">
+            <button onclick="document.getElementById('quiz-modal').style.display='none'" class="absolute right-6 top-6 text-slate-300 font-bold text-xl">✕</button>
+            <div id="quiz-content"></div>
+        </div>
+    </div>
 
     <script type="module">
-        import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, where, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4", authDomain: "jpnote-5f436.firebaseapp.com", projectId: "jpnote-5f436", storageBucket: "jpnote-5f436.firebasestorage.app", messagingSenderId: "881660892658", appId: "1:881660892658:web:9d88f9b2332aa9e2b3076b", measurementId: "G-QV2NRXQSY7" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const vocabsCol = collection(db, "vocabs");
 
-        // 全局變數掛載
         window.vocabs = []; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; window.selectedNewCat = 'n.'; window.selectedNewLesson = '附錄';
         window.editingId = null; window.sortOrder = 'desc';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
-
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
-        const GeminiDict = { "ついたち":["1號 (1日)", "1日"], "ふつか":["2號/兩天", "二日"], "みっか":["3號/三天", "三日"], "よっか":["4號/四天", "四日"], "いつか":["5號/五天", "五日"], "がつ":["月 (月份)", "月"], "なんがつ":["幾月", "何月"], "なんねん":["幾年/哪一年", "何年"], "なんにち":["幾號/幾天", "何日"] };
+        const GeminiDict = { "ついたち":["1號 (1日)", "1日"], "ふつk":["2號/兩天", "二日"], "みっk":["3號/三天", "三日"], "よっk":["4號/四天", "四日"], "いつか":["5號/五天", "五日"], "がつ":["月 (月份)", "月"], "なんがつ":["幾月", "何月"], "なんねん":["幾年/哪一年", "何年"], "なんにち":["幾號/幾天", "何日"] };
 
-        // 核心功能掛載 (解決按鈕點擊失效)
-        window.switchUser = () => { const u = prompt("請輸入使用者名稱：", currentUser); if(u) { currentUser = u; localStorage.setItem('jp_user_shared', u); document.getElementById('user-display').innerText = `👤 ${u}`; window.renderList(); } };
+        // 全局掛載按鈕功能
+        window.switchUser = () => { const u = prompt("使用者名稱：", currentUser); if(u) { currentUser = u; localStorage.setItem('jp_user_shared', u); document.getElementById('user-display').innerText = `👤 ${u}`; window.renderList(); } };
         window.autoTranslate = () => { const w = document.getElementById('word').value.trim().toLowerCase(); if(GeminiDict[w] && !window.editingId) { document.getElementById('meaning').value = GeminiDict[w][0]; document.getElementById('reading').value = GeminiDict[w][1]; } };
-        window.showToast = (m) => { const t = document.getElementById("toast"); t.innerText = m; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2000); };
+        window.editWord = (id) => { const v = window.vocabs.find(x => x.id === id); if(!v) return; window.editingId = id; document.getElementById('word').value = v.word; document.getElementById('reading').value = v.reading || ""; document.getElementById('meaning').value = v.meaning; window.selectedNewLesson = v.lesson; window.selectedNewCat = v.category; document.getElementById('input-section').classList.add('show'); document.getElementById('save-btn').innerText = "更新單字"; window.renderNewLessonUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+        window.deleteWord = async (id) => { if(confirm("確定刪除嗎？")) { await deleteDoc(doc(db, "vocabs", id)); window.showToast("🗑️ 已刪除"); } };
         window.toggleImport = (s) => { document.getElementById('import-modal').style.display = s ? 'block' : 'none'; };
+        window.showStatsModal = () => { const s = window.vocabs.reduce((a, v) => { a[v.lesson] = (a[v.lesson] || 0) + 1; return a; }, {}); alert("進度統計：\n" + Object.entries(s).map(([k,v]) => `${k}: ${v}個`).join('\n')); };
+        window.showToast = (m) => { const t = document.getElementById("toast"); t.innerText = m; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2000); };
         window.toggleSort = () => { window.sortOrder = window.sortOrder === 'desc' ? 'asc' : 'desc'; document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder==='desc'?'↓':'↑'}`; window.renderList(); };
         window.speakAction = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.6; window.speechSynthesis.speak(u); };
 
-        window.editWord = (id) => {
-            const v = window.vocabs.find(x => x.id === id);
-            if(!v) return;
-            window.editingId = id;
-            document.getElementById('word').value = v.word;
-            document.getElementById('reading').value = v.reading || "";
-            document.getElementById('meaning').value = v.meaning;
-            window.selectedNewLesson = v.lesson; window.selectedNewCat = v.category;
-            document.getElementById('input-section').classList.add('show');
-            document.getElementById('save-btn').innerText = "更新單字";
-            window.renderNewLessonUI();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-        window.deleteWord = async (id) => { if(confirm("確定刪除嗎？")) { await deleteDoc(doc(db, "vocabs", id)); window.showToast("🗑️ 已刪除"); } };
-
         window.submitNewWord = async () => {
             const w = document.getElementById('word').value.trim(), r = document.getElementById('reading').value.trim(), m = document.getElementById('meaning').value.trim();
-            if (!w || !m) return alert("內容未填寫完整");
+            if (!w || !m) return alert("請填寫完整內容");
             if(!window.editingId) {
                 if (window.vocabs.some(v => v.word === w && v.lesson === window.selectedNewLesson)) return alert("⚠️ 單字重複紀錄");
                 await addDoc(vocabsCol, { word: w, reading: r, meaning: m, lesson: window.selectedNewLesson, category: window.selectedNewCat, createdAt: new Date(), uid: window.selectedNewLesson==='個人筆記'?currentUser:null });
@@ -132,26 +123,45 @@
             document.getElementById('word').value = document.getElementById('reading').value = document.getElementById('meaning').value = ""; window.showToast("✅ 已儲存");
         };
 
-        // 隨機測試
+        // --- 🚀 還原隨機測試 (聽與寫版本) ---
         let qzArr = [], qzIdx = 0;
         window.openQuizSetup = () => {
             qzArr = window.vocabs.filter(v => (v.lesson !== '個人筆記' || v.uid === currentUser) && (window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson)));
-            if(qzArr.length < 3) return alert("單字量不足（需至少3個）");
-            qzArr = qzArr.sort(() => Math.random() - 0.5).slice(0, 10); qzIdx = 0;
+            if(qzArr.length < 2) return alert("單字量不足");
+            qzArr = qzArr.sort(() => Math.random() - 0.5).slice(0, 15); qzIdx = 0;
             document.getElementById('quiz-modal').style.display = 'block'; window.renderQuiz();
         };
         window.renderQuiz = () => {
-            if(qzIdx >= qzArr.length) { document.getElementById('quiz-content').innerHTML = "<h2 class='text-2xl font-black mb-4'>測試結束！🎉</h2><button onclick=\"document.getElementById('quiz-modal').style.display='none'\" class='bg-indigo-600 text-white w-full py-4 rounded-2xl font-bold'>完成</button>"; return; }
-            const q = qzArr[qzIdx]; const opts = [q.meaning, ...window.vocabs.filter(v => v.meaning !== q.meaning).sort(() => Math.random() - 0.5).slice(0, 2).map(v => v.meaning)].sort(() => Math.random() - 0.5);
-            document.getElementById('quiz-content').innerHTML = `<div class='text-indigo-600 font-bold mb-2 text-xs'>QUESTION ${qzIdx+1}/${qzArr.length}</div><div class='text-4xl font-black mb-10'>${q.word}</div><div class='grid gap-3'>${opts.map(o => `<button onclick="window.checkAns('${o.replace(/'/g,"\\'")}','${q.meaning.replace(/'/g,"\\'")}')" class='py-5 border-2 rounded-2xl font-bold hover:bg-slate-50'>${o}</button>`).join('')}</div>`;
+            if(qzIdx >= qzArr.length) { document.getElementById('quiz-content').innerHTML = "<h2 class='text-2xl font-black mb-4'>測試結束！🎉</h2><button onclick=\"document.getElementById('quiz-modal').style.display='none'\" class='bg-indigo-600 text-white w-full py-4 rounded-2xl font-bold'>返回</button>"; return; }
+            const q = qzArr[qzIdx]; window.speakAction(q.word); // 自動播放聲音
+            document.getElementById('quiz-content').innerHTML = `
+                <div class='text-indigo-600 font-bold mb-2 text-xs'>QUESTION ${qzIdx+1}/${qzArr.length}</div>
+                <button onclick="window.speakAction('${q.word}')" class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full text-3xl mb-6">🔈</button>
+                <div class='text-3xl font-black mb-8'>${q.word}</div>
+                <input id="quiz-input" type="text" placeholder="請輸入中文意思或漢字" class="w-full p-4 border-2 border-slate-100 rounded-2xl mb-4 text-center outline-none focus:border-indigo-500 font-bold" onkeydown="if(event.key==='Enter')window.checkQuizAns()">
+                <button onclick="window.checkQuizAns()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold">送出答案</button>
+            `;
+            setTimeout(() => document.getElementById('quiz-input').focus(), 300);
         };
-        window.checkAns = (a, c) => { if(a === c) { window.showToast("⭕ 正確"); qzIdx++; window.renderQuiz(); } else alert("❌ 答錯囉！正確答案是：" + c); };
+        window.checkQuizAns = () => {
+            const input = document.getElementById('quiz-input').value.trim();
+            const q = qzArr[qzIdx];
+            if(input === q.meaning || input === q.reading || (q.reading && input === q.word)) {
+                window.showToast("⭕ 正確"); qzIdx++; window.renderQuiz();
+            } else {
+                alert(`❌ 答錯囉！\n正確答案是：\n意思：${q.meaning}\n漢字：${q.reading || '無'}`);
+                document.getElementById('quiz-input').value = ""; document.getElementById('quiz-input').focus();
+            }
+        };
 
-        // UI 邏輯
+        // --- UI 聯動與渲染 ---
         window.renderNewLessonUI = () => {
             document.getElementById('new-lesson-container').innerHTML = window.newWordBook === 'note' ? "" : BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.selectedNewLesson='${l}';window.renderNewLessonUI();" class="ls-btn-style border rounded-xl ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>`).join('');
             const cats = window.selectedNewLesson === '附錄' ? ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞', '其他'] : ['n.', 'v.', 'adj.', '其他'];
             document.getElementById('new-category-picker').innerHTML = cats.map(t => `<button onclick="window.selectedNewCat='${t}';window.renderNewCategoryUI();" class="ls-btn-style border rounded-xl ${window.selectedNewCat===t?'active-new-cat text-white':'bg-white'}">${t}</button>`).join('');
+            document.getElementById('new-book1-tab').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.newWordBook===1?'lesson-active':'bg-white'}`;
+            document.getElementById('new-book2-tab').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.newWordBook===2?'lesson-active':'bg-white'}`;
+            document.getElementById('new-note-tab').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.newWordBook==='note'?'note-active':'bg-white'}`;
         };
         window.renderNewCategoryUI = window.renderNewLessonUI;
         window.setNewBookTab = (b) => { window.newWordBook = b; window.selectedNewLesson = b==='note'?'個人筆記':(b===1?'附錄':'L13'); window.renderNewLessonUI(); };
@@ -168,15 +178,18 @@
             document.getElementById('vocab-list').innerHTML = filtered.map(v => `
                 <li class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100">
                     <div class="flex-1 text-left">
-                        <div class="flex gap-1.5 mb-1 text-[9px] font-black uppercase"><span class="${v.lesson==='個人筆記'?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span><span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span></div>
+                        <div class="flex gap-1.5 mb-1 text-[9px] font-black uppercase">
+                            <span class="${v.lesson==='個人筆記'?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span>
+                            <span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span>
+                        </div>
                         <div class="text-xl font-bold">${v.word}${v.reading?`<span class="text-xs text-slate-400 ml-1">【${v.reading}】</span>`:''}</div>
                         <div class="text-slate-500 text-xs mt-1 font-bold">${v.meaning}</div>
                         <div class="flex gap-2 mt-4">
-                            <button onclick="window.editWord('${v.id}')" class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-4 py-1 rounded-full border border-indigo-100">編輯</button>
-                            <button onclick="window.deleteWord('${v.id}')" class="text-[10px] text-red-500 font-bold bg-red-50 px-4 py-1 rounded-full border border-red-100">刪除</button>
+                            <button onclick="window.editWord('${v.id}')" class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">編輯</button>
+                            <button onclick="window.deleteWord('${v.id}')" class="text-[10px] text-red-500 font-bold bg-red-50 px-3 py-1 rounded-full border border-red-100">刪除</button>
                         </div>
                     </div>
-                    <button onclick="window.speakAction('${v.word.replace(/'/g,"\\'")}')" class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full text-xl">🔊</button>
+                    <button onclick="window.speakAction('${v.word}')" class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full text-xl shadow-sm">🔊</button>
                 </li>`).join('');
         };
 
@@ -186,16 +199,14 @@
         
         window.renderLessonUI = () => {
             document.getElementById('lesson-filter-container').innerHTML = window.currentBook === 'note' ? "" : BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style border rounded-xl ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join('');
-            document.getElementById('book1-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`;
-            document.getElementById('book2-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500'}`;
-            document.getElementById('book-note-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook==='note'?'note-active text-white':'bg-white text-slate-500'}`;
+            document.getElementById('book1-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active':'bg-white'}`;
+            document.getElementById('book2-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active':'bg-white'}`;
+            document.getElementById('book-note-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook==='note'?'note-active':'bg-white'}`;
         };
         window.renderTypeUI = () => {
             const types = window.selectedLessons.includes('附錄') ? ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞', '其他'] : ['n.', 'v.', 'adj.', '其他'];
             document.getElementById('type-filter').innerHTML = types.map(t => `<button onclick="window.toggleType('${t}')" class="ls-btn-style border rounded-xl ${window.selectedTypes.includes(t)?'type-active text-white':'bg-white'}">${t}</button>`).join('');
         };
-
-        window.showStatsModal = () => { const s = window.vocabs.reduce((a, v) => { a[v.lesson] = (a[v.lesson] || 0) + 1; return a; }, {}); alert("📊 目前進度：\n" + Object.entries(s).map(([k,v]) => `${k}: ${v}個`).join('\n')); };
 
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { 
             window.vocabs = snap.docs.map(d => ({id: d.id, ...d.data()})); 
