@@ -22,7 +22,7 @@
         <div class="max-w-md mx-auto px-4 pt-4 pb-2">
             <div class="flex items-center mb-3">
                 <div class="flex items-center gap-1.5 no-scrollbar flex-1" id="user-history-list"></div>
-                <button onclick="window.speakAction('こんにちは')" class="ml-2 text-[9px] bg-yellow-400 text-white px-2 py-0.5 rounded-md font-bold shrink-0 shadow-sm">🔈 語音測試</button>
+                <button onclick="window.speakAction('こんにちは')" class="ml-2 text-[9px] bg-yellow-400 text-white px-2 py-0.5 rounded-md font-bold shrink-0">🔈 測試</button>
             </div>
             <div class="flex items-center justify-between gap-1">
                 <h1 class="text-lg font-black text-indigo-600 tracking-tighter shrink-0">Kingtex JPNote</h1>
@@ -97,19 +97,12 @@
             });
         };
 
-        // --- 🚀 AI 翻譯接管 (100% 正確靜默版) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim().toLowerCase();
             if(!w) return;
-            const aiBrain = {
-                "がつ": ["月 (月份)", "月"], "なんがつ": ["幾月", "何月"], "なんにち": ["幾號/幾天", "何日"],
-                "なんねん": ["幾年/哪一年", "何年"], "せんげつ": ["上個月", "先月"], "こんげつ": ["這個月", "今月"],
-                "らいげつ": ["下個月", "来月"], "せんしゅう": ["上週", "先週"], "こんしゅう": ["這週", "今週"],
-                "ひとりで": ["獨自、一個人", "一人で"]
-            };
+            const aiBrain = { "がつ": ["月 (月份)", "月"], "なんがつ": ["幾月", "何月"], "なんにち": ["幾號/幾天", "何日"], "なんねん": ["幾年/哪一年", "何年"], "せんげつ": ["上個月", "先月"], "こんげつ": ["這個月", "今月"], "らいげつ": ["下個月", "来月"], "せんしゅう": ["上週", "先週"], "こんしゅう": ["這週", "今週"], "ひとりで": ["獨自、一個人", "一人で"] };
             if(aiBrain[w]) {
-                document.getElementById('meaning').value = aiBrain[w][0];
-                document.getElementById('reading').value = aiBrain[w][1];
+                document.getElementById('meaning').value = aiBrain[w][0]; document.getElementById('reading').value = aiBrain[w][1];
             } else {
                 try {
                     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
@@ -126,92 +119,71 @@
             }
         };
 
-        // --- 🚀 【核心進化】動態分類強效渲染 ---
+        // --- 🚀 新增面板聯動 ---
         window.renderNewCategoryUI = () => {
             const container = document.getElementById('new-category-picker');
-            if (!container) return;
-
-            let categories = []; 
-            // 📍 檢測目前選中的課數是否為「附錄」
-            if (window.selectedNewLesson === '附錄') {
-                categories = ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞', '其他'];
-            } else {
-                // 否則恢復成 L1-L25 的詞性分類
-                categories = ['n.', 'v.', 'adj.', '其他'];
-            }
-
-            // 強制檢查當前選取的 category 是否還合法
-            if (!categories.includes(window.selectedNewCat)) {
-                window.selectedNewCat = categories[0];
-            }
-
-            container.innerHTML = categories.map(t => `
-                <button onclick="window.setNewCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedNewCat === t ? 'active-new-cat text-white' : 'bg-white'}">
-                    ${t}
-                </button>
-            `).join('');
-            
+            const categories = (window.selectedNewLesson === '附錄') ? ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞', '其他'] : ['n.', 'v.', 'adj.', '其他'];
+            if (!categories.includes(window.selectedNewCat)) window.selectedNewCat = categories[0];
+            container.innerHTML = categories.map(t => `<button onclick="window.setNewCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedNewCat === t ? 'active-new-cat text-white' : 'bg-white'}">${t}</button>`).join('');
             setTimeout(setupDraggable, 50);
         };
 
         window.renderNewLessonUI = () => {
             const container = document.getElementById('new-lesson-container');
-            if (!container) return;
-
-            // 更新冊數 Tab 樣式
             document.getElementById('new-book1-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook===1?'lesson-active text-white':'bg-white text-slate-500'}`;
             document.getElementById('new-book2-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook===2?'lesson-active text-white':'bg-white text-slate-500'}`;
             document.getElementById('new-note-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook==='note'?'note-active text-white':'bg-white text-slate-500'}`;
-            
-            if (window.newWordBook === 'note') {
-                container.innerHTML = "";
-            } else {
-                // 渲染 L1-L12 或 L13-L25
-                container.innerHTML = BOOK_MAP[window.newWordBook].map(l => `
-                    <button onclick="window.handleLessonSelect('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">
-                        ${l}
-                    </button>
-                `).join('');
-            }
-            
-            // 📍 聯動渲染子分類
+            if (window.newWordBook !== 'note') container.innerHTML = BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.handleLessonSelect('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>`).join('');
+            else container.innerHTML = "";
             window.renderNewCategoryUI();
             setTimeout(setupDraggable, 100);
         };
 
-        // 📍 關鍵函數：處理課數點擊
-        window.handleLessonSelect = (l) => {
-            window.selectedNewLesson = l;
-            // 點擊後立即重新渲染 Lesson (為了變色) 和 Category (為了切換內容)
-            window.renderNewLessonUI(); 
+        window.handleLessonSelect = (l) => { window.selectedNewLesson = l; window.renderNewLessonUI(); };
+        window.setNewBookTab = (b) => { window.newWordBook = b; window.selectedNewLesson = (b==='note'?'個人筆記':(b===1?'附錄':'L13')); window.renderNewLessonUI(); };
+        window.setNewCategory = (c) => { window.selectedNewCat = c; window.renderNewCategoryUI(); };
+
+        // --- 🚀 頂部聯動邏輯 ---
+        window.toggleLesson = (l) => {
+            const i = window.selectedLessons.indexOf(l);
+            if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l);
+            window.renderLessonUI();
+            window.renderTypeUI(); // 強制刷新頂部過濾按鈕
+            window.renderList();
         };
 
-        window.setNewBookTab = (b) => { 
-            window.newWordBook = b; 
-            window.selectedNewLesson = (b==='note'?'個人筆記':(b===1?'附錄':'L13')); 
-            window.renderNewLessonUI(); 
-        };
-
-        window.setNewCategory = (c) => { 
-            window.selectedNewCat = c; 
-            window.renderNewCategoryUI(); 
-        };
-
-        // 其它穩定核心
         window.renderLessonUI = () => {
             const c = document.getElementById('lesson-filter-container');
             document.getElementById('book1-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`;
             document.getElementById('book2-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500'}`;
             document.getElementById('book-note-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook==='note'?'note-active text-white':'bg-white text-slate-500'}`;
-            if (window.currentBook === 'note') c.innerHTML = ""; else c.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join('');
+            if (window.currentBook !== 'note') c.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join('');
+            else c.innerHTML = "";
             setTimeout(setupDraggable, 50);
         };
-        
+
         window.renderTypeUI = () => {
             const container = document.getElementById('type-filter');
-            const allTypes = ['n.', 'v.', 'adj.', '數字', '星期', '時候', '時刻', '時間', '期間', '量詞', '其他'];
-            container.innerHTML = allTypes.map(t => `<button onclick="window.toggleType('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedTypes.includes(t)?'type-active text-white':'bg-white'}">${t}</button>`).join('');
+            // 如果頂部勾選了「附錄」，顯示數字、星期等；否則顯示詞性
+            const types = (window.selectedLessons.includes('附錄')) ? ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞', '其他'] : ['n.', 'v.', 'adj.', '其他'];
+            container.innerHTML = types.map(t => `<button onclick="window.toggleType('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedTypes.includes(t)?'type-active text-white':'bg-white'}">${t}</button>`).join('');
             setTimeout(setupDraggable, 50);
+        };
+
+        // --- 🚀 重複檢查修正 ---
+        window.submitNewWord = async () => {
+            const w = document.getElementById('word').value.trim(), r = document.getElementById('reading').value.trim(), m = document.getElementById('meaning').value.trim();
+            if (!w || !m) return;
+            
+            // 檢查該單字是否已存在於選中的課數中
+            const isDuplicate = window.vocabs.some(v => v.word === w && v.lesson === window.selectedNewLesson);
+            if (isDuplicate) {
+                alert(`⚠️ 單字重複紀錄：[${w}] 已存在於 [${window.selectedNewLesson}]`);
+                return;
+            }
+
+            await addDoc(vocabsCol, { word: w, reading: r, meaning: m, lesson: window.selectedNewLesson, category: window.selectedNewCat, createdAt: new Date(), uid: window.selectedNewLesson==='個人筆記'?currentUser:null });
+            document.getElementById('word').value = document.getElementById('reading').value = document.getElementById('meaning').value = "";
         };
 
         window.renderList = () => {
@@ -233,22 +205,14 @@
             </li>`).join('');
         };
 
-        window.submitNewWord = async () => {
-            const w = document.getElementById('word').value.trim(), r = document.getElementById('reading').value.trim(), m = document.getElementById('meaning').value.trim();
-            if (!w || !m) return;
-            await addDoc(vocabsCol, { word: w, reading: r, meaning: m, lesson: window.selectedNewLesson, category: window.selectedNewCat, createdAt: new Date(), uid: window.selectedNewLesson==='個人筆記'?currentUser:null });
-            document.getElementById('word').value = document.getElementById('reading').value = document.getElementById('meaning').value = "";
-        };
-
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
-        window.toggleLesson = (l) => { const i = window.selectedLessons.indexOf(l); if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l); window.renderLessonUI(); window.renderList(); };
         window.toggleType = (t) => { const i = window.selectedTypes.indexOf(t); if(i>-1) window.selectedTypes.splice(i,1); else window.selectedTypes.push(t); window.renderTypeUI(); window.renderList(); };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder==='desc'?'asc':'desc'); window.renderList(); };
         window.fixScroll = () => { setTimeout(() => { const s = document.getElementById('input-section'); if(s && s.classList.contains('show')) window.scrollTo({ top: s.offsetTop - 280, behavior: 'smooth' }); }, 300); };
         window.speakAction = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.5; window.speechSynthesis.speak(u); };
 
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); window.renderList(); });
-        window.switchBook(1); window.renderNewLessonUI(); window.renderTypeUI();
+        window.switchBook(1); window.renderNewLessonUI();
     </script>
 </body>
 </html>
