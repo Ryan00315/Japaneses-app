@@ -87,10 +87,9 @@
         window.selectedNewCat = 'n.'; window.selectedNewLesson = 'L1';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         
-        // 📍 第一層級：時間已移除，併入附錄
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
 
-        // --- 🚀 橫向拖曳 ---
+        // --- 🚀 拖曳引擎 ---
         const setupDraggable = () => {
             document.querySelectorAll('.no-scrollbar').forEach(el => {
                 let isDown = false, startX, scrollLeft;
@@ -108,7 +107,7 @@
                 "がつ": ["月 (月份)", "月"], "なんがつ": ["幾月", "何月"], "なんにち": ["幾號/幾天", "何日"],
                 "なんねん": ["幾年/哪一年", "何年"], "せんげつ": ["上個月", "先月"], "こんげつ": ["這個月", "今月"],
                 "らいげつ": ["下個月", "来月"], "せんしゅう": ["上週", "先週"], "こんしゅう": ["這週", "今週"],
-                "ひとりで": ["獨自、一個人", "一人で"], "かぞく": ["家人、家族", "家族"]
+                "ひとりで": ["獨自、一個人", "一人で"]
             };
             if(aiBrain[w]) {
                 document.getElementById('meaning').value = aiBrain[w][0];
@@ -129,18 +128,21 @@
             }
         };
 
-        // --- 🚀 【核心進化】動態分類渲染邏輯 (數字、星期、時刻...) ---
+        // --- 🚀 【核心修正】動態分類切換鎖定 ---
         window.renderNewCategoryUI = () => {
             const container = document.getElementById('new-category-picker');
-            let categories = ['n.', 'v.', 'adj.', '其他']; 
+            if(!container) return;
 
-            // 📍 點選附錄時，切換成您指定的分類
+            let categories = []; 
             if (window.selectedNewLesson === '附錄') {
                 categories = ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞', '其他'];
-                if (!categories.includes(window.selectedNewCat)) window.selectedNewCat = '數字';
             } else {
-                // 點選 L1-L12 恢復
-                if (!['n.', 'v.', 'adj.', '其他'].includes(window.selectedNewCat)) window.selectedNewCat = 'n.';
+                categories = ['n.', 'v.', 'adj.', '其他'];
+            }
+
+            // 如果目前選取的類別不在新清單中，重設為第一個
+            if (!categories.includes(window.selectedNewCat)) {
+                window.selectedNewCat = categories[0];
             }
 
             container.innerHTML = categories.map(t => `<button onclick="window.setNewCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedNewCat === t ? 'active-new-cat text-white' : 'bg-white'}">${t}</button>`).join('');
@@ -153,9 +155,13 @@
             document.getElementById('new-book2-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook===2?'lesson-active text-white':'bg-white text-slate-500'}`;
             document.getElementById('new-note-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook==='note'?'note-active text-white':'bg-white text-slate-500'}`;
             
-            if (window.newWordBook === 'note') container.innerHTML = "";
-            else container.innerHTML = BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.setNewLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>`).join('');
+            if (window.newWordBook === 'note') {
+                container.innerHTML = "";
+            } else {
+                container.innerHTML = BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.setNewLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>`).join('');
+            }
             
+            // 每次重新渲染 Lesson 時，必須重新渲染 Category UI
             window.renderNewCategoryUI();
             setTimeout(setupDraggable, 100);
         };
@@ -164,6 +170,7 @@
         window.setNewLesson = (l) => { window.selectedNewLesson = l; window.renderNewLessonUI(); };
         window.setNewCategory = (c) => { window.selectedNewCat = c; window.renderNewCategoryUI(); };
 
+        // 其它穩定功能
         window.renderLessonUI = () => {
             const c = document.getElementById('lesson-filter-container');
             document.getElementById('book1-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`;
