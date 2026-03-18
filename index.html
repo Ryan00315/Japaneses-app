@@ -124,25 +124,30 @@
         </div>
     </div>
 
-    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[80vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
-    </div>
-    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
-        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight uppercase">批量匯入</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
-    </div>
     <div id="edit-modal" class="fixed inset-0 z-[350] modal-overlay hidden flex flex-col items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h2 class="text-xl font-black mb-6 border-b pb-4 text-center text-indigo-600 uppercase">編輯單語</h2>
+            <h2 class="text-xl font-black mb-6 border-b pb-4 text-center text-indigo-600 uppercase tracking-tighter">編輯單語</h2>
             <div class="space-y-4">
                 <input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm font-bold">
-                <div class="flex gap-2"><button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第一冊</button><button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第二冊</button></div>
+                <div class="flex gap-2">
+                    <button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第一冊</button>
+                    <button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第二冊</button>
+                    <button id="edit-book-note-btn" onclick="window.setEditBook('note')" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">個人筆記</button>
+                </div>
                 <div id="edit-lesson-container" class="no-scrollbar pb-3"></div>
                 <div id="edit-category-picker" class="flex flex-wrap gap-2 no-scrollbar"></div>
                 <div class="flex gap-3 pt-4 border-t mt-4"><button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 bg-slate-100 py-3 rounded-2xl font-bold">取消</button><button onclick="window.saveWordEdit()" class="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold">更新保存</button></div>
             </div>
         </div>
+    </div>
+
+    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[80vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
+    </div>
+    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
+        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight uppercase">批量匯入</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
     </div>
 
     <script type="module">
@@ -155,7 +160,6 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
-        // 全域狀態
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
@@ -166,14 +170,11 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 終極阿拉伯數字量詞字典 8.0：鎖定「1~31日日期」 ---
+        // --- 🚀 翻譯引擎 (17號, 阿拉伯數字化) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
-
-            // 📍 教材日期、月份、時間、量詞 (阿拉伯數字化)
             const unitLibrary = {
-                // 1~31日日期 (重點修正)
                 "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"],
                 "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"],
                 "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"],
@@ -181,40 +182,26 @@
                 "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"], "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"],
                 "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"], "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"],
                 "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"], "にじゅうしちにち": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"],
-                "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"], "なんにち": ["幾號", "何日"],
-                // 月份 (1~12月)
+                "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"],
                 "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"],
                 "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"],
                 "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"],
-                // 時間 (1~12點)
                 "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"],
                 "ごじ": ["5點", "5時"], "ろくじ": ["6點", "6時"], "しちじ": ["7點", "7時"], "はちじ": ["8點", "8時"],
                 "くじ": ["9點", "9時"], "じゅうじ": ["10點", "10時"], "じゅういちじ": ["11點", "11時"], "じゅうにじ": ["12點", "12時"],
-                // 分鐘 (1~10分)
                 "いっぷん": ["1分", "1分"], "にふん": ["2分", "2分"], "さんぷん": ["3分", "3分"], "よんぷん": ["4分", "4分"],
                 "ごふん": ["5分", "5分"], "ろっぷん": ["6分", "6分"], "ななふん": ["7分", "7分"], "はっぷん": ["8分", "8分"],
-                "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"],
-                // 常用期間與週
-                "いちじかん": ["1小時", "1時間"], "いっしゅうかん": ["1星期", "1週間"], "いっかげつ": ["1個月", "1個月"], "いちねんかん": ["1年", "1年間"],
-                "こんしゅう": ["這星期", "今週"], "せんしゅう": ["上星期", "先週"], "らいしゅう": ["下星期", "來週"]
+                "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"]
             };
-
             const cleanW = w.toLowerCase().replace(/\s+/g, '');
-            if(unitLibrary[cleanW]) {
-                document.getElementById('meaning').value = unitLibrary[cleanW][0];
-                document.getElementById('reading').value = unitLibrary[cleanW][1];
-                return;
-            }
-
+            if(unitLibrary[cleanW]) { document.getElementById('meaning').value = unitLibrary[cleanW][0]; document.getElementById('reading').value = unitLibrary[cleanW][1]; return; }
             try {
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
                 const res = await fetch(url); const data = await res.json();
                 if(data && data[0] && data[0][0]) {
                     let resM = data[0][0][0];
-                    // 針對 Google 常見發音誤判進行過濾
                     if(resM.includes("掌握") || resM.includes("橫幅") || resM.includes("一次") || resM.includes("整天") || resM.includes("志賀")) {
-                        if(w.endsWith("じ")) resM = "點";
-                        if(w.endsWith("にち")) resM = "號";
+                        if(w.endsWith("じ")) resM = "點"; if(w.endsWith("にち")) resM = "號";
                     }
                     document.getElementById('meaning').value = resM;
                     let sugK = data[0][1] ? data[0][1][3] : "";
@@ -321,8 +308,39 @@
         window.switchUser = (name) => { localStorage.setItem('jp_user_shared', name); location.reload(); };
         window.addNewUserAction = () => { const n = prompt("使用者:"); if(n && n.trim()){ const name = n.trim(); if(!userHistory.includes(name)) userHistory.unshift(name); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(name); } };
         window.deleteWord = async (id) => { if(confirm("確定刪除？")) await deleteDoc(doc(vocabsCol, id)); };
-        window.openEditAction = (id) => { const v = window.vocabs.find(x => x.id === id); if(!v) return; window.currentEditId = id; document.getElementById('edit-word').value = v.word; document.getElementById('edit-reading').value = v.reading || ""; document.getElementById('edit-meaning').value = v.meaning; const idx = LESSON_ORDER.indexOf(v.lesson); window.editWordBook = (idx >= 0 && idx <= 15) ? 1 : 2; window.selectedEditLesson = v.lesson; window.selectedEditCat = v.category || (v.lesson==='附錄'?'數字':'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); document.getElementById('edit-modal').classList.remove('hidden'); };
-        window.saveWordEdit = async () => { await updateDoc(doc(db, "vocabs", window.currentEditId), { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat }); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 已更新"); };
+
+        // --- 修正編輯相關 UI ---
+        window.setEditBook = (b) => { window.editWordBook = b; window.selectedEditLesson = (b==='note'?'個人筆記':(b===1?'附錄':'L13')); window.selectedEditCat = (window.selectedEditLesson === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
+        window.renderEditLessonUI = () => { const c = document.getElementById('edit-lesson-container'); if(window.editWordBook==='note') c.innerHTML=""; else c.innerHTML = BOOK_MAP[window.editWordBook].map(l => `<button onclick="window.setEditLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedEditLesson===l?'active-edit-cat bg-indigo-600 text-white':'bg-white'}">${l}</button>`).join(''); setupDraggable(); };
+        window.setEditLesson = (l) => { window.selectedEditLesson = l; window.selectedEditCat = (l === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
+        window.renderEditCategoryUI = () => { const container = document.getElementById('edit-category-picker'); if(!container) return; const types = window.selectedEditLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setEditCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedEditCat === t ? 'active-edit-cat bg-indigo-600 text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
+        window.setEditCategory = (c) => { window.selectedEditCat = c; window.renderEditCategoryUI(); };
+
+        window.openEditAction = (id) => { 
+            const v = window.vocabs.find(x => x.id === id); 
+            if(!v) return; 
+            window.currentEditId = id; 
+            document.getElementById('edit-word').value = v.word; 
+            document.getElementById('edit-reading').value = v.reading || ""; 
+            document.getElementById('edit-meaning').value = v.meaning; 
+            const idx = LESSON_ORDER.indexOf(v.lesson); 
+            window.editWordBook = v.lesson === '個人筆記' ? 'note' : ((idx >= 0 && idx <= 13) ? 1 : 2); 
+            window.selectedEditLesson = v.lesson; 
+            window.selectedEditCat = v.category || 'n.'; 
+            window.renderEditLessonUI(); 
+            window.renderEditCategoryUI(); 
+            document.getElementById('edit-modal').classList.remove('hidden'); 
+        };
+
+        window.saveWordEdit = async () => { 
+            const data = { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat };
+            if (window.selectedEditLesson === '個人筆記') data.uid = currentUser;
+            else data.uid = null;
+            await updateDoc(doc(db, "vocabs", window.currentEditId), data); 
+            document.getElementById('edit-modal').classList.add('hidden'); 
+            window.showToast("✅ 已更新"); 
+        };
+
         const setupDraggable = () => { document.querySelectorAll('.no-scrollbar').forEach(el => { let isDown = false, startX, scrollLeft; el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; }; el.onmouseleave = () => isDown = false; el.onmouseup = () => isDown = false; el.onmousemove = (e) => { if(!isDown) return; e.preventDefault(); const x = e.pageX - el.offsetLeft; const dist = x - startX; el.scrollLeft = scrollLeft - dist; }; }); };
         let audioUnlocked = false;
         window.initAudioOnFirstClick = () => { if (!audioUnlocked) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } };
