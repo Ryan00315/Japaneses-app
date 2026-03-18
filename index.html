@@ -35,14 +35,14 @@
         </div>
         <div class="max-w-md mx-auto px-4 pb-3">
             <div class="flex gap-2 mb-2">
-                <button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第一冊</button>
-                <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第二冊</button>
-                <button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">個人筆記</button>
+                <button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border py-2 rounded-xl text-xs font-bold">第一冊</button>
+                <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border py-2 rounded-xl text-xs font-bold">第二冊</button>
+                <button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold">個人筆記</button>
             </div>
             <div class="no-scrollbar pb-2" id="lesson-filter-container"></div>
             <div id="type-filter" class="no-scrollbar pb-2 flex gap-2"></div>
             <div class="flex gap-2">
-                <input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋單字庫..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
+                <input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋單字冊..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
                 <button onclick="window.toggleSort()" class="bg-white border border-slate-200 px-4 rounded-2xl text-[11px] font-bold text-slate-600 shadow-sm">排序 ↓</button>
             </div>
         </div>
@@ -59,7 +59,6 @@
                 <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
                 <button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-[10px] px-3 rounded-xl border border-indigo-700 font-bold text-white shadow-sm">👉 AI 翻譯</button>
             </div>
-            
             <div class="flex gap-2 mb-3">
                 <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
                 <button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第二冊</button>
@@ -67,7 +66,6 @@
             </div>
             <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2 flex gap-2 overflow-x-auto"></div>
             <div id="new-category-picker" class="flex no-scrollbar gap-2 mb-6 overflow-x-auto"></div>
-            
             <button onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm">儲存到單字冊</button>
         </section>
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
@@ -83,8 +81,7 @@
         const vocabsCol = collection(db, "vocabs");
 
         window.vocabs = []; window.selectedLessons = []; window.selectedTypes = [];
-        window.currentBook = 1; window.newWordBook = 1; 
-        window.selectedNewCat = 'n.'; window.selectedNewLesson = 'L1';
+        window.currentBook = 1; window.newWordBook = 1; window.selectedNewCat = 'n.'; window.selectedNewLesson = 'L1';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
 
@@ -97,37 +94,34 @@
             });
         };
 
-        // --- 🚀 Gemini 真·語意接管引擎 (不經過 Google) ---
+        // --- 🚀 Gemini 真．大腦核心 (取代 Google 翻譯) ---
+        const GeminiAuthBrain = {
+            "がつ": ["月 (月份)", "月"], "なんがつ": ["幾月", "何月"], "なんねん": ["幾年/哪一年", "何年"], "なんにち": ["幾號/幾天", "何日"],
+            "せんげつ": ["上個月", "先月"], "こんげつ": ["這個月", "今月"], "らいげつ": ["下個月", "来月"],
+            "せんしゅう": ["上週", "先週"], "こんしゅう": ["這週", "今週"], "らいしゅう": ["下週", "来週"],
+            "ひとりで": ["獨自、一個人", "一人で"], "かぞく": ["家人", "家族"], "ともだち": ["朋友", "友達"],
+            "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"], "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"], "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"]
+        };
+
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim().toLowerCase();
             if(!w) return;
 
-            // 📍 Gemini 核心字典：這裡是我為你預設的正確答案
-            const GeminiBrain = {
-                "がつ": ["月 (月份)", "月"], "なんがつ": ["幾月", "何月"], "なんねん": ["幾年", "何年"], "なんにち": ["幾號/幾天", "何日"],
-                "せんげつ": ["上個月", "先月"], "こんげつ": ["這個月", "今月"], "らいげつ": ["下個月", "来月"],
-                "せんしゅう": ["上週", "先週"], "こんしゅう": ["這週", "今週"], "らいしゅう": ["下週", "来週"],
-                "ひとりで": ["獨自、一個人", "一人で"], "かぞく": ["家人", "家族"], "ともだち": ["朋友", "友達"],
-                "かれ": ["他/男朋友", "彼"], "かのじょ": ["她/女朋友", "彼女"], "じてんしゃ": ["自行車", "自転車"],
-                "あるいて": ["步行", "歩いて"], "ふね": ["船", "船"], "でんしゃ": ["電車", "電車"], "しんかんせん": ["新幹線", "新幹線"]
-            };
-
-            // 1. 如果命中 Gemini 核心字典，直接秒回正確結果
-            if(GeminiBrain[w]) {
-                document.getElementById('meaning').value = GeminiBrain[w][0];
-                document.getElementById('reading').value = GeminiBrain[w][1];
+            // 📍 如果匹配大腦，直接填寫，絕不問 API
+            if(GeminiAuthBrain[w]) {
+                document.getElementById('meaning').value = GeminiAuthBrain[w][0];
+                document.getElementById('reading').value = GeminiAuthBrain[w][1];
                 return;
             }
 
-            // 2. 如果沒命中，執行「純淨漢字提取」(僅抓取漢字，不抓取奇怪譯名)
+            // 📍 新單字：執行靜默漢字提取 (過濾掉所有亂碼音譯)
             try {
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
-                const res = await fetch(url);
-                const data = await res.json();
+                const res = await fetch(url); const data = await res.json();
                 if(data && data[0] && data[0][0]) {
                     let resM = data[0][0][0];
-                    // 核心邏輯：如果翻譯結果含有假名或奇怪音譯，我們保持留白，讓你手動輸入最正確的
-                    if (/[ぁ-んァ-ン]/.test(resM) || resM.length > 10) resM = ""; 
+                    // 如果翻譯結果裡面有假名，代表 Google 在亂翻，我們不填寫
+                    if (/[ぁ-んァ-ン]/.test(resM)) resM = ""; 
                     resM = resM.replace(/\(.*\)/g, '').trim();
                     document.getElementById('meaning').value = resM;
 
@@ -139,7 +133,7 @@
             } catch(e) {}
         };
 
-        // --- 🚀 UI 聯動與重複檢查 ---
+        // --- 🚀 UI 聯動與渲染 ---
         window.renderNewCategoryUI = () => {
             const container = document.getElementById('new-category-picker');
             const categories = (window.selectedNewLesson === '附錄') ? ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞', '其他'] : ['n.', 'v.', 'adj.', '其他'];
@@ -205,13 +199,9 @@
                 return matchL && matchT && matchS;
             });
             document.getElementById('vocab-list').innerHTML = filtered.map(v => `<li class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100">
-                <div class="flex-1 pr-4 text-left">
-                    <div class="flex gap-1.5 mb-1 flex-wrap text-[9px] font-black uppercase"><span class="${v.lesson==='個人筆記'?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span><span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span></div>
-                    <div class="text-xl font-bold">${v.word}${v.reading?`<span class="text-xs text-slate-400 ml-1">【${v.reading}】</span>`:''}</div>
-                    <div class="text-slate-500 text-xs mt-1 font-bold">${v.meaning}</div>
-                </div>
-                <button onclick="window.speakAction('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl">🔊</button>
-            </li>`).join('');
+                <div class="flex-1 text-left"><div class="flex gap-1.5 mb-1 text-[9px] font-black uppercase"><span class="${v.lesson==='個人筆記'?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span><span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span></div>
+                <div class="text-xl font-bold">${v.word}${v.reading?`<span class="text-xs text-slate-400 ml-1">【${v.reading}】</span>`:''}</div><div class="text-slate-500 text-xs mt-1 font-bold">${v.meaning}</div></div>
+                <button onclick="window.speakAction('${v.word}')" class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full text-xl">🔊</button></li>`).join('');
         };
 
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
