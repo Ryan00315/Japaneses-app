@@ -62,7 +62,6 @@
 
     <div class="max-w-md mx-auto p-4">
         <button onclick="document.getElementById('input-section').classList.toggle('show'); window.fixScroll();" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full active:scale-95 transition-all shadow-sm">＋ 新增單語</button>
-        
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all overflow-hidden text-center">
              <div class="grid grid-cols-2 gap-3 mb-4 text-left">
                 <input id="word" type="text" placeholder="單語 (日文)" onfocus="window.fixScroll()" onkeydown="if(event.key==='Enter') { window.autoTranslate(); this.blur(); }" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
@@ -170,37 +169,54 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 翻譯引擎 (17號, 阿拉伯數字化) ---
+        // --- 🚀 終極翻譯引擎 9.0：本地優先 + 阿拉伯數字 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
-            const unitLibrary = {
-                "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"],
-                "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"],
-                "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"],
-                "じゅうさんにち": ["13號", "13日"], "じゅうよっか": ["14號", "14日"], "じゅうごにち": ["15號", "15日"], "じゅうろくにち": ["16號", "16日"],
-                "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"], "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"],
-                "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"], "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"],
-                "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"], "にじゅうしちにち": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"],
-                "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"],
-                "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"],
-                "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"],
-                "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"],
-                "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"],
-                "ごじ": ["5點", "5時"], "ろくじ": ["6點", "6時"], "しちじ": ["7點", "7時"], "はちじ": ["8點", "8時"],
-                "くじ": ["9點", "9時"], "じゅうじ": ["10點", "10時"], "じゅういちじ": ["11點", "11時"], "じゅうにじ": ["12點", "12時"],
-                "いっぷん": ["1分", "1分"], "にふん": ["2分", "2分"], "さんぷん": ["3分", "3分"], "よんぷん": ["4分", "4分"],
-                "ごふん": ["5分", "5分"], "ろっぷん": ["6分", "6分"], "ななふん": ["7分", "7分"], "はっぷん": ["8分", "8分"],
-                "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"]
+
+            // 📍 建立「本地最強字典庫」 (直接阻斷 Google 亂猜)
+            const textbookLibrary = {
+                // 日期系列 (1~31)
+                "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"], "いつか": ["5號", "5日"],
+                "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"], "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"],
+                "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"], "じゅうさんにち": ["13號", "13日"], "じゅうよっか": ["14號", "14日"],
+                "じゅうごにち": ["15號", "15日"], "じゅうろくにち": ["16號", "16日"], "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"],
+                "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"], "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"],
+                "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"], "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"],
+                "にじゅうしちにち": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"], "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"],
+                "さんじゅういちにち": ["31號", "31日"], "なんにち": ["幾號", "何日"],
+                // 月份系列 (1~12)
+                "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"], "ごがつ": ["5月", "5月"],
+                "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"], "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"],
+                "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"], "なんがつ": ["幾月", "何月"],
+                // 時間與分系列
+                "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"], "ごじ": ["5點", "5時"], "なんじ": ["幾點", "何時"],
+                "いっぷん": ["1分", "1分"], "にふん": ["2分", "2分"], "さんぷん": ["3分", "3分"], "よんぷん": ["4分", "4分"], "ごふん": ["5分", "5分"],
+                "ろっぷん": ["6分", "6分"], "ななふん": ["7分", "7分"], "はっぷん": ["8分", "8分"], "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"],
+                "なんぷん": ["幾分", "何分"], "はん": ["半", "半"],
+                // 期間與每/這/系列
+                "いちじかん": ["1小時", "1時間"], "いっぷんかん": ["1分鐘", "1分間"], "いっしゅうかん": ["1星期", "1週間"], "いっかげつ": ["1個月", "1個月"], "いちねんかん": ["1年", "1年間"],
+                "まいしゅう": ["每週", "毎週"], "こんしゅう": ["這星期", "今週"], "せんしゅう": ["上星期", "先週"], "らいしゅう": ["下星期", "來週"],
+                "まいつき": ["每個月", "每月"], "こんげつ": ["這個月", "今月"], "せんげつ": ["上個月", "先月"], "らいげつ": ["下個月", "來月"],
+                "まいあさ": ["每天早上", "每朝"], "まいばん": ["每天晚上", "每晚"], "まいにち": ["每天", "每日"]
             };
+
             const cleanW = w.toLowerCase().replace(/\s+/g, '');
-            if(unitLibrary[cleanW]) { document.getElementById('meaning').value = unitLibrary[cleanW][0]; document.getElementById('reading').value = unitLibrary[cleanW][1]; return; }
+            // 第一步：檢查本地字典
+            if(textbookLibrary[cleanW]) {
+                document.getElementById('meaning').value = textbookLibrary[cleanW][0];
+                document.getElementById('reading').value = textbookLibrary[cleanW][1];
+                return; // 直接結束，不再連網
+            }
+
+            // 第二步：如果字典查不到，才連網問 Google
             try {
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
                 const res = await fetch(url); const data = await res.json();
                 if(data && data[0] && data[0][0]) {
                     let resM = data[0][0][0];
-                    if(resM.includes("掌握") || resM.includes("橫幅") || resM.includes("一次") || resM.includes("整天") || resM.includes("志賀")) {
+                    // 針對 Google 常見發音誤判過濾
+                    if(resM.includes("掌握") || resM.includes("橫幅") || resM.includes("一次") || resM.includes("整天") || resM.includes("志賀") || resM.includes("老師")) {
                         if(w.endsWith("じ")) resM = "點"; if(w.endsWith("にち")) resM = "號";
                     }
                     document.getElementById('meaning').value = resM;
@@ -309,37 +325,14 @@
         window.addNewUserAction = () => { const n = prompt("使用者:"); if(n && n.trim()){ const name = n.trim(); if(!userHistory.includes(name)) userHistory.unshift(name); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(name); } };
         window.deleteWord = async (id) => { if(confirm("確定刪除？")) await deleteDoc(doc(vocabsCol, id)); };
 
-        // --- 修正編輯相關 UI ---
+        // --- 編輯功能鎖定 ---
         window.setEditBook = (b) => { window.editWordBook = b; window.selectedEditLesson = (b==='note'?'個人筆記':(b===1?'附錄':'L13')); window.selectedEditCat = (window.selectedEditLesson === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
         window.renderEditLessonUI = () => { const c = document.getElementById('edit-lesson-container'); if(window.editWordBook==='note') c.innerHTML=""; else c.innerHTML = BOOK_MAP[window.editWordBook].map(l => `<button onclick="window.setEditLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedEditLesson===l?'active-edit-cat bg-indigo-600 text-white':'bg-white'}">${l}</button>`).join(''); setupDraggable(); };
         window.setEditLesson = (l) => { window.selectedEditLesson = l; window.selectedEditCat = (l === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
         window.renderEditCategoryUI = () => { const container = document.getElementById('edit-category-picker'); if(!container) return; const types = window.selectedEditLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setEditCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedEditCat === t ? 'active-edit-cat bg-indigo-600 text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
         window.setEditCategory = (c) => { window.selectedEditCat = c; window.renderEditCategoryUI(); };
-
-        window.openEditAction = (id) => { 
-            const v = window.vocabs.find(x => x.id === id); 
-            if(!v) return; 
-            window.currentEditId = id; 
-            document.getElementById('edit-word').value = v.word; 
-            document.getElementById('edit-reading').value = v.reading || ""; 
-            document.getElementById('edit-meaning').value = v.meaning; 
-            const idx = LESSON_ORDER.indexOf(v.lesson); 
-            window.editWordBook = v.lesson === '個人筆記' ? 'note' : ((idx >= 0 && idx <= 13) ? 1 : 2); 
-            window.selectedEditLesson = v.lesson; 
-            window.selectedEditCat = v.category || 'n.'; 
-            window.renderEditLessonUI(); 
-            window.renderEditCategoryUI(); 
-            document.getElementById('edit-modal').classList.remove('hidden'); 
-        };
-
-        window.saveWordEdit = async () => { 
-            const data = { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat };
-            if (window.selectedEditLesson === '個人筆記') data.uid = currentUser;
-            else data.uid = null;
-            await updateDoc(doc(db, "vocabs", window.currentEditId), data); 
-            document.getElementById('edit-modal').classList.add('hidden'); 
-            window.showToast("✅ 已更新"); 
-        };
+        window.openEditAction = (id) => { const v = window.vocabs.find(x => x.id === id); if(!v) return; window.currentEditId = id; document.getElementById('edit-word').value = v.word; document.getElementById('edit-reading').value = v.reading || ""; document.getElementById('edit-meaning').value = v.meaning; const idx = LESSON_ORDER.indexOf(v.lesson); window.editWordBook = v.lesson === '個人筆記' ? 'note' : ((idx >= 0 && idx <= 13) ? 1 : 2); window.selectedEditLesson = v.lesson; window.selectedEditCat = v.category || 'n.'; window.renderEditLessonUI(); window.renderEditCategoryUI(); document.getElementById('edit-modal').classList.remove('hidden'); };
+        window.saveWordEdit = async () => { const data = { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat }; if (window.selectedEditLesson === '個人筆記') data.uid = currentUser; else data.uid = null; await updateDoc(doc(db, "vocabs", window.currentEditId), data); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 已更新"); };
 
         const setupDraggable = () => { document.querySelectorAll('.no-scrollbar').forEach(el => { let isDown = false, startX, scrollLeft; el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; }; el.onmouseleave = () => isDown = false; el.onmouseup = () => isDown = false; el.onmousemove = (e) => { if(!isDown) return; e.preventDefault(); const x = e.pageX - el.offsetLeft; const dist = x - startX; el.scrollLeft = scrollLeft - dist; }; }); };
         let audioUnlocked = false;
