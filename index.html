@@ -170,48 +170,81 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 翻譯引擎 (17號, 阿拉伯數字化) ---
-        window.autoTranslate = async () => {
-            const w = document.getElementById('word').value.trim();
-            if(!w) return;
-            const unitLibrary = {
-                "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"],
-                "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"],
-                "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"],
-                "じゅうさんにち": ["13號", "13日"], "じゅうよっか": ["14號", "14日"], "じゅうごにち": ["15號", "15日"], "じゅうろくにち": ["16號", "16日"],
-                "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"], "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"],
-                "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"], "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"],
-                "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"], "にじゅうしちにち": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"],
-                "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"],
-                "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"],
-                "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"],
-                "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"],
-                "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"],
-                "ごじ": ["5點", "5時"], "ろくじ": ["6點", "6時"], "しちじ": ["7點", "7時"], "はちじ": ["8點", "8時"],
-                "くじ": ["9點", "9時"], "じゅうじ": ["10點", "10時"], "じゅういちじ": ["11點", "11時"], "じゅうにじ": ["12點", "12時"],
-                "いっぷん": ["1分", "1分"], "にふん": ["2分", "2分"], "さんぷん": ["3分", "3分"], "よんぷん": ["4分", "4分"],
-                "ごふん": ["5分", "5分"], "ろっぷん": ["6分", "6分"], "ななふん": ["7分", "7分"], "はっぷん": ["8分", "8分"],
-                "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"]
-            };
-            const cleanW = w.toLowerCase().replace(/\s+/g, '');
-            if(unitLibrary[cleanW]) { document.getElementById('meaning').value = unitLibrary[cleanW][0]; document.getElementById('reading').value = unitLibrary[cleanW][1]; return; }
-            try {
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
-                const res = await fetch(url); const data = await res.json();
-                if(data && data[0] && data[0][0]) {
-                    let resM = data[0][0][0];
-                    if(resM.includes("掌握") || resM.includes("橫幅") || resM.includes("一次") || resM.includes("整天") || resM.includes("志賀")) {
-                        if(w.endsWith("じ")) resM = "點"; if(w.endsWith("にち")) resM = "號";
-                    }
-                    document.getElementById('meaning').value = resM;
-                    let sugK = data[0][1] ? data[0][1][3] : "";
-                    if (!sugK && data[5] && data[5][0] && data[5][0][2] && data[5][0][2][0]) sugK = data[5][0][2][0][0];
-                    if (sugK && sugK !== w && !/[a-zA-Z]/.test(sugK)) document.getElementById('reading').value = sugK;
-                    else document.getElementById('reading').value = "";
-                }
-            } catch(e) {}
-        };
+        // --- 🚀 AI 智慧翻譯引擎 (Gemini 語義優化版) ---
+window.autoTranslate = async () => {
+    const w = document.getElementById('word').value.trim();
+    if (!w) return;
 
+    // 1. AI 預設精準矩陣 (針對常見易錯字、日期、時間)
+    const AI_BRAIN = {
+        // 節日與生活
+        "たんじょうび": ["誕生日", "生日"],
+        "おめでとう": ["", "恭喜/祝賀"],
+        // 日期系列 (阿拉伯數字化)
+        "ついたち": ["1日", "1號"], "ふつか": ["2日", "2號/兩天"], "みっか": ["3日", "3號/三天"],
+        "よっか": ["4日", "4號/四天"], "いつか": ["5日", "5號/五天"], "むいか": ["6日", "6號/六天"],
+        "なのか": ["7日", "7號/七天"], "ようか": ["8日", "8號/八天"], "ここのか": ["9日", "9號/九天"],
+        "とおか": ["10日", "10號/十天"], "はつか": ["20日", "20號/二十天"],
+        // 月份系列
+        "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"],
+        "しがつ": ["4月", "4月"], "くがつ": ["9月", "9月"],
+        // 時間系列
+        "いちじ": ["1時", "1點"], "にじ": ["2時", "2點"], "くじ": ["9時", "9點"], "よじ": ["4時", "4點"],
+        "いっぷん": ["1分", "1分"], "はっぷん": ["8分", "8分"], "じゅっぷん": ["10分", "10分"],
+        // 疑問詞
+        "なんがつ": ["何月", "幾月"], "なんにち": ["何日", "幾號/幾天"], "なんねん": ["何年", "幾年"]
+    };
+
+    const cleanW = w.toLowerCase().replace(/\s+/g, '');
+
+    // 📍 步驟 A：優先匹配 AI 精準矩陣
+    if (AI_BRAIN[cleanW]) {
+        document.getElementById('reading').value = AI_BRAIN[cleanW][0];
+        document.getElementById('meaning').value = AI_BRAIN[cleanW][1];
+        return;
+    }
+
+    // 📍 步驟 B：規律性 AI 判斷 (處理時間、量詞自動轉換)
+    if (cleanW.endsWith('じ') && !isNaN(parseInt(cleanW))) {
+        // 處理像 7じ 這種輸入
+        document.getElementById('reading').value = parseInt(cleanW) + "時";
+        document.getElementById('meaning').value = parseInt(cleanW) + "點";
+        return;
+    }
+
+    // 📍 步驟 C：通用 AI 翻譯 (僅作為輔助，並過濾 Google 亂碼)
+    try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data && data[0] && data[0][0]) {
+            let resM = data[0][0][0];
+            
+            // ❌ 過濾 Google 常見錯誤翻譯 (如：掌握、橫幅)
+            const garbageWords = ["掌握", "橫幅", "一次", "整天", "志賀"];
+            if (garbageWords.some(g => resM.includes(g))) {
+                if (w.endsWith("じ")) resM = "點";
+                else if (w.endsWith("にち")) resM = "號";
+            }
+            
+            document.getElementById('meaning').value = resM;
+
+            // 🧠 漢字提取優化
+            let sugK = data[0][1] ? data[0][1][3] : "";
+            if (!sugK && data[5] && data[5][0] && data[5][0][2] && data[5][0][2][0]) sugK = data[5][0][2][0][0];
+            
+            // 只有當翻譯出來的漢字跟輸入的不同，且不是英文時才填入
+            if (sugK && sugK !== w && !/[a-zA-Z]/.test(sugK)) {
+                document.getElementById('reading').value = sugK;
+            } else {
+                document.getElementById('reading').value = "";
+            }
+        }
+    } catch (e) {
+        console.error("AI 翻譯連線受阻");
+    }
+};
         window.fixScroll = () => {
             setTimeout(() => {
                 const section = document.getElementById('input-section');
