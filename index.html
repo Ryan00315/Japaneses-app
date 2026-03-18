@@ -35,9 +35,9 @@
         </div>
         <div class="max-w-md mx-auto px-4 pb-3">
             <div class="flex gap-2 mb-2">
-                <button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border py-2 rounded-xl text-xs font-bold">第一冊</button>
-                <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border py-2 rounded-xl text-xs font-bold">第二冊</button>
-                <button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold">個人筆記</button>
+                <button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第一冊</button>
+                <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第二冊</button>
+                <button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">個人筆記</button>
             </div>
             <div class="no-scrollbar pb-2" id="lesson-filter-container"></div>
             <div id="type-filter" class="no-scrollbar pb-2 flex gap-2"></div>
@@ -59,6 +59,7 @@
                 <input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
                 <button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-[10px] px-3 rounded-xl border border-indigo-700 font-bold text-white shadow-sm">👉 AI 翻譯</button>
             </div>
+            
             <div class="flex gap-2 mb-3">
                 <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
                 <button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第二冊</button>
@@ -66,6 +67,7 @@
             </div>
             <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2 flex gap-2 overflow-x-auto"></div>
             <div id="new-category-picker" class="flex no-scrollbar gap-2 mb-6 overflow-x-auto"></div>
+            
             <button onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm">儲存到單字冊</button>
         </section>
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
@@ -90,50 +92,47 @@
                 let isDown = false, startX, scrollLeft;
                 el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; };
                 el.onmouseleave = () => isDown = false; el.onmouseup = () => isDown = false;
-                el.onmousemove = (e) => { if (!isDown) return; e.preventDefault(); el.scrollLeft = scrollLeft - (e.pageX - el.offsetLeft - startX) * 1.5; };
+                el.onmousemove = (e) => { if (!isDown) return; e.preventDefault(); el.scrollLeft = scrollLeft - (e.pageX - el.offsetLeft - startX) * 2; };
             });
         };
 
-        // --- 🚀 Gemini 真．大腦核心 (取代 Google 翻譯) ---
-        const GeminiAuthBrain = {
+        // --- 🚀 Gemini 核心權威字典 (直接寫入代碼，永不亂翻) ---
+        const GeminiBrain = {
             "がつ": ["月 (月份)", "月"], "なんがつ": ["幾月", "何月"], "なんねん": ["幾年/哪一年", "何年"], "なんにち": ["幾號/幾天", "何日"],
             "せんげつ": ["上個月", "先月"], "こんげつ": ["這個月", "今月"], "らいげつ": ["下個月", "来月"],
-            "せんしゅう": ["上週", "先週"], "こんしゅう": ["這週", "今週"], "らいしゅう": ["下週", "来週"],
-            "ひとりで": ["獨自、一個人", "一人で"], "かぞく": ["家人", "家族"], "ともだち": ["朋友", "友達"],
-            "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"], "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"], "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"]
+            "せんしゅう": ["上週", "先週"], "こん週": ["這週", "今週"], "らいしゅう": ["下週", "来週"],
+            "ひとりで": ["獨自、一個人", "一人で"], "かぞく": ["家人、家族", "家族"], "ともだち": ["朋友", "友達"],
+            "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"], "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"], "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"],
+            "ふつか": ["2號/兩天", "二日"], "みっか": ["3號/三天", "三日"], "よっか": ["4號/四天", "四日"], "いつか": ["5號/五天", "五日"], "むいか": ["6號/六天", "六日"], "なのか": ["7號/七天", "七日"], "ようか": ["8號/八天", "八日"], "ここのか": ["9號/九天", "九日"], "とおか": ["10號/十天", "十日"], "じゅうよっか": ["14號/十四天", "十四日"], "はつか": ["20號/二十天", "二十日"], "にじゅうよっka": ["24號/二十四天", "二十四日"]
         };
 
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim().toLowerCase();
             if(!w) return;
 
-            // 📍 如果匹配大腦，直接填寫，絕不問 API
-            if(GeminiAuthBrain[w]) {
-                document.getElementById('meaning').value = GeminiAuthBrain[w][0];
-                document.getElementById('reading').value = GeminiAuthBrain[w][1];
+            // 1. 如果命中我的核心權威表，直接秒回最正確的答案
+            if(GeminiBrain[w]) {
+                document.getElementById('meaning').value = GeminiBrain[w][0];
+                document.getElementById('reading').value = GeminiBrain[w][1];
                 return;
             }
 
-            // 📍 新單字：執行靜默漢字提取 (過濾掉所有亂碼音譯)
+            // 2. 如果是字典外單字，採用「安全漢字提取」(不再使用 Google 的亂碼翻譯)
             try {
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
                 const res = await fetch(url); const data = await res.json();
                 if(data && data[0] && data[0][0]) {
                     let resM = data[0][0][0];
-                    // 如果翻譯結果裡面有假名，代表 Google 在亂翻，我們不填寫
+                    // 核心邏輯：如果翻譯結果含有假名或音譯（如伽津），代表不準確，我們不填寫
                     if (/[ぁ-んァ-ン]/.test(resM)) resM = ""; 
-                    resM = resM.replace(/\(.*\)/g, '').trim();
-                    document.getElementById('meaning').value = resM;
-
+                    document.getElementById('meaning').value = resM.replace(/\(.*\)/g, '').trim();
                     let sugK = (data[0][1] && data[0][1][3]) ? data[0][1][3] : (data[5] && data[5][0] && data[5][0][2] && data[5][0][2][0] ? data[5][0][2][0][0] : "");
-                    if (sugK && sugK !== w && !/[a-zA-Zぁ-んァ-ン]/.test(sugK)) {
-                        document.getElementById('reading').value = sugK;
-                    }
+                    if (sugK && sugK !== w && !/[a-zA-Zぁ-んァ-ン]/.test(sugK)) document.getElementById('reading').value = sugK;
                 }
             } catch(e) {}
         };
 
-        // --- 🚀 UI 聯動與渲染 ---
+        // --- 🚀 UI 聯動核心 ---
         window.renderNewCategoryUI = () => {
             const container = document.getElementById('new-category-picker');
             const categories = (window.selectedNewLesson === '附錄') ? ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞', '其他'] : ['n.', 'v.', 'adj.', '其他'];
@@ -180,6 +179,7 @@
             setTimeout(setupDraggable, 50);
         };
 
+        // --- 🚀 重複檢查機制 ---
         window.submitNewWord = async () => {
             const w = document.getElementById('word').value.trim(), r = document.getElementById('reading').value.trim(), m = document.getElementById('meaning').value.trim();
             if (!w || !m) return;
