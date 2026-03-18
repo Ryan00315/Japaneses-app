@@ -12,17 +12,15 @@
         .card-front, .card-back { backface-visibility: hidden; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 40px; padding: 2rem; pointer-events: none; }
         .card-back { transform: rotateY(180deg); }
         .sticky-header { z-index: 200 !important; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); position: sticky; top: 0; }
-        .lesson-active, .type-active, .active-new-cat, .active-edit-cat { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
+        .lesson-active, .type-active, .active-new-cat { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
         .note-active { background-color: #f97316 !important; color: white !important; border-color: #f97316 !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; overflow-x: auto; display: flex; gap: 0.5rem; -webkit-overflow-scrolling: touch; cursor: grab; user-select: none; }
         #input-section { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.4s ease; }
         #input-section.show { max-height: 2000px; opacity: 1; margin-bottom: 1.5rem; }
         .ls-btn-style { color: #64748b; font-weight: 700; font-size: 11px; border-color: #e2e8f0; white-space: nowrap; flex-shrink: 0; }
-        #toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 100px; transform: translateX(-50%); font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 1.5s; }
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 100px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 100px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        #toast { visibility: hidden; min-width: 200px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 100px; transform: translateX(-50%); font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: opacity 0.3s; }
+        #toast.show { visibility: visible; opacity: 1; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
@@ -72,11 +70,11 @@
             </div>
             
             <div class="flex gap-2 mb-3">
-                <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
-                <button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第二冊</button>
-                <button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">個人筆記</button>
+                <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">第一冊</button>
+                <button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">第二冊</button>
+                <button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">個人筆記</button>
             </div>
-            <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2 flex gap-2 overflow-x-auto"></div>
+            <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2 flex gap-2"></div>
             <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6 no-scrollbar"></div>
             
             <button id="submit-btn" onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm">儲存到單字冊</button>
@@ -100,63 +98,66 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 橫向拖曳引擎 ---
+        // --- 🚀 全自動拖曳引擎 ---
         const setupDraggable = () => {
-            const draggables = document.querySelectorAll('.no-scrollbar');
-            draggables.forEach(el => {
+            document.querySelectorAll('.no-scrollbar').forEach(el => {
                 let isDown = false, startX, scrollLeft;
-                el.addEventListener('mousedown', (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; });
-                el.addEventListener('mouseleave', () => { isDown = false; });
-                el.addEventListener('mouseup', () => { isDown = false; });
-                el.addEventListener('mousemove', (e) => {
+                el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; };
+                el.onmouseleave = () => isDown = false;
+                el.onmouseup = () => isDown = false;
+                el.onmousemove = (e) => {
                     if (!isDown) return;
                     e.preventDefault();
-                    const x = e.pageX - el.offsetLeft;
-                    el.scrollLeft = scrollLeft - (x - startX) * 2;
-                });
+                    el.scrollLeft = scrollLeft - (e.pageX - el.offsetLeft - startX) * 2;
+                };
             });
         };
 
-        // --- 🚀 真 AI 智慧翻譯接管 (徹底廢除字典與 Google API) ---
+        // --- 🚀 AI 智慧解析翻譯引擎 (強勢提取漢字) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
 
-            // 📍 智慧分流映射 (僅針對極端教材單字保留高速通道)
-            const fastTrack = {
-                "ひとりで": ["獨自、一個人", "一人で"], "かぞく": ["家人", "家族"], "かれ": ["他", "彼"]
-            };
-            if(fastTrack[w]) {
-                document.getElementById('meaning').value = fastTrack[w][0];
-                document.getElementById('reading').value = fastTrack[w][1];
-                window.showToast("✅ AI 翻譯完成");
-                return;
-            }
-
-            // 📍 智慧翻譯解析 (直接模擬我的推論過程)
             try {
+                // 深度提取 API
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
-                const res = await fetch(url); const data = await res.json();
+                const res = await fetch(url);
+                const data = await res.json();
+                
                 if(data && data[0] && data[0][0]) {
                     let resM = data[0][0][0];
-                    // AI 邏輯：洗掉括號、假名、重複字
+                    // 1. 洗掉括號日文與疊字
                     resM = resM.replace(/\(.*\)/g, '').replace(/[ぁ-んァ-ン]/g, '').trim();
                     if(resM.length > 1 && resM.substring(0, resM.length/2) === resM.substring(resM.length/2)) resM = resM.substring(0, resM.length/2);
+                    
+                    // 2. 特殊教材修正
+                    if(w === "ひとりで") resM = "獨自、一個人";
+                    if(w === "かぞく") resM = "家人、家族";
+                    if(w === "ともだち") resM = "朋友";
                     document.getElementById('meaning').value = resM;
 
-                    // AI 邏輯：深度漢字抓取
-                    let sugK = (data[0][1] && data[0][1][3]) ? data[0][1][3] : (data[5] && data[5][0] && data[5][0][2] && data[5][0][2][0] ? data[5][0][2][0][0] : "");
+                    // 3. 強勢漢字提取 (V25 核心：不放過任何漢字)
+                    let sugK = "";
+                    if (data[0][1] && data[0][1][3]) sugK = data[0][1][3];
+                    else if (data[5] && data[5][0] && data[5][0][2] && data[5][0][2][0]) sugK = data[5][0][2][0][0];
+                    
+                    // 如果還是沒有，嘗試從回傳的羅馬字映射中尋找
+                    if (!sugK && data[0][1] && data[0][1][2]) sugK = data[0][1][2];
+
+                    // 最終檢查：如果提取到的是假名或英文，則放棄填寫漢字
                     if (sugK && sugK !== w && !/[a-zA-Zぁ-んァ-ン]/.test(sugK)) {
                         document.getElementById('reading').value = sugK;
                     } else {
-                        document.getElementById('reading').value = ""; 
+                        // 針對特定單字的保底漢字
+                        const backup = {"ひとりで":"一人で", "かぞく":"家族", "ともだち":"友達", "かれ":"彼", "じてんしゃ":"自転車"};
+                        document.getElementById('reading').value = backup[w] || "";
                     }
                     window.showToast("✅ AI 翻譯完成");
                 }
-            } catch(e) { window.showToast("❌ 智慧引擎連結失敗"); }
+            } catch(e) { window.showToast("❌ 翻譯同步失敗"); }
         };
 
-        // --- UI 渲染與按鈕恢復 ---
+        // --- 🚀 穩定渲染函數 (不消失) ---
         window.setNewBookTab = (b) => { window.newWordBook = b; window.selectedNewLesson = (b==='note'?'個人筆記':(b===1?'L1':'L13')); window.renderNewLessonUI(); };
         window.renderNewLessonUI = () => {
             const c = document.getElementById('new-lesson-container');
@@ -166,7 +167,7 @@
             if (window.newWordBook === 'note') c.innerHTML = "";
             else c.innerHTML = BOOK_MAP[window.newWordBook].map(l => `<button onclick="window.setNewLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>`).join('');
             window.renderNewCategoryUI();
-            setTimeout(setupDraggable, 100);
+            setTimeout(setupDraggable, 50);
         };
         window.setNewLesson = (l) => { window.selectedNewLesson = l; window.renderNewLessonUI(); };
         window.renderNewCategoryUI = () => {
@@ -175,17 +176,7 @@
         };
         window.setNewCategory = (c) => { window.selectedNewCat = c; window.renderNewCategoryUI(); };
 
-        window.renderLessonUI = () => {
-            const c = document.getElementById('lesson-filter-container');
-            document.getElementById('book1-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`;
-            document.getElementById('book2-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500'}`;
-            document.getElementById('book-note-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook==='note'?'note-active text-white':'bg-white text-slate-500'}`;
-            if (window.currentBook === 'note') c.innerHTML = "";
-            else c.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join('');
-            setTimeout(setupDraggable, 100);
-        };
-
-        // 基礎渲染邏輯
+        // 列表與同步
         window.renderList = () => {
             const search = document.getElementById('searchInput').value.toLowerCase();
             let filtered = window.vocabs.filter(v => {
@@ -209,14 +200,21 @@
         window.submitNewWord = async () => {
             const w = document.getElementById('word').value.trim(), r = document.getElementById('reading').value.trim(), m = document.getElementById('meaning').value.trim();
             if (!w || !m) return alert("內容不完整");
-            const data = { word: w, reading: r, meaning: m, lesson: window.selectedNewLesson, category: window.selectedNewCat, createdAt: new Date() };
-            if (window.selectedNewLesson === '個人筆記') data.uid = currentUser;
-            await addDoc(vocabsCol, data); document.getElementById('word').value = document.getElementById('reading').value = document.getElementById('meaning').value = ""; window.showToast("✅ 已儲存");
+            await addDoc(vocabsCol, { word: w, reading: r, meaning: m, lesson: window.selectedNewLesson, category: window.selectedNewCat, createdAt: new Date(), uid: window.selectedNewLesson === '個人筆記' ? currentUser : null });
+            document.getElementById('word').value = document.getElementById('reading').value = document.getElementById('meaning').value = ""; window.showToast("✅ 已儲存");
         };
 
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.renderLessonUI(); window.renderList(); };
+        window.renderLessonUI = () => {
+            const c = document.getElementById('lesson-filter-container');
+            document.getElementById('book1-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`;
+            document.getElementById('book2-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500'}`;
+            document.getElementById('book-note-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook==='note'?'note-active text-white':'bg-white text-slate-500'}`;
+            if (window.currentBook === 'note') c.innerHTML = ""; else c.innerHTML = BOOK_MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>`).join('');
+            setTimeout(setupDraggable, 50);
+        };
         window.toggleLesson = (l) => { const i = window.selectedLessons.indexOf(l); if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l); window.renderLessonUI(); window.renderList(); };
-        window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.className = "show"; setTimeout(() => { t.className = ""; }, 2000); };
+        window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2000); };
         window.fixScroll = () => { setTimeout(() => { const section = document.getElementById('input-section'); if(section && section.classList.contains('show')) window.scrollTo({ top: section.offsetTop - 280, behavior: 'smooth' }); }, 300); };
         window.speakAction = (t) => { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.5; window.speechSynthesis.speak(u); };
 
