@@ -79,26 +79,63 @@
         const MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
 
         // --- 🚀 最終極 JSON 翻譯解析器 ---
-        window.autoTranslate = async () => {
-    const w = document.getElementById('word').value.trim(); 
-    if(!w) return; 
+window.autoTranslate = async () => {
+    const w = document.getElementById('word').value.trim();
+    if (!w) return;
     window.showToast("⏳ AI 正在翻譯...");
 
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEY}`, {
-            method: 'POST', 
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ 
-                contents: [{ 
-                    parts: [{ 
-                        text: `You are a Japanese translator. Translate the word "${w}" into Japanese Kanji and Traditional Chinese. 
-                        Return ONLY a valid JSON object. 
-                        Example format: {"k":"漢字","m":"繁體中文意思"}
-                        Do not include markdown backticks or any other text.` 
-                    }] 
-                }] 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: `Translate the Japanese word "${w}". 
+                        Return ONLY a JSON object with keys "k" (Kanji/Reading) and "m" (Traditional Chinese meaning). 
+                        Example: {"k":"食べる","m":"吃"} 
+                        Strictly NO markdown, NO code blocks, NO extra text.`
+                    }]
+                }]
             })
         });
+
+        const data = await res.json();
+        
+        // 檢查 API 是否回傳錯誤
+        if (!data.candidates || !data.candidates[0].content.parts[0].text) {
+            throw new Error("API response empty");
+        }
+
+        let text = data.candidates[0].content.parts[0].text;
+        console.log("AI Raw Output:", text); // 可以在 F12 控制台看到 AI 到底回了什麼
+
+        // --- 強力解析邏輯 ---
+        // 1. 移除 Markdown 代碼塊標籤
+        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        // 2. 尋找 JSON 的邊界 { ... }
+        const start = text.indexOf('{');
+        const end = text.lastIndexOf('}');
+        
+        if (start === -1 || end === -1) {
+            throw new Error("Could not find JSON structure");
+        }
+
+        const jsonStr = text.substring(start, end + 1);
+        const result = JSON.parse(jsonStr);
+
+        // 3. 安全填入欄位
+        if (result.k) document.getElementById('reading').value = result.k;
+        if (result.m) document.getElementById('meaning').value = result.m;
+        
+        window.showToast("✅ 翻譯成功");
+
+    } catch (e) {
+        console.error("Translation Error:", e);
+        window.showToast("❌ 解析失敗");
+    }
+};
 
         const d = await res.json();
         let raw = d.candidates[0].content.parts[0].text;
