@@ -80,20 +80,49 @@
 
         // --- 🚀 最終極 JSON 翻譯解析器 ---
         window.autoTranslate = async () => {
-            const w = document.getElementById('word').value.trim(); if(!w) return; window.showToast("⏳ AI 正在翻譯...");
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEY}`, {
-                    method: 'POST', headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `Translate "${w}". Return ONLY strict JSON: {"k":"日語漢字","m":"繁體中文意思"}. NO explanation. NO markdown.` }] }] })
-                });
-                const d = await res.json(); const raw = d.candidates[0].content.parts[0].text;
-                // 🧠 使用「暴力邊界法」：只挖取 JSON 區塊並解析
-                const result = JSON.parse(raw.match(/\{.*\}/s)[0]);
-                document.getElementById('reading').value = result.k.trim();
-                document.getElementById('meaning').value = result.m.trim();
-                window.showToast("✅ 翻譯成功");
-            } catch(e) { window.showToast("❌ 解析失敗，請重試一次"); }
-        };
+    const w = document.getElementById('word').value.trim(); 
+    if(!w) return; 
+    window.showToast("⏳ AI 正在翻譯...");
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEY}`, {
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ 
+                contents: [{ 
+                    parts: [{ 
+                        text: `You are a Japanese translator. Translate the word "${w}" into Japanese Kanji and Traditional Chinese. 
+                        Return ONLY a valid JSON object. 
+                        Example format: {"k":"漢字","m":"繁體中文意思"}
+                        Do not include markdown backticks or any other text.` 
+                    }] 
+                }] 
+            })
+        });
+
+        const d = await res.json();
+        let raw = d.candidates[0].content.parts[0].text;
+
+        // 1. 清理字串：移除可能存在的 Markdown 標籤與空白
+        // 移除 ```json 或 ``` 以及前後空格
+        raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+
+        // 2. 暴力提取：尋找第一個 { 和最後一個 } 之間的內容
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No JSON found");
+
+        const result = JSON.parse(jsonMatch[0]);
+
+        // 3. 填入欄位
+        document.getElementById('reading').value = result.k || "";
+        document.getElementById('meaning').value = result.m || "";
+        window.showToast("✅ 翻譯成功");
+
+    } catch(e) { 
+        console.error("解析錯誤詳情:", e);
+        window.showToast("❌ 解析失敗，請再點一次"); 
+    }
+};
 
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b==='note'?['個人筆記']:[]); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
         window.renderLessonUI = () => {
