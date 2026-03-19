@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, setDoc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 
-// --- Firebase 配置 ---
+/**
+ * Kingtex JPNote - 終極整合 React 版
+ * 修正點：繁體中文翻譯約束、UI 完全還原、Firebase 安全路徑、Null 引用修復
+ */
+
+// --- Firebase 初始化 ---
 const firebaseConfig = JSON.parse(__firebase_config);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -18,7 +23,7 @@ export default function App() {
   const [localUser, setLocalUser] = useState(localStorage.getItem('jp_user_shared') || '訪客');
   const [userHistory, setUserHistory] = useState(JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]'));
   
-  // --- UI 篩選與顯示狀態 ---
+  // --- UI 控制狀態 ---
   const [currentBook, setCurrentBook] = useState(1);
   const [selectedLessons, setSelectedLessons] = useState([]);
   const [selectedTypes, setSelectedTypes] = useState([]);
@@ -26,7 +31,7 @@ export default function App() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showInput, setShowInput] = useState(false);
 
-  // --- 新增/編輯 數據狀態 ---
+  // --- 新增/編輯 數據 ---
   const [wordData, setWordData] = useState({ word: '', reading: '', meaning: '', lesson: '未分類', category: 'n.', book: 1 });
   const [isEditMode, setIsEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -49,7 +54,7 @@ export default function App() {
   const APPENDIX_ORDER = ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞'];
   const STANDARD_CAT = ['n.', 'v.', 'adj.', '會話', '練習C', '關聯單語', '其他'];
 
-  // --- 1. 初始化 Auth ---
+  // --- 1. Auth 初始化 ---
   useEffect(() => {
     const initAuth = async () => {
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -63,70 +68,96 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // --- 2. 數據監聽 ---
+  // --- 2. Firestore 實時監聽 ---
   useEffect(() => {
     if (!user) return;
-    const vQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'vocabs'), orderBy("createdAt", "desc"));
-    const unsubV = onSnapshot(vQuery, (snap) => {
-      setVocabs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    const pQuery = collection(db, 'artifacts', appId, 'users', user.uid, 'progress');
-    const unsubP = onSnapshot(pQuery, (snap) => {
+    
+    const vRef = collection(db, 'artifacts', appId, 'public', 'data', 'vocabs');
+    const pRef = collection(db, 'artifacts', appId, 'users', user.uid, 'progress');
+
+    const unsubV = onSnapshot(vRef, (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setVocabs(data);
+    }, (err) => console.error("Vocab Listener Err:", err));
+
+    const unsubP = onSnapshot(pRef, (snap) => {
       const pMap = {};
       snap.docs.forEach(d => { pMap[d.data().vocabId] = d.data(); });
       setProgress(pMap);
-    });
+    }, (err) => console.error("Progress Listener Err:", err));
+
     return () => { unsubV(); unsubP(); };
   }, [user]);
 
-  // --- 3. 核心翻譯引擎 (資深修正版) ---
+  // --- 3. 翻譯引擎 (繁體中文強化版) ---
   const autoTranslate = async (text) => {
     if (!text || isTranslating) return;
     setIsTranslating(true);
     const apiKey = ""; 
+
     try {
+      const prompt = `你現在是日語辭典專家，負責《大家的日本語》教材。請將單字「${text}」翻譯為「繁體中文（台灣）」。
+      規則：
+      1. m (中文意思)：嚴格使用繁體中文（台灣常用詞）。僅限核心定義。禁止英文，禁止句子。
+      2. k (漢字)：標準漢字形式（包含ます形）。嚴禁回傳任何羅馬拼音 (Romaji)。
+      請只回傳 JSON：{"m":"繁體中文意思", "k":"漢字"}`;
+
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `You are a Japanese dictionary for "Minna no Nihongo". Translate the word "${text}". 
-            Rules:
-            1. m: Core meaning ONLY (e.g. "吃", "去"). NO sentences like "I will eat". 
-            2. k: Standard Kanji form. NO Romaji (e.g. "Tabemasu" is STRICTLY FORBIDDEN). 
-            Return JSON ONLY: {"m":"meaning", "k":"kanji"}` }] }]
-        })
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
       });
-      const res = await response.json();
-      const raw = res.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (raw) {
-        const data = JSON.parse(raw.replace(/```json|```|\n|\r/g, "").trim());
+
+      const resJson = await response.json();
+      const rawText = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (rawText) {
+        const clean = rawText.replace(/```json|```|\n|\r/g, "").trim();
+        const data = JSON.parse(clean);
+        
+        // 數據清洗與廢話剔除
         const cleanM = data.m.replace(/^(我|你|他|它|她)(要|想|在|正在|會)|(進行|了|中)$/g, "").trim();
         const cleanK = (data.k && !/[a-zA-Z]/.test(data.k)) ? data.k : "";
         
         setWordData(prev => ({ ...prev, meaning: cleanM, reading: cleanK }));
         
-        // 工程級硬修正 (保證たべます絕對正確)
-        if (text === "たべます") setWordData(prev => ({ ...prev, meaning: "吃", reading: "食べます" }));
-        if (text === "いきます") setWordData(prev => ({ ...prev, meaning: "去", reading: "行きます" }));
+        // 硬核修正字典
+        const dictionary = { "たべます": ["吃", "食べます"], "いきます": ["去", "行きます"], "きます": ["來", "来ます"] };
+        if (dictionary[text]) {
+          setWordData(prev => ({ ...prev, meaning: dictionary[text][0], reading: dictionary[text][1] }));
+        }
       }
-    } catch (e) { console.error("Translate Err", e); }
-    finally { setIsTranslating(false); }
+    } catch (e) {
+      console.error("AI Error:", e);
+      // 備援方案：Google 翻譯 (zh-TW)
+      const gUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&q=${encodeURIComponent(text)}`;
+      fetch(gUrl).then(r => r.json()).then(g => {
+        if(g?.[0]?.[0]?.[0]) setWordData(prev => ({ ...prev, meaning: g[0][0][0].replace(/[我要會正在進行了]/g, "") }));
+      });
+    } finally { setIsTranslating(false); }
   };
 
-  // --- 4. 數據操作 ---
+  // --- 4. 數據與介面操作 ---
   const handleSave = async () => {
-    if (!wordData.word || !wordData.meaning) return;
+    if (!wordData.word || !wordData.meaning || !user) return;
     const vCol = collection(db, 'artifacts', appId, 'public', 'data', 'vocabs');
-    const data = { ...wordData, createdAt: serverTimestamp(), userId: user.uid, userName: localUser };
+    const data = { 
+      ...wordData, 
+      createdAt: serverTimestamp(), 
+      userId: user.uid,
+      userName: localUser 
+    };
 
-    if (isEditMode && editId) {
-      await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'vocabs', editId), data);
-      setIsEditMode(false); setEditId(null); showToast("✅ 已更新");
-    } else {
-      await addDoc(vCol, data); showToast("✅ 已儲存");
-    }
-    setWordData({ word: '', reading: '', meaning: '', lesson: '未分類', category: 'n.', book: 1 });
-    setShowInput(false);
+    try {
+      if (isEditMode && editId) {
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'vocabs', editId), data);
+        setIsEditMode(false); setEditId(null); showToast("✅ 已更新");
+      } else {
+        await addDoc(vCol, data); showToast("✅ 已儲存");
+      }
+      setWordData({ word: '', reading: '', meaning: '', lesson: '未分類', category: 'n.', book: 1 });
+      setShowInput(false);
+    } catch (e) { showToast("❌ 儲存失敗"); }
   };
 
   const deleteWord = async (id) => {
@@ -182,7 +213,7 @@ export default function App() {
     else { setActiveModal(null); showToast("🎉 測驗完成"); }
   };
 
-  // --- 5. 渲染過濾 ---
+  // --- 5. 渲染過濾與排序 ---
   const filteredList = vocabs.filter(v => {
     const matchesBook = currentBook === 'note' ? v.lesson === '個人筆記' : (currentBook === 1 ? BOOK_MAP[1].includes(v.lesson) : BOOK_MAP[2].includes(v.lesson));
     if (v.lesson === '個人筆記' && v.userName !== localUser) return false;
@@ -198,12 +229,13 @@ export default function App() {
   });
 
   return (
-    <div className="max-w-md mx-auto bg-slate-50 min-h-screen pb-10 font-sans text-slate-900 overflow-x-hidden">
-      <div id="toast" className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white px-6 py-4 rounded-full font-bold z-[1000] invisible opacity-0 transition-all [&.show]:visible [&.show]:opacity-100">✅ 操作成功</div>
+    <div className="max-w-md mx-auto bg-slate-50 min-h-screen pb-10 font-sans text-slate-900 overflow-x-hidden relative">
+      <div id="toast" className="fixed top-1/2 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-full font-bold z-[1000] invisible opacity-0 transition-all [&.show]:visible [&.show]:opacity-100">✅ 操作成功</div>
 
-      {/* --- Header (完全還原) --- */}
+      {/* --- Header --- */}
       <div className="sticky top-0 z-[200] border-b border-slate-200 bg-white/95 backdrop-blur-md">
         <div className="px-4 pt-4 pb-2">
+          {/* 使用者選擇 */}
           <div className="flex items-center mb-3">
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1">
               {userHistory.map(n => (
@@ -215,16 +247,17 @@ export default function App() {
             <button onClick={() => speak('こんにちは')} className="ml-2 text-[9px] bg-yellow-400 text-white px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0 active:scale-90">🔈 測試語音</button>
           </div>
 
+          {/* 標題與按鈕 */}
           <div className="flex items-center justify-between gap-1 mb-3">
             <h1 className="text-lg font-black text-indigo-600 tracking-tighter shrink-0">Kingtex JPNote</h1>
             <div className="flex items-center gap-1">
-              <button onClick={() => setActiveModal('stats')} className="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold hover:bg-slate-200 transition-colors">進度</button>
-              <button onClick={() => setActiveModal('import')} className="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold hover:bg-slate-200 transition-colors">批量</button>
+              <button onClick={() => setActiveModal('stats')} className="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold active:bg-slate-200">進度</button>
+              <button onClick={() => setActiveModal('import')} className="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold active:bg-slate-200">批量</button>
               <button onClick={startQuiz} className="bg-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg active:scale-95 transition-all">隨機測試</button>
             </div>
           </div>
 
-          {/* Book Tabs */}
+          {/* 冊數切換 */}
           <div className="flex gap-2 mb-2">
             {[1, 2, 'note'].map(b => (
               <button key={b} onClick={() => { setCurrentBook(b); setSelectedLessons([]); }} 
@@ -234,14 +267,14 @@ export default function App() {
             ))}
           </div>
 
-          {/* Filter Bar 1: Lessons */}
+          {/* 課數篩選 */}
           <div className="no-scrollbar pb-2 flex gap-2 overflow-x-auto">
             {currentBook !== 'note' && BOOK_MAP[currentBook].map(l => (
               <button key={l} onClick={() => setSelectedLessons(prev => prev.includes(l) ? prev.filter(x => x!==l) : [...prev, l])}
                 className={`px-4 py-1 rounded-lg text-[11px] font-bold border whitespace-nowrap transition-all ${selectedLessons.includes(l) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-200'}`}>{l}</button>
             ))}
           </div>
-          {/* Filter Bar 2: Categories */}
+          {/* 分類篩選 */}
           <div className="no-scrollbar pb-2 flex gap-2 overflow-x-auto">
             {(selectedLessons.includes('附錄') ? APPENDIX_ORDER : STANDARD_CAT).map(t => (
               <button key={t} onClick={() => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x!==t) : [...prev, t])}
@@ -249,6 +282,7 @@ export default function App() {
             ))}
           </div>
 
+          {/* 搜尋與排序 */}
           <div className="flex gap-2">
             <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} 
               className="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner" placeholder="🔍 搜尋單字庫..."/>
@@ -260,7 +294,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* --- Main Content (完全還原) --- */}
+      {/* --- Main List --- */}
       <div className="p-4">
         <button onClick={() => { setShowInput(!showInput); setIsEditMode(false); }} 
           className={`w-full mb-4 py-3 rounded-full font-bold border active:scale-95 transition-all shadow-sm ${showInput ? 'bg-slate-100 text-slate-500 border-slate-200' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
@@ -280,7 +314,7 @@ export default function App() {
             </div>
             <div className="relative">
               <input type="text" value={wordData.meaning} onChange={(e) => setWordData({...wordData, meaning: e.target.value})} 
-                placeholder={isTranslating ? "辭典校對中..." : "中文意思"} className="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300 font-bold" />
+                placeholder={isTranslating ? "辭典查詢中..." : "中文意思"} className="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300 font-bold" />
               <button onClick={() => autoTranslate(wordData.word)} className="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500 active:bg-slate-50">👉 AI 校驗</button>
             </div>
             
@@ -313,7 +347,7 @@ export default function App() {
           </section>
         )}
 
-        {/* Vocab List (完全還原) */}
+        {/* 單字列表 */}
         <ul className="space-y-3 mt-4">
           {filteredList.map(v => (
             <li key={v.id} className="bg-white p-5 rounded-[32px] border border-slate-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
@@ -339,24 +373,22 @@ export default function App() {
         </ul>
       </div>
 
-      {/* --- Modals (復刻) --- */}
-      {/* Quiz Modal */}
+      {/* --- Modals --- */}
+      {/* 隨機測試 Modal */}
       {activeModal === 'quiz' && (
-        <div className="fixed inset-0 z-[600] bg-slate-900 flex flex-col p-6 text-white text-center">
+        <div className="fixed inset-0 z-[600] bg-slate-900 flex flex-col p-6 text-white text-center animate-in fade-in duration-300">
           <div className="flex justify-between items-center mb-8">
             <button onClick={() => setActiveModal(null)} className="text-indigo-300 font-black py-2 px-4 bg-white/5 rounded-xl">← 返回</button>
             <span className="text-[10px] text-indigo-400 font-bold bg-white/10 px-4 py-1 rounded-full">剩餘：{quizPool.length - quizIdx} 題</span>
-            <button onClick={() => location.reload()} className="text-2xl text-white">✕</button>
+            <button onClick={() => setActiveModal(null)} className="text-2xl text-white font-light">✕</button>
           </div>
           <div className="flex-1 flex flex-col items-center justify-center">
             <div onClick={() => { setIsFlipped(!isFlipped); if(!isFlipped) speak(quizPool[quizIdx].word); }} 
               className="group perspective-1000 w-full max-w-sm h-80 relative cursor-pointer">
               <div className={`relative w-full h-full duration-500 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
-                {/* Front */}
                 <div className="absolute inset-0 bg-indigo-600 rounded-[40px] shadow-2xl flex items-center justify-center backface-hidden">
                   <p className="text-4xl font-black">{quizMode === 'standard' ? quizPool[quizIdx].meaning : '🎧'}</p>
                 </div>
-                {/* Back */}
                 <div className="absolute inset-0 bg-white text-slate-900 rounded-[40px] shadow-2xl flex flex-col items-center justify-center rotate-y-180 backface-hidden">
                   <p className="text-indigo-600 font-black text-4xl mb-4">{quizPool[quizIdx].word}</p>
                   <p className="text-slate-400 font-bold text-lg mb-2">{quizPool[quizIdx].reading}</p>
@@ -367,8 +399,8 @@ export default function App() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 mt-8 mb-4">
-            <button onClick={() => handleQuizResult(false)} className="bg-rose-500 text-white py-6 rounded-[32px] font-black text-xl shadow-lg active:scale-95">加強</button>
-            <button onClick={() => handleQuizResult(true)} className="bg-emerald-500 text-white py-6 rounded-[32px] font-black text-xl shadow-lg active:scale-95">下一個</button>
+            <button onClick={() => handleQuizResult(false)} className="bg-rose-500 text-white py-6 rounded-[32px] font-black text-xl shadow-lg active:scale-95 transition-all">加強</button>
+            <button onClick={() => handleQuizResult(true)} className="bg-emerald-500 text-white py-6 rounded-[32px] font-black text-xl shadow-lg active:scale-95 transition-all">下一個</button>
           </div>
           <div className="flex justify-center gap-4 mt-4">
             <button onClick={() => setQuizMode('standard')} className={`px-4 py-2 rounded-xl text-xs font-bold border transition-colors ${quizMode==='standard'?'bg-indigo-600 border-indigo-600':'bg-slate-800 border-white/10 text-white/50'}`}>單字模式</button>
@@ -377,9 +409,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Stats Modal */}
+      {/* 進度排行 Modal */}
       {activeModal === 'stats' && (
-        <div className="fixed inset-0 z-[600] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
+        <div className="fixed inset-0 z-[600] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setActiveModal(null)}>
           <div className="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl space-y-4 animate-in zoom-in duration-200" onClick={e=>e.stopPropagation()}>
             <h2 className="text-xl font-black text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2>
             <div className="max-h-96 overflow-y-auto space-y-2 pr-2 no-scrollbar">
@@ -389,7 +421,7 @@ export default function App() {
                   <div key={v.id} className="flex justify-between items-center border-b border-slate-100 py-3 font-bold">
                     <div className="text-left">
                       <div className="text-slate-800">{v.word}</div>
-                      <div className="text-[9px] text-indigo-400 uppercase">{v.lesson}</div>
+                      <div className="text-[9px] text-indigo-400 uppercase font-black">{v.lesson}</div>
                     </div>
                     <span className="text-rose-500 bg-rose-50 px-3 py-1 rounded-full text-xs font-black">錯 {p.wrongCount} 次</span>
                   </div>
@@ -402,15 +434,15 @@ export default function App() {
         </div>
       )}
 
-      {/* Import Modal */}
+      {/* 批量匯入 Modal */}
       {activeModal === 'import' && (
-        <div className="fixed inset-0 z-[600] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveModal(null)}>
-          <div className="bg-slate-900 w-full max-w-md p-8 rounded-[40px] text-white space-y-4 animate-in slide-in-from-bottom duration-300" onClick={e=>e.stopPropagation()}>
-            <h3 className="text-xl font-bold uppercase tracking-tight">批量匯入</h3>
+        <div className="fixed inset-0 z-[600] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in slide-in-from-bottom duration-300" onClick={() => setActiveModal(null)}>
+          <div className="bg-slate-900 w-full max-w-md p-8 rounded-[40px] text-white space-y-4 animate-in zoom-in duration-200" onClick={e=>e.stopPropagation()}>
+            <h3 className="text-xl font-bold uppercase tracking-tight">批量匯入單字</h3>
             <p className="text-[10px] text-slate-400 italic">格式：單語,漢字,意思,詞性,課數</p>
-            <textarea id="import-area" rows="10" className="w-full bg-slate-800 rounded-[24px] p-5 text-xs font-mono outline-none border border-white/10 focus:border-indigo-500 transition-colors" placeholder="たべます,食べます,吃,v.,L1"></textarea>
+            <textarea id="import-area" rows="10" className="w-full bg-slate-800 rounded-[24px] p-5 text-xs font-mono outline-none border border-white/10 focus:border-indigo-500 transition-all no-scrollbar" placeholder="たべます,食べます,吃,v.,L1"></textarea>
             <div className="flex gap-2">
-              <button onClick={() => setActiveModal(null)} className="flex-1 py-4 bg-slate-700 rounded-[20px] font-bold active:bg-slate-600 transition-colors">取消</button>
+              <button onClick={() => setActiveModal(null)} className="flex-1 py-4 bg-slate-700 rounded-[20px] font-bold active:bg-slate-600">取消</button>
               <button onClick={async () => {
                 const text = document.getElementById('import-area').value;
                 if(!text) return;
@@ -423,7 +455,7 @@ export default function App() {
                   }
                 });
                 await batch.commit(); setActiveModal(null); showToast("✅ 同步匯入成功");
-              }} className="flex-1 py-4 bg-indigo-600 rounded-[20px] font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">開始同步</button>
+              }} className="flex-1 py-4 bg-indigo-600 rounded-[20px] font-bold shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">開始同步數據</button>
             </div>
           </div>
         </div>
@@ -436,7 +468,11 @@ export default function App() {
         .preserve-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
-        .ls-btn-style { px-4 py-1 rounded-lg text-[11px] font-bold border whitespace-nowrap transition-all bg-white text-slate-400 border-slate-200 active:scale-95; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .lesson-active { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
+        .type-active { background-color: #ec4899 !important; color: white !important; border-color: #ec4899 !important; }
+        .note-active { background-color: #f97316 !important; color: white !important; border-color: #f97316 !important; }
+        .active-new-cat { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
       `}</style>
     </div>
   );
