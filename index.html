@@ -37,10 +37,10 @@
         <button onclick="document.getElementById('input-section').classList.toggle('show'); window.fixScroll();" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full active:scale-95 shadow-sm">＋ 新增單語</button>
         <section id="input-section" class="bg-white rounded-3xl p-5 border shadow-sm">
              <div class="grid grid-cols-2 gap-3 mb-4"><input id="word" type="text" placeholder="單語 (日文)" onkeydown="if(event.key==='Enter') window.autoTranslate()" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300"><input id="reading" type="text" placeholder="日語漢字" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300"></div>
-            <div class="relative mb-4"><input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 pr-32 rounded-2xl outline-none text-sm border focus:border-indigo-300"><button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-[10px] px-3 rounded-xl font-bold text-white shadow-lg">👉 自動翻譯</button></div>
-            <div class="flex gap-2 mb-3"><button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button><button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第二冊</button><button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">個人筆記</button></div>
+            <div class="relative mb-4 text-left"><input id="meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-4 pr-32 rounded-2xl outline-none text-sm border focus:border-indigo-300"><button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-[10px] px-3 rounded-xl font-bold text-white shadow-lg">👉 自動填寫</button></div>
+            <div class="flex gap-2 mb-3"><button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">第一冊</button><button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">第二冊</button><button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">個人筆記</button></div>
             <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2 flex gap-2 overflow-x-auto"></div>
-            <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6 no-scrollbar"></div>
+            <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6"></div>
             <button onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold block text-sm active:scale-95 shadow-xl">儲存單字</button>
         </section>
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
@@ -67,27 +67,27 @@
         let user = localStorage.getItem('jp_user_shared') || '訪客'; let history = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
         const MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
 
-        // --- 🚀 終極翻譯穩定方案：雙重獲取 (漢字+意思) ---
+        // --- 🚀 究極原廠翻譯引擎：不再報 PLEASE SELECT LANGUAGES ---
         window.autoTranslate = async () => {
-            const w = document.getElementById('word').value.trim(); if(!w) return; window.showToast("⏳ 正在獲取辭典資料...");
+            const w = document.getElementById('word').value.trim(); if(!w) return; window.showToast("⏳ 獲取資料中...");
             try {
-                // 1. 同步獲取漢字 (由 MyMemory 代理)
-                const resKanji = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(w)}&langpair=ja|ja`);
-                const d1 = await resKanji.json();
-                const kanji = d1.responseData.translatedText;
-                
-                // 2. 獲取精準中文
-                const resMean = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(w)}&langpair=ja|zh-TW`);
-                const d2 = await resMean.json();
-                let mean = d2.responseData.translatedText;
+                // 1. 獲取漢字 (利用 Google 日日翻譯獲取漢字原形)
+                const kanjiUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ja&dt=t&q=${encodeURIComponent(w)}`;
+                const r1 = await fetch(kanjiUrl); const d1 = await r1.json();
+                const kanji = d1[0][0][0];
 
-                // 3. 糾錯 (自動去除我要、我想、正在等贅字)
-                mean = mean.replace(/我要|我想|正在|打算|要去|是在/g, "");
+                // 2. 獲取中文
+                const meanUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&q=${encodeURIComponent(w)}`;
+                const r2 = await fetch(meanUrl); const d2 = await r2.json();
+                let mean = d2[0][0][0];
+
+                // 3. 贅字清洗 (讓翻譯更準確)
+                mean = mean.replace(/我|要|想|是在|打算/g, "");
 
                 document.getElementById('reading').value = (kanji !== w) ? kanji : "";
                 document.getElementById('meaning').value = mean;
-                window.showToast("✅ 漢字與意思已填入");
-            } catch(e) { window.showToast("❌ 伺服器忙碌中，請稍後"); }
+                window.showToast("✅ 填寫成功");
+            } catch(e) { window.showToast("❌ 翻譯失敗，請檢查網路"); }
         };
 
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b==='note'?['個人筆記']:[]); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
@@ -99,9 +99,8 @@
             if(window.currentBook==='note') c.innerHTML=""; else c.innerHTML = MAP[window.currentBook].map(l => `<button onclick="window.toggleLesson('${l}')" class="ls-btn-style ${window.selectedLessons.includes(l)?'lesson-active':'bg-white'}">${l}</button>`).join('');
         };
         window.renderTypeUI = () => {
-            const container = document.getElementById('type-filter'); 
             const types = window.selectedLessons.includes('附錄') ? ['數字', '時間', '量詞'] : ['n.', 'v.', 'adj.', '其他'];
-            container.innerHTML = types.map(x => `<button onclick="window.toggleType('${x}')" class="ls-btn-style border rounded-lg px-3 py-1 ${window.selectedTypes.includes(x)?'type-active':'bg-white'}">${x}</button>`).join('');
+            document.getElementById('type-filter').innerHTML = types.map(x => `<button onclick="window.toggleType('${x}')" class="ls-btn-style border rounded-lg px-3 py-1 ${window.selectedTypes.includes(x)?'type-active':'bg-white'}">${x}</button>`).join('');
         };
         window.toggleLesson = (l) => { const i = window.selectedLessons.indexOf(l); if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
         window.toggleType = (t) => { const i = window.selectedTypes.indexOf(t); if(i>-1) window.selectedTypes.splice(i,1); else window.selectedTypes.push(t); window.renderTypeUI(); window.renderList(); };
