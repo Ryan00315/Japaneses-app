@@ -170,46 +170,71 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 翻譯引擎 (17號, 阿拉伯數字化) ---
+// --- 🚀 雙引擎翻譯 (Google + Gemini AI) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
-            const unitLibrary = {
-                "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"],
-                "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"],
-                "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"],
-                "じゅうさんにち": ["13號", "13日"], "じゅうよっか": ["14號", "14日"], "じゅうごにち": ["15號", "15日"], "じゅうろくにち": ["16號", "16日"],
-                "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"], "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"],
-                "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"], "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"],
-                "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"], "にじゅうしちにち": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"],
-                "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"],
-                "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"],
-                "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"],
-                "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"],
-                "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"],
-                "ごじ": ["5點", "5時"], "ろくじ": ["6點", "6時"], "しちじ": ["7點", "7時"], "はちじ": ["8點", "8時"],
-                "くじ": ["9點", "9時"], "じゅうじ": ["10點", "10時"], "じゅういちじ": ["11點", "11時"], "じゅうにじ": ["12點", "12時"],
-                "いっぷん": ["1分", "1分"], "にふん": ["2分", "2分"], "さんぷん": ["3分", "3分"], "よんぷん": ["4分", "4分"],
-                "ごふん": ["5分", "5分"], "ろっぷん": ["6分", "6分"], "ななふん": ["7分", "7分"], "はっぷん": ["8分", "8分"],
-                "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"]
-            };
-            const cleanW = w.toLowerCase().replace(/\s+/g, '');
-            if(unitLibrary[cleanW]) { document.getElementById('meaning').value = unitLibrary[cleanW][0]; document.getElementById('reading').value = unitLibrary[cleanW][1]; return; }
+
+            const GEMINI_API_KEY = "AIzaSyDb7BA3Ikwz33KKjJgrzrc1afHIoGj7q94";
+            const meaningInput = document.getElementById('meaning');
+            const readingInput = document.getElementById('reading');
+            
+            meaningInput.placeholder = "AI 翻譯校正中...";
+
             try {
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&dt=at&q=${encodeURIComponent(w)}`;
-                const res = await fetch(url); const data = await res.json();
-                if(data && data[0] && data[0][0]) {
-                    let resM = data[0][0][0];
-                    if(resM.includes("掌握") || resM.includes("橫幅") || resM.includes("一次") || resM.includes("整天") || resM.includes("志賀")) {
-                        if(w.endsWith("じ")) resM = "點"; if(w.endsWith("にち")) resM = "號";
-                    }
-                    document.getElementById('meaning').value = resM;
-                    let sugK = data[0][1] ? data[0][1][3] : "";
-                    if (!sugK && data[5] && data[5][0] && data[5][0][2] && data[5][0][2][0]) sugK = data[5][0][2][0][0];
-                    if (sugK && sugK !== w && !/[a-zA-Z]/.test(sugK)) document.getElementById('reading').value = sugK;
-                    else document.getElementById('reading').value = "";
+                // 1. 同時啟動 Google 翻譯與 Gemini 請求
+                const googleUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&q=${encodeURIComponent(w)}`;
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+                
+                const geminiPayload = {
+                    contents: [{
+                        parts: [{
+                            text: `你現在是日語教學專家，請翻譯《大家的日本語》初級單字「${w}」。請直接給我最精確、精簡的中文意思（例如：去、吃、老師），不要有任何解釋、標點或贅字。如果是動詞ます形，請回傳動詞原意。`
+                        }]
+                    }]
+                };
+
+                const [googleRes, geminiRes] = await Promise.all([
+                    fetch(googleUrl).then(r => r.json()),
+                    fetch(geminiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(geminiPayload)
+                    }).then(r => r.json())
+                ]);
+
+                // 2. 處理 Google 的結果 (優先拿漢字建議)
+                let googleMeaning = "";
+                let sugK = "";
+                if(googleRes && googleRes[0] && googleRes[0][0]) {
+                    googleMeaning = googleRes[0][0][0];
+                    sugK = googleRes[0][1] ? googleRes[0][1][3] : "";
+                    if (!sugK && googleRes[5] && googleRes[5][0]) sugK = googleRes[5][0][2][0][0];
                 }
-            } catch(e) {}
+
+                // 3. 處理 Gemini 的結果 (拿最準確的語意)
+                let aiMeaning = "";
+                if(geminiRes && geminiRes.candidates && geminiRes.candidates[0].content.parts[0].text) {
+                    aiMeaning = geminiRes.candidates[0].content.parts[0].text.trim();
+                }
+
+                // 4. 決策填入
+                // 優先使用 AI 翻譯的語意（避開 Google 的贅字），若 AI 失敗則降級使用 Google 翻譯
+                meaningInput.value = aiMeaning || googleMeaning;
+
+                // 漢字填入：如果 Google 抓到的漢字跟輸入的詞不同，且不是英文，則填入
+                if (sugK && sugK !== w && !/[a-zA-Z]/.test(sugK)) {
+                    readingInput.value = sugK;
+                } else {
+                    readingInput.value = "";
+                }
+
+                meaningInput.placeholder = "中文意思";
+
+            } catch(e) {
+                console.error("翻譯出錯:", e);
+                meaningInput.placeholder = "翻譯失敗，請檢查 API Key";
+            }
         };
 
         window.fixScroll = () => {
