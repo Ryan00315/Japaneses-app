@@ -104,27 +104,10 @@
             <button onclick="document.getElementById('quiz-overlay').classList.add('hidden')" class="text-slate-500 font-bold">返回首頁</button>
         </div>
         <div id="quiz-content" class="w-full max-w-md flex flex-col h-full hidden">
-            <div class="flex justify-between items-center mb-6">
-                <button onclick="window.backToQuizSetup()" class="text-base font-black text-indigo-300">← 返回</button>
-                <span id="quiz-progress-display" class="text-[10px] text-indigo-400"></span>
-                <button onclick="location.reload()" class="text-2xl text-white">✕</button>
-            </div>
-            <div id="quiz-card-container" onclick="window.handleCardClick(event)" class="card-flip flex-1 w-full relative mb-6">
-                <div id="quiz-card" class="card-inner">
-                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex items-center justify-center p-4"><p id="q-meaning-front" class="text-4xl font-black text-center"></p><div id="hear-icon" class="text-6xl hidden">🎧</div></div>
-                    <div class="card-back bg-white text-slate-900 rounded-[40px] p-8 text-center flex flex-col items-center justify-center">
-                        <p id="q-word-answer" class="text-indigo-600 font-black text-4xl mb-4"></p>
-                        <p id="q-reading-back" class="text-slate-400 font-bold text-lg mb-2"></p>
-                        <p id="q-meaning-back" class="text-xl font-bold text-slate-500"></p>
-                        <div class="mt-8"><button onclick="window.playCurrentWord(event)" class="audio-btn bg-slate-50 p-5 rounded-full text-3xl shadow-inner">🔊</button></div>
-                    </div>
-                </div>
-            </div>
-            <div id="spelling-input-area" class="mb-4 hidden"><input type="text" id="spelling-input" placeholder="按 Enter 檢查..." class="w-full p-4 bg-white/10 border-2 border-white/20 rounded-2xl text-center text-xl font-bold text-white outline-none focus:border-indigo-400"><p id="feedback-msg" class="mt-2 text-[10px] font-bold h-5"></p></div>
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <button onclick="window.quizFail()" class="bg-rose-500 text-white py-6 rounded-3xl font-black">加強</button>
-                <button onclick="window.quizPass()" class="bg-emerald-500 text-white py-6 rounded-3xl font-black shadow-lg">下一個</button>
-            </div>
+            <div class="flex justify-between items-center mb-6"><button onclick="window.backToQuizSetup()" class="text-base font-black text-indigo-300">← 返回</button><span id="quiz-progress-display" class="text-[10px] text-indigo-400"></span><button onclick="location.reload()" class="text-2xl text-white">✕</button></div>
+            <div id="quiz-card-container" onclick="window.handleCardClick(event)" class="card-flip flex-1 w-full relative mb-6"><div id="quiz-card" class="card-inner"><div class="card-front bg-indigo-600 text-white rounded-[40px] flex items-center justify-center p-4"><p id="q-meaning-front" class="text-4xl font-black text-center"></p><div id="hear-icon" class="text-6xl hidden">🎧</div></div><div class="card-back bg-white text-slate-900 rounded-[40px] p-8 text-center flex flex-col items-center justify-center"><p id="q-word-answer" class="text-indigo-600 font-black text-4xl mb-4"></p><p id="q-reading-back" class="text-slate-400 font-bold text-lg mb-2"></p><p id="q-meaning-back" class="text-xl font-bold text-slate-500"></p><div class="mt-8"><button onclick="window.playCurrentWord(event)" class="audio-btn bg-slate-50 p-5 rounded-full text-3xl">🔊</button></div></div></div></div>
+            <div id="spelling-input-area" class="mb-4 hidden"><input type="text" id="spelling-input" placeholder="按 Enter 檢查..." class="w-full p-4 bg-white/10 border-2 rounded-2xl text-center text-xl text-white outline-none"><p id="feedback-msg" class="mt-2 text-[10px] font-bold h-5"></p></div>
+            <div class="grid grid-cols-2 gap-4 mb-4"><button onclick="window.quizFail()" class="bg-rose-500 text-white py-6 rounded-3xl font-black">加強</button><button onclick="window.quizPass()" class="bg-emerald-500 text-white py-6 rounded-3xl font-black shadow-lg">下一個</button></div>
         </div>
     </div>
 
@@ -155,6 +138,58 @@
         <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight uppercase">批量匯入</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
     </div>
 
+    <script>
+        // --- 🚀 先行掛載翻譯引擎 (確保在 Module 載入前就生效) ---
+        window.isTranslating = false;
+        window.lastTranslatedWord = "";
+        window.autoTranslate = async () => {
+            const wordEl = document.getElementById('word');
+            const meaningEl = document.getElementById('meaning');
+            const readingEl = document.getElementById('reading');
+            if (!wordEl || !meaningEl || !readingEl) return;
+            
+            const w = wordEl.value.trim();
+            if (window.isTranslating || !w || window.lastTranslatedWord === w) return;
+
+            const API_KEY = "AIzaSyDb7BA3Ikwz33KKjJgrzrc1afHIoGj7q94";
+            window.isTranslating = true;
+            window.lastTranslatedWord = w;
+            meaningEl.placeholder = "🔍 正在翻譯...";
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `你現在是辭典專家，請將單字「${w}」翻譯成《大家的日本語》風格。中文意思僅限核心單詞（如：去、吃），絕對禁止贅字如「我要、進行」。漢字請給出標準形式（含ます形）。請嚴格只回傳 JSON 格式：{"m":"意思", "k":"漢字"}` }] }]
+                    })
+                });
+                const aiData = await response.json();
+
+                if (aiData.candidates && aiData.candidates[0].content.parts) {
+                    let text = aiData.candidates[0].content.parts[0].text.trim();
+                    // 強制過濾 Markdown 與雜質
+                    text = text.replace(/```json|```/g, "").replace(/^"|"$/g, "").trim();
+                    const data = JSON.parse(text);
+                    
+                    let m = data.m.replace(/^(我|你|他)(要|想|在|正在)|(進行|了|中)$/g, "").trim();
+                    const fastFix = { "いきます": "去", "きます": "來", "かえります": "回來/回家", "わかります": "明白/懂" };
+                    if (fastFix[w]) m = fastFix[w];
+
+                    meaningEl.value = m;
+                    readingEl.value = (data.k && data.k !== w && !/[a-zA-Z]/.test(data.k)) ? data.k : "";
+                }
+            } catch (e) {
+                console.error("AI Error:", e);
+                meaningEl.placeholder = "翻譯失敗，請手動輸入";
+            } finally {
+                window.isTranslating = false;
+                meaningEl.placeholder = "中文意思";
+            }
+        };
+    </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -178,51 +213,7 @@
         const APPENDIX_ORDER = ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞'];
         const STANDARD_CAT = ['n.', 'v.', 'adj.', '會話', '練習C', '關聯單語', '其他'];
 
-        // --- 🚀 AI 翻譯引擎 (強制掛載與防禦) ---
-        let isTranslating = false;
-        window.autoTranslate = async () => {
-            const wordEl = document.getElementById('word');
-            const meaningEl = document.getElementById('meaning');
-            const readingEl = document.getElementById('reading');
-            if (!wordEl || !meaningEl || !readingEl) return;
-            
-            const w = wordEl.value.trim();
-            if (isTranslating || !w || window.lastTranslatedWord === w) return;
-
-            const GEMINI_API_KEY = "AIzaSyDb7BA3Ikwz33KKjJgrzrc1afHIoGj7q94";
-            isTranslating = true;
-            window.lastTranslatedWord = w;
-            meaningEl.placeholder = "🔍 校對辭典中...";
-
-            try {
-                const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-                const response = await fetch(aiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `你現在是日語辭典專家。請翻譯日文單字「${w}」。中文意思僅限核心單詞（如：去、吃），禁止贅字。漢字請給出對應的漢字形式。格式：{"m":"意思", "k":"漢字"}` }] }]
-                    })
-                });
-                const aiData = await response.json();
-
-                if (aiData.candidates && aiData.candidates[0].content.parts) {
-                    const rawText = aiData.candidates[0].content.parts[0].text.trim().replace(/```json|```/g, "");
-                    const data = JSON.parse(rawText);
-                    
-                    let cleanM = data.m.replace(/^(我|你|他)(要|想|在|正在)|(進行|了|中)$/g, "").trim();
-                    const fastFix = { "いきます": "去", "きます": "來", "かえります": "回來/回家", "わかります": "明白/懂" };
-                    if (fastFix[w]) cleanM = fastFix[w];
-
-                    meaningEl.value = cleanM;
-                    readingEl.value = (data.k && data.k !== w && !/[a-zA-Z]/.test(data.k)) ? data.k : "";
-                }
-            } catch (e) { console.error("AI Error:", e); } finally {
-                isTranslating = false;
-                meaningEl.placeholder = "中文意思";
-            }
-        };
-
-        // --- 🚀 全功能函式 (全量修復掛載) ---
+        // --- 🚀 功能函式全修復 ---
         window.fixScroll = () => { setTimeout(() => { const s = document.getElementById('input-section'); if(s && s.classList.contains('show')) { window.scrollTo({ top: s.getBoundingClientRect().top + window.pageYOffset - 280, behavior: 'smooth' }); } }, 300); };
         window.showToast = (m) => { const t = document.getElementById("toast"); t.innerText = m; t.className = "show"; setTimeout(() => { t.className = ""; }, 2000); };
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
