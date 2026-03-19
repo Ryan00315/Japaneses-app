@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kingtex JPNote</title>
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .card-flip { perspective: 1000px; height: 100%; width: 100%; }
         .card-inner { transition: transform 0.4s; transform-style: preserve-3d; cursor: pointer; height: 100%; width: 100%; position: relative; }
@@ -162,8 +162,8 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "[https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js](https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js)";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "[https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js](https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js)";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
         // --- GitHub Pages 專用 Firebase 配置 ---
         const firebaseConfig = { 
@@ -225,7 +225,6 @@
                 const aiData = await response.json();
                 if (aiData.candidates?.[0]?.content?.parts?.[0]?.text) {
                     let rawText = aiData.candidates[0].content.parts[0].text.trim();
-                    // 強效清洗：使用 Regex 抓取 {} 之間的內容，解決 Markdown 區塊問題
                     const jsonMatch = rawText.match(/\{.*\}/s);
                     if (jsonMatch) {
                         const data = JSON.parse(jsonMatch[0]);
