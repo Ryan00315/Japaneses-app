@@ -28,29 +28,21 @@
             <div class="flex gap-2 mb-2"><button id="book1-btn" onclick="window.switchBook(1)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第一冊</button><button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第二冊</button><button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">個人筆記</button></div>
             <div class="no-scrollbar pb-2 flex gap-2 overflow-x-auto" id="lesson-filter-container"></div>
             <div id="type-filter" class="no-scrollbar pb-2 flex gap-2 overflow-x-auto"></div>
-            <div class="flex gap-2"><input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋..." class="flex-1 p-3 rounded-2xl bg-white border outline-none text-sm shadow-inner"><button id="sort-btn" onclick="window.toggleSort()" class="bg-white border px-4 rounded-2xl text-[11px] font-bold text-slate-600">排序 ↓</button></div>
+            <div class="flex gap-2"><input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋..." class="flex-1 p-3 rounded-2xl bg-white border outline-none text-sm shadow-inner"><button id="sort-btn" onclick="window.toggleSort()" class="bg-white border px-4 rounded-2xl text-[11px] font-bold text-slate-600 shadow-sm">排序 ↓</button></div>
         </div>
     </div>
-
     <div class="max-w-md mx-auto p-4">
         <button onclick="document.getElementById('input-section').classList.toggle('show'); window.fixScroll();" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full active:scale-95 transition-all shadow-sm">＋ 新增單語</button>
         <section id="input-section" class="bg-white rounded-3xl p-5 border shadow-sm text-center">
-             <div class="grid grid-cols-2 gap-3 mb-4 text-left">
-                <input id="word" type="text" placeholder="單語 (日文)" onkeydown="if(event.key==='Enter') window.autoTranslate()" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-                <input id="reading" type="text" placeholder="日語漢字" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-            </div>
-            <div class="relative mb-4 text-left">
-                <input id="meaning" type="text" placeholder="繁體中文意思" class="w-full bg-slate-50 p-4 pr-32 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-                <button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-[10px] px-3 rounded-xl font-bold text-white shadow-lg">👉 AI 翻譯</button>
-            </div>
-            <div class="flex gap-2 mb-3"><button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">第一冊</button><button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">第二冊</button><button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold">個人筆記</button></div>
+             <div class="grid grid-cols-2 gap-3 mb-4 text-left"><input id="word" type="text" placeholder="單語 (日文)" onkeydown="if(event.key==='Enter') window.autoTranslate()" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300"><input id="reading" type="text" placeholder="日語漢字" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300"></div>
+            <div class="relative mb-4 text-left"><input id="meaning" type="text" placeholder="繁體中文意思" class="w-full bg-slate-50 p-4 pr-32 rounded-2xl outline-none text-sm border focus:border-indigo-300"><button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-[10px] px-3 rounded-xl font-bold text-white shadow-lg">👉 AI 翻譯</button></div>
+            <div class="flex gap-2 mb-3"><button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button><button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第二冊</button><button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">個人筆記</button></div>
             <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2 flex gap-2 overflow-x-auto"></div>
-            <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6"></div>
+            <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6 no-scrollbar"></div>
             <button id="submit-btn" onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold block text-sm shadow-xl active:scale-95">儲存到單字冊</button>
         </section>
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
-
     <div id="quiz-overlay" class="fixed inset-0 z-[400] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">
         <div id="quiz-setup" class="w-full max-w-md"><h2 class="text-2xl font-black mb-6 uppercase">測試範圍統計</h2>
             <div class="bg-slate-800 p-6 rounded-[32px] mb-8 text-left border border-white/10 text-xs">
@@ -65,15 +57,10 @@
             <div class="grid grid-cols-2 gap-4 mb-4"><button onclick="window.quizAction(false)" class="bg-rose-500 text-white py-6 rounded-3xl font-black shadow-lg">加強 (←)</button><button onclick="window.quizAction(true)" class="bg-emerald-500 text-white py-6 rounded-3xl font-black shadow-lg">下一個 (→)</button></div>
         </div>
     </div>
-
     <div id="edit-modal" class="fixed inset-0 z-[350] modal-overlay hidden flex flex-col items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]"><h2 class="text-xl font-black mb-6 text-indigo-600 text-center uppercase">編輯單語</h2>
         <div class="space-y-4"><input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none"><input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none"><input id="edit-meaning" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none font-bold">
         <div class="flex gap-2"><button onclick="window.setEditBook(1)" id="edit-book1-btn" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第一冊</button><button onclick="window.setEditBook(2)" id="edit-book2-btn" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第二冊</button><button onclick="window.setEditBook('note')" id="edit-book-note-btn" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">個人筆記</button></div>
-        <div id="edit-lesson-container" class="no-scrollbar pb-3 flex gap-2 overflow-x-auto"></div><div id="edit-category-picker" class="flex flex-wrap gap-2"></div><div class="flex gap-3 pt-4 border-t"><button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 bg-slate-100 py-3 rounded-2xl font-bold">取消</button><button onclick="window.saveWordEdit()" class="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold">更新</button></div></div></div></div>
-    
-    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4"><div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl text-center"><h2 class="text-xl font-black mb-4 text-indigo-600 uppercase">弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div></div>
-    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white"><div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 uppercase text-center">批量匯入</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div></div>
-
+        <div id="edit-lesson-container" class="no-scrollbar pb-3 flex gap-2 overflow-x-auto"></div><div id="edit-category-picker" class="flex flex-wrap gap-2 no-scrollbar"></div><div class="flex gap-3 pt-4 border-t"><button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 bg-slate-100 py-3 rounded-2xl font-bold">取消</button><button onclick="window.saveWordEdit()" class="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold">更新</button></div></div></div></div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -84,21 +71,17 @@
         let user = localStorage.getItem('jp_user_shared') || '訪客'; let history = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
         const MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
 
-        // --- 🚀 最終究極解析法：全域掃描錨點 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim(); if(!w) return; window.showToast("⏳ AI 正在翻譯...");
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEY}`, {
-                    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `你是一個翻譯機。將 "${w}" 翻譯。規則：日語漢字寫在 "[[K]]" 後，繁體中文意思寫在 "[[M]]" 後。範例：[[K]]誕生日[[M]]生日。不准有其他字。日期時間用數字。` }] }] })
+                    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ contents: [{ parts: [{ text: `你是一個翻譯機。將 "${w}" 翻譯。規則：日語漢字寫在 "[[K]]" 後，繁體中文意思寫在 "[[M]]" 後。範例：[[K]]誕生日[[M]]生日。日期時間用數字。` }] }] })
                 });
-                const d = await res.json(); 
-                const raw = d.candidates[0].content.parts[0].text;
-                // 🧠 使用全域正規表達式掃描，避開所有 AI 廢話與格式錯誤
-                const kMatch = raw.match(/\[\[K\]\](.*?)(?=\[\[|$)/);
-                const mMatch = raw.match(/\[\[M\]\](.*?)(?=\[\[|$)/);
+                const d = await res.json(); const raw = d.candidates[0].content.parts[0].text;
+                const kMatch = raw.match(/\[\[K\]\](.*?)(?=\[\[|$)/); const mMatch = raw.match(/\[\[M\]\](.*?)(?=\[\[|$)/);
                 if (kMatch && mMatch) {
-                    document.getElementById('reading').value = kMatch[1].trim().replace(/\*/g, '');
-                    document.getElementById('meaning').value = mMatch[1].trim().replace(/\*/g, '');
+                    document.getElementById('reading').value = kMatch[1].trim();
+                    document.getElementById('meaning').value = mMatch[1].trim();
                     window.showToast("✅ 填寫成功");
                 } else { throw new Error(); }
             } catch(e) { window.showToast("❌ 解析失敗"); }
@@ -150,7 +133,6 @@
             document.getElementById('quiz-total-info').innerText = `目前選中總數：${pool.length} 題`;
             document.getElementById('quiz-overlay').classList.remove('hidden'); 
         };
-        window.setQuizMode = (m) => { window.quizMode = m; document.getElementById('modeStdBtn').className = `px-4 py-2 rounded-xl text-sm font-bold ${m==='standard'?'bg-indigo-600 text-white':'bg-slate-700'}`; };
         window.startQuiz = () => { if(!window.quizPool.length) return alert("範圍無單字"); window.remainingPool = [...window.quizPool].sort(()=>Math.random()-0.5).slice(0,30); document.getElementById('quiz-setup').classList.add('hidden'); document.getElementById('quiz-content').classList.remove('hidden'); window.nextQuestion(); };
         window.nextQuestion = () => { if(!window.remainingPool.length) return location.reload(); document.getElementById('quiz-card').classList.remove('is-flipped'); window.currentQuizWord = window.remainingPool.shift(); document.getElementById('q-meaning-front').innerText = window.currentQuizWord.meaning; document.getElementById('q-word-answer').innerText = window.currentQuizWord.word; document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || ''; document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning; document.getElementById('quiz-progress-display').innerText = `剩餘：${window.remainingPool.length}`; };
         window.quizAction = async (c) => { const docId = `${user}_${window.currentQuizWord.id}`; const ex = window.userProgress[window.currentQuizWord.id] || { wrongCount: 0 }; await setDoc(doc(pCol, docId), { uid: user, vocabId: window.currentQuizWord.id, wrongCount: c ? ex.wrongCount : (ex.wrongCount + 1), lastUpdate: new Date() }); window.nextQuestion(); };
@@ -162,6 +144,7 @@
         window.toggleSort = () => { window.sortOrder = (window.sortOrder==='desc'?'asc':'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder==='desc'?'↓':'↑'}`; window.renderList(); };
         window.toggleStats = (s) => document.getElementById('stats-modal').classList.toggle('hidden', !s);
         window.toggleImport = (s) => document.getElementById('import-overlay').classList.toggle('hidden', !s);
+        window.setQuizMode = (m) => { window.quizMode = m; document.getElementById('modeStdBtn').className = `px-4 py-2 rounded-xl text-sm font-bold ${m==='standard'?'bg-indigo-600 text-white':'bg-slate-700'}`; };
         window.handleCardClick = (e) => { if(e.target.closest('button')) return; document.getElementById('quiz-card').classList.toggle('is-flipped'); };
         onSnapshot(query(vCol, orderBy("createdAt", "desc")), (snap) => { window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); window.renderList(); });
         onSnapshot(query(pCol, where("uid", "==", user)), (snap) => { window.userProgress = {}; snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); }); window.renderList(); });
