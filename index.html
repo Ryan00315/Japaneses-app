@@ -171,7 +171,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 核心優化：AI 翻譯引擎 (解決「我要去」與「自動漢字」) ---
+       // --- 🚀 資深工程師精校版：大家日語專用辭典引擎 ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if (!w) return;
@@ -179,20 +179,26 @@
             const GEMINI_API_KEY = "AIzaSyDb7BA3Ikwz33KKjJgrzrc1afHIoGj7q94";
             const meaningInput = document.getElementById('meaning');
             const readingInput = document.getElementById('reading');
-            meaningInput.placeholder = "辭典檢索中...";
+            
+            // 保持 UI 體驗，提示正在精確校對
+            meaningInput.placeholder = "正在對照《大家的日本語》辭典義...";
 
             try {
                 const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+                
+                // 強化提示詞：強調「單字本定義」與「禁止句子翻譯」
                 const aiRes = await fetch(aiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{
                             parts: [{
-                                text: `你現在是日語專家辭典。請翻譯單字「${w}」：
-                                1. 中文意思：僅限單詞定義（如：去、吃、老師）。絕對禁止出現「我要、在、進行、了」等贅字。
-                                2. 漢字：提供該單字的標準漢字形式（含ます形，如：行きます）。若無漢字則留空。
-                                請嚴格以 JSON 格式回傳：{"m":"意思", "k":"漢字"}`
+                                text: `你現在是《大家的日本語》專用編纂辭典。
+                                任務：翻譯日文單字「${w}」。
+                                規則：
+                                1. 中文意思：僅限核心定義。若是動詞，請給予單一動詞（如：去、吃、讀）。嚴禁出現「我要、在、進行、了、正在」等對話贅字。
+                                2. 漢字：提供該單字在教材中的正確漢字形式（含ます形，如：行きます、食べます）。若無漢字則留空。
+                                格式：請嚴格只回傳 JSON 格式如下，不需解釋：{"m":"意思", "k":"漢字"}`
                             }]
                         }]
                     })
@@ -202,20 +208,45 @@
                     const rawText = aiRes.candidates[0].content.parts[0].text.trim().replace(/```json|```/g, "");
                     const data = JSON.parse(rawText);
                     
-                    let cleanM = data.m.replace(/我?要|正在|進行|了/g, "");
-                    const fastFix = { "いきます": "去", "きます": "來", "かえります": "回來/回家" };
-                    if (fastFix[w]) cleanM = fastFix[w];
+                    // --- 資深工程師的防禦性邏輯 ---
+                    // 1. 強制剔除所有常見的翻譯贅字 (雙重保障)
+                    let cleanM = data.m.replace(/^(我|你|他)(要|想|在|正在)|(進行|了|中)$/g, "").trim();
+                    
+                    // 2. 處理動詞翻譯的「純淨度」 (例如將「我要去」修正為「去」)
+                    if (w.endsWith("ます")) {
+                        // 移除動詞翻譯常見的語氣詞
+                        cleanM = cleanM.replace(/^(我要|我想|正在)/g, "");
+                    }
 
+                    // 3. 針對《大家的日本語》核心動詞的硬編碼修正 (最高優先級)
+                    const coreVocab = {
+                        "いきます": "去",
+                        "きます": "來",
+                        "かえります": "回來/回家",
+                        "たべます": "吃",
+                        "のみます": "喝",
+                        "わかります": "明白/懂",
+                        "あります": "有/在",
+                        "います": "有/在"
+                    };
+                    if (coreVocab[w]) cleanM = coreVocab[w];
+
+                    // 填入翻譯結果
                     meaningInput.value = cleanM;
-                    readingInput.value = (data.k && data.k !== w && !/[a-zA-Z]/.test(data.k)) ? data.k : "";
+                    
+                    // 填入漢字：排除英文、重複輸入、或無效結果
+                    if (data.k && data.k !== w && !/[a-zA-Z]/.test(data.k)) {
+                        readingInput.value = data.k;
+                    } else {
+                        readingInput.value = "";
+                    }
                 }
                 meaningInput.placeholder = "中文意思";
             } catch (e) {
-                console.error("AI Error:", e);
-                meaningInput.placeholder = "翻譯失敗，請手動輸入";
+                console.error("AI Engine Timeout or Error:", e);
+                meaningInput.placeholder = "翻譯超時，請點擊重試";
             }
         };
-
         // --- 🚀 核心優化：分類 UI (附錄排序與擴充子階層) ---
         const APPENDIX_ORDER = ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞'];
         const STANDARD_CAT = ['n.', 'v.', 'adj.', '會話', '練習C', '關聯單語', '其他'];
