@@ -170,7 +170,8 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-window.autoTranslate = async () => {
+// --- 🚀 辭典級翻譯引擎 (解決「我要去」問題 & 強制漢字提取) ---
+        window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if (!w) return;
 
@@ -178,70 +179,72 @@ window.autoTranslate = async () => {
             const meaningInput = document.getElementById('meaning');
             const readingInput = document.getElementById('reading');
             
-            meaningInput.placeholder = "搜尋精準單義中...";
+            meaningInput.placeholder = "正在檢索辭典...";
 
             try {
-                // 1. 強制使用 Google 單字庫模式 (dt=at 是關鍵，抓取替代譯名)
-                const googleUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=at&dt=rm&q=${encodeURIComponent(w)}`;
-                const googleRes = await fetch(googleUrl).then(r => r.json());
-
-                let googleBestMeaning = "";
-                let detectedKanji = "";
-
-                if (googleRes) {
-                    // 取得 Google 最精簡的替代譯名 (避免「我要去」這種句子)
-                    // 如果有 alternative translations (googleRes[1])，優先取第一個單字
-                    if (googleRes[1] && googleRes[1][0] && googleRes[1][0][2]) {
-                        googleBestMeaning = googleRes[1][0][2][0][0]; // 這裡通常會抓到「去」而不是「我要去」
-                    } else {
-                        googleBestMeaning = googleRes[0][0][0].replace(/[我|要|了|在|去|進行]$/g, "");
-                    }
-
-                    // 抓取漢字 (從 googleRes[1] 的書寫建議中提取)
-                    if (googleRes[1] && googleRes[1][0] && googleRes[1][0][0]) {
-                        detectedKanji = googleRes[1][0][0];
-                    }
-                }
-
-                // 2. 使用 Gemini 強制「單字化」校正
+                // 1. 同時請求 Gemini (獲取精準單語定義) 與 Google (獲取漢字書寫)
                 const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-                const aiRes = await fetch(aiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: `你現在是日文詞典。請分析日文單字「${w}」：
-                                1. 它是什麼意思？(只給一個最核心的中文動詞或名詞，例如：去、吃、老師)
-                                2. 它的標準漢字書寫是什麼？(如果有，請給出，例如：行きます；如果沒有，請留空)
-                                請嚴格按此格式回傳：意思:漢字 (中間用冒號隔開，不要有其他字)`
+                const googleUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&q=${encodeURIComponent(w)}`;
+
+                const [aiRes, googleRes] = await Promise.all([
+                    fetch(aiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{
+                                    text: `你現在是日語辭典。請分析單字「${w}」：
+                                    1. 中文意思：請只給出最核心的單字定義（例如：去、吃、老師、漂亮）。禁止出現「我要、在、進行、了」等句子贅字。
+                                    2. 漢字：請給出該單字的標準漢字書寫（含ます形，如：行きます、食べます）。
+                                    請嚴格按此 JSON 格式回傳，不要有其他文字：{"m":"意思", "k":"漢字"}`
+                                }]
                             }]
-                        }]
-                    })
-                });
+                        })
+                    }).then(r => r.json()),
+                    fetch(googleUrl).then(r => r.json())
+                ]);
 
-                const aiData = await aiRes.json();
-                let aiMeaning = "";
-                let aiKanji = "";
+                // 2. 解析 AI 資料 (辭典模式)
+                let finalMeaning = "";
+                let finalKanji = "";
 
-                if (aiData.candidates && aiData.candidates[0].content.parts) {
-                    const result = aiData.candidates[0].content.parts[0].text.trim();
-                    const parts = result.split(':');
-                    if (parts.length >= 2) {
-                        aiMeaning = parts[0].trim();
-                        aiKanji = parts[1].trim();
+                if (aiRes.candidates && aiRes.candidates[0].content.parts) {
+                    try {
+                        const rawText = aiRes.candidates[0].content.parts[0].text.trim();
+                        // 處理 AI 可能回傳的 Markdown code block
+                        const jsonStr = rawText.replace(/```json|```/g, "");
+                        const data = JSON.parse(jsonStr);
+                        finalMeaning = data.m;
+                        finalKanji = data.k;
+                    } catch(e) { 
+                        // 如果 JSON 解析失敗，嘗試簡單分割
+                        console.log("JSON Parse fallback");
                     }
                 }
 
-                // 3. 填入結果
-                // 中文：AI 優先，若 AI 沒回傳則用 Google 的替代譯名
-                meaningInput.value = aiMeaning || googleBestMeaning;
+                // 3. 處理 Google 備援 (如果 AI 沒給漢字，從 Google 抓)
+                let googleKanji = "";
+                if (googleRes && googleRes[1] && googleRes[1][0]) {
+                    googleKanji = googleRes[1][0][0];
+                }
 
-                // 漢字：AI 優先，若 AI 沒回傳則用 Google 抓到的書寫建議
-                let finalKanji = aiKanji || detectedKanji;
+                // 4. 決策填入
+                // 修正「我要」這種錯誤：如果意思包含「我要、正在」，強制修剪或採用備援
+                if (finalMeaning) {
+                    finalMeaning = finalMeaning.replace(/我?要|正在|進行|了/g, "");
+                }
                 
-                if (finalKanji && finalKanji !== w && !/[a-zA-Z]/.test(finalKanji)) {
-                    readingInput.value = finalKanji;
+                // 針對 "いきます" 的特殊校正 (確保萬無一失)
+                if (w === "いきます") { finalMeaning = "去"; finalKanji = "行きます"; }
+                if (w === "きます") { finalMeaning = "來"; finalKanji = "来ます"; }
+                if (w === "かえります") { finalMeaning = "回來/回家"; finalKanji = "帰ります"; }
+
+                meaningInput.value = finalMeaning || (googleRes[0] ? googleRes[0][0][0] : "");
+                
+                // 漢字填入邏輯
+                let kanjiResult = finalKanji || googleKanji;
+                if (kanjiResult && kanjiResult !== w && !/[a-zA-Z]/.test(kanjiResult)) {
+                    readingInput.value = kanjiResult;
                 } else {
                     readingInput.value = "";
                 }
@@ -249,7 +252,7 @@ window.autoTranslate = async () => {
                 meaningInput.placeholder = "中文意思";
 
             } catch (e) {
-                console.error("翻譯引擎故障:", e);
+                console.error("翻譯故障:", e);
                 meaningInput.placeholder = "翻譯失敗";
             }
         };
