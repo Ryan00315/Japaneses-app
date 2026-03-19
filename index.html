@@ -170,39 +170,40 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 專業版雙引擎翻譯 (精準抓取漢字 + AI 語義校正) ---
-        window.autoTranslate = async () => {
+window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
-            if(!w) return;
+            if (!w) return;
 
             const GEMINI_API_KEY = "AIzaSyDb7BA3Ikwz33KKjJgrzrc1afHIoGj7q94";
             const meaningInput = document.getElementById('meaning');
             const readingInput = document.getElementById('reading');
             
-            meaningInput.placeholder = "AI 校正語義中...";
+            meaningInput.placeholder = "搜尋精準單義中...";
 
             try {
-                // 1. Google 翻譯：專門用來抓取「漢字」與「基礎翻譯」
-                const googleUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&q=${encodeURIComponent(w)}`;
+                // 1. 強制使用 Google 單字庫模式 (dt=at 是關鍵，抓取替代譯名)
+                const googleUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=at&dt=rm&q=${encodeURIComponent(w)}`;
                 const googleRes = await fetch(googleUrl).then(r => r.json());
 
-                let googleMeaning = "";
+                let googleBestMeaning = "";
                 let detectedKanji = "";
 
                 if (googleRes) {
-                    // 取得 Google 基礎翻譯
-                    if (googleRes[0] && googleRes[0][0]) googleMeaning = googleRes[0][0][0];
-                    
-                    // --- 關鍵：從 Google 回傳結構中過濾漢字 ---
-                    // 優先尋找 Google 建議的正確書寫形式
-                    if (googleRes[1] && googleRes[1][0] && googleRes[1][0][1]) {
-                        detectedKanji = googleRes[1][0][0]; 
-                    } else if (googleRes[0][1] && googleRes[0][1][3]) {
-                        detectedKanji = googleRes[0][1][3];
+                    // 取得 Google 最精簡的替代譯名 (避免「我要去」這種句子)
+                    // 如果有 alternative translations (googleRes[1])，優先取第一個單字
+                    if (googleRes[1] && googleRes[1][0] && googleRes[1][0][2]) {
+                        googleBestMeaning = googleRes[1][0][2][0][0]; // 這裡通常會抓到「去」而不是「我要去」
+                    } else {
+                        googleBestMeaning = googleRes[0][0][0].replace(/[我|要|了|在|去|進行]$/g, "");
+                    }
+
+                    // 抓取漢字 (從 googleRes[1] 的書寫建議中提取)
+                    if (googleRes[1] && googleRes[1][0] && googleRes[1][0][0]) {
+                        detectedKanji = googleRes[1][0][0];
                     }
                 }
 
-                // 2. Gemini AI：專門校正為《大家的日本語》風格
+                // 2. 使用 Gemini 強制「單字化」校正
                 const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
                 const aiRes = await fetch(aiUrl, {
                     method: 'POST',
@@ -210,10 +211,10 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [{
-                                text: `你現在是專業日語老師。請翻譯單字「${w}」。
-                                1. 中文意思：請給予最精簡的書面定義（例如：吃、去、老師）。不要有贅字。
-                                2. 漢字：如果該單字有對應的日文漢字，請直接回傳該漢字。如果本身就是漢字或沒有漢字，請回傳空值。
-                                請嚴格遵守此格式回傳：[中文意思],[漢字]`
+                                text: `你現在是日文詞典。請分析日文單字「${w}」：
+                                1. 它是什麼意思？(只給一個最核心的中文動詞或名詞，例如：去、吃、老師)
+                                2. 它的標準漢字書寫是什麼？(如果有，請給出，例如：行きます；如果沒有，請留空)
+                                請嚴格按此格式回傳：意思:漢字 (中間用冒號隔開，不要有其他字)`
                             }]
                         }]
                     })
@@ -224,19 +225,21 @@
                 let aiKanji = "";
 
                 if (aiData.candidates && aiData.candidates[0].content.parts) {
-                    const parts = aiData.candidates[0].content.parts[0].text.split(',');
-                    aiMeaning = parts[0]?.trim().replace(/["'「」]/g, "");
-                    aiKanji = parts[1]?.trim().replace(/["'「」]/g, "");
+                    const result = aiData.candidates[0].content.parts[0].text.trim();
+                    const parts = result.split(':');
+                    if (parts.length >= 2) {
+                        aiMeaning = parts[0].trim();
+                        aiKanji = parts[1].trim();
+                    }
                 }
 
-                // 3. 決策填入邏輯
-                // 中文意思：AI 優先 (因為 AI 不會翻出「我要去」這種句子)
-                meaningInput.value = (aiMeaning && aiMeaning.length < 10) ? aiMeaning : googleMeaning;
+                // 3. 填入結果
+                // 中文：AI 優先，若 AI 沒回傳則用 Google 的替代譯名
+                meaningInput.value = aiMeaning || googleBestMeaning;
 
-                // 漢字填入：如果 AI 有給出漢字就用 AI 的，否則用 Google 抓到的
+                // 漢字：AI 優先，若 AI 沒回傳則用 Google 抓到的書寫建議
                 let finalKanji = aiKanji || detectedKanji;
                 
-                // 排除無效漢字（如果抓到的是英文、或者跟原本輸入的一模一樣，就不填）
                 if (finalKanji && finalKanji !== w && !/[a-zA-Z]/.test(finalKanji)) {
                     readingInput.value = finalKanji;
                 } else {
@@ -245,9 +248,9 @@
 
                 meaningInput.placeholder = "中文意思";
 
-            } catch(e) {
-                console.error("翻譯出錯:", e);
-                meaningInput.placeholder = "連線超時，請重試";
+            } catch (e) {
+                console.error("翻譯引擎故障:", e);
+                meaningInput.placeholder = "翻譯失敗";
             }
         };
         window.fixScroll = () => {
