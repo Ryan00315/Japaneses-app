@@ -14,6 +14,7 @@
         .sticky-header { z-index: 200 !important; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); position: sticky; top: 0; }
         .lesson-active, .type-active, .active-new-cat { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
         .note-active { background-color: #f97316 !important; color: white !important; border-color: #f97316 !important; }
+        .active-edit-cat { background-color: #4f46e5 !important; color: white !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; overflow-x: auto; display: flex; gap: 0.5rem; -webkit-overflow-scrolling: touch; cursor: grab; }
         #input-section { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.4s ease; }
@@ -70,7 +71,7 @@
             </div>
             <div class="relative mb-4 text-left">
                 <input id="meaning" type="text" placeholder="中文意思" onfocus="window.fixScroll()" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-                <button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500">👉 翻譯(漢字、中文)</button>
+                <button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500">👉 AI 辭典翻譯</button>
             </div>
             <div class="flex gap-2 mb-3">
                 <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
@@ -170,7 +171,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 辭典級翻譯引擎 (解決「我要去」問題 & 強制漢字提取) ---
+        // --- 🚀 核心優化：AI 翻譯引擎 (解決「我要去」與「自動漢字」) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if (!w) return;
@@ -178,91 +179,69 @@
             const GEMINI_API_KEY = "AIzaSyDb7BA3Ikwz33KKjJgrzrc1afHIoGj7q94";
             const meaningInput = document.getElementById('meaning');
             const readingInput = document.getElementById('reading');
-            
-            meaningInput.placeholder = "正在檢索辭典...";
+            meaningInput.placeholder = "辭典檢索中...";
 
             try {
-                // 1. 同時請求 Gemini (獲取精準單語定義) 與 Google (獲取漢字書寫)
                 const aiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-                const googleUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dt=rm&q=${encodeURIComponent(w)}`;
-
-                const [aiRes, googleRes] = await Promise.all([
-                    fetch(aiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [{
-                                    text: `你現在是日語辭典。請分析單字「${w}」：
-                                    1. 中文意思：請只給出最核心的單字定義（例如：去、吃、老師、漂亮）。禁止出現「我要、在、進行、了」等句子贅字。
-                                    2. 漢字：請給出該單字的標準漢字書寫（含ます形，如：行きます、食べます）。
-                                    請嚴格按此 JSON 格式回傳，不要有其他文字：{"m":"意思", "k":"漢字"}`
-                                }]
+                const aiRes = await fetch(aiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `你現在是日語專家辭典。請翻譯單字「${w}」：
+                                1. 中文意思：僅限單詞定義（如：去、吃、老師）。絕對禁止出現「我要、在、進行、了」等贅字。
+                                2. 漢字：提供該單字的標準漢字形式（含ます形，如：行きます）。若無漢字則留空。
+                                請嚴格以 JSON 格式回傳：{"m":"意思", "k":"漢字"}`
                             }]
-                        })
-                    }).then(r => r.json()),
-                    fetch(googleUrl).then(r => r.json())
-                ]);
-
-                // 2. 解析 AI 資料 (辭典模式)
-                let finalMeaning = "";
-                let finalKanji = "";
+                        }]
+                    })
+                }).then(r => r.json());
 
                 if (aiRes.candidates && aiRes.candidates[0].content.parts) {
-                    try {
-                        const rawText = aiRes.candidates[0].content.parts[0].text.trim();
-                        // 處理 AI 可能回傳的 Markdown code block
-                        const jsonStr = rawText.replace(/```json|```/g, "");
-                        const data = JSON.parse(jsonStr);
-                        finalMeaning = data.m;
-                        finalKanji = data.k;
-                    } catch(e) { 
-                        // 如果 JSON 解析失敗，嘗試簡單分割
-                        console.log("JSON Parse fallback");
-                    }
-                }
+                    const rawText = aiRes.candidates[0].content.parts[0].text.trim().replace(/```json|```/g, "");
+                    const data = JSON.parse(rawText);
+                    
+                    let cleanM = data.m.replace(/我?要|正在|進行|了/g, "");
+                    const fastFix = { "いきます": "去", "きます": "來", "かえります": "回來/回家" };
+                    if (fastFix[w]) cleanM = fastFix[w];
 
-                // 3. 處理 Google 備援 (如果 AI 沒給漢字，從 Google 抓)
-                let googleKanji = "";
-                if (googleRes && googleRes[1] && googleRes[1][0]) {
-                    googleKanji = googleRes[1][0][0];
+                    meaningInput.value = cleanM;
+                    readingInput.value = (data.k && data.k !== w && !/[a-zA-Z]/.test(data.k)) ? data.k : "";
                 }
-
-                // 4. 決策填入
-                // 修正「我要」這種錯誤：如果意思包含「我要、正在」，強制修剪或採用備援
-                if (finalMeaning) {
-                    finalMeaning = finalMeaning.replace(/我?要|正在|進行|了/g, "");
-                }
-                
-                // 針對 "いきます" 的特殊校正 (確保萬無一失)
-                if (w === "いきます") { finalMeaning = "去"; finalKanji = "行きます"; }
-                if (w === "きます") { finalMeaning = "來"; finalKanji = "来ます"; }
-                if (w === "かえります") { finalMeaning = "回來/回家"; finalKanji = "帰ります"; }
-
-                meaningInput.value = finalMeaning || (googleRes[0] ? googleRes[0][0][0] : "");
-                
-                // 漢字填入邏輯
-                let kanjiResult = finalKanji || googleKanji;
-                if (kanjiResult && kanjiResult !== w && !/[a-zA-Z]/.test(kanjiResult)) {
-                    readingInput.value = kanjiResult;
-                } else {
-                    readingInput.value = "";
-                }
-
                 meaningInput.placeholder = "中文意思";
-
             } catch (e) {
-                console.error("翻譯故障:", e);
-                meaningInput.placeholder = "翻譯失敗";
+                console.error("AI Error:", e);
+                meaningInput.placeholder = "翻譯失敗，請手動輸入";
             }
         };
+
+        // --- 🚀 核心優化：分類 UI (附錄排序與擴充子階層) ---
+        const APPENDIX_ORDER = ['數字', '星期', '時候', '時刻', '時間', '期間', '量詞'];
+        const STANDARD_CAT = ['n.', 'v.', 'adj.', '會話', '練習C', '關聯單語', '其他'];
+
+        window.renderTypeUI = () => {
+            const container = document.getElementById('type-filter');
+            if(!container) return;
+            const types = window.selectedLessons.includes('附錄') ? APPENDIX_ORDER : STANDARD_CAT;
+            container.innerHTML = types.map(t => `<button onclick="window.toggleType('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedTypes.includes(t)?'type-active text-white':'bg-white'}">${t}</button>`).join('');
+            setupDraggable();
+        };
+
+        window.renderNewCategoryUI = () => {
+            const container = document.getElementById('new-category-picker');
+            if(!container) return;
+            const types = window.selectedNewLesson === '附錄' ? APPENDIX_ORDER : STANDARD_CAT;
+            container.innerHTML = types.map(t => `<button onclick="window.setNewCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedNewCat === t ? 'active-new-cat text-white' : 'bg-white'}">${t}</button>`).join('');
+            setupDraggable();
+        };
+
+        // --- 基礎邏輯與介面控制 ---
         window.fixScroll = () => {
             setTimeout(() => {
                 const section = document.getElementById('input-section');
                 if(section && section.classList.contains('show')) {
-                    const headerHeight = 280; 
-                    const elementPosition = section.getBoundingClientRect().top;
-                    const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+                    const offsetPosition = section.getBoundingClientRect().top + window.pageYOffset - 280;
                     window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
                 }
             }, 300);
@@ -326,6 +305,8 @@
             await addDoc(vocabsCol, data); document.getElementById('word').value = document.getElementById('reading').value = document.getElementById('meaning').value = ""; window.showToast("✅ 已儲存");
         };
 
+        window.showToast = (m) => { const t = document.getElementById("toast"); t.innerText = m; t.className = "show"; setTimeout(() => { t.className = t.className.replace("show", ""); }, 2000); };
+        window.setQuizMode = (m) => { window.quizMode = m; document.getElementById('modeStdBtn').className = `px-4 py-2 rounded-xl text-sm font-bold ${m==='standard'?'bg-indigo-600 border border-indigo-600':'bg-slate-700 text-slate-300 border border-slate-600'}`; document.getElementById('modeHearBtn').className = `px-4 py-2 rounded-xl text-sm font-bold ${m==='hearing'?'bg-indigo-600 border border-indigo-600':'bg-slate-700 text-slate-300 border border-slate-600'}`; };
         window.openQuizSetup = () => { 
             const pool = window.vocabs.filter(v => { if (v.lesson === '個人筆記') return v.uid === currentUser && (window.currentBook === 'note'); else return !v.uid && (window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson)); });
             if(!pool.length) return alert("範圍內沒有單字"); window.quizPool = pool; document.getElementById('quiz-overlay').classList.remove('hidden'); const stats = {}; pool.forEach(v => stats[v.lesson] = (stats[v.lesson] || 0) + 1); document.getElementById('quiz-range-list').innerHTML = Object.entries(stats).map(([l, c]) => `<div class="bg-white/5 p-2 rounded-lg border border-white/10 flex justify-between items-center"><span class="font-bold text-xs">${l}</span><span class="text-indigo-300 text-xs">${c} 題</span></div>`).join('');
@@ -342,8 +323,6 @@
         window.showStatsModal = () => { const c = document.getElementById('devil-list'); const sorted = Object.values(window.userProgress).filter(p => p.wrongCount > 0).sort((a,b) => b.wrongCount - a.wrongCount).slice(0, 15); c.innerHTML = sorted.length ? sorted.map(p => { const v = window.vocabs.find(x => x.id === p.vocabId); return v ? `<div class="flex justify-between items-center border-b border-slate-100 py-3 font-bold"><div><span class="text-slate-800">${v.word}</span><span class="text-[9px] text-indigo-400 ml-2 uppercase">${v.lesson}</span></div><span class="text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full text-xs">錯 ${p.wrongCount} 次</span></div>` : ''; }).join('') : '<p class="text-center py-8">尚無紀錄</p>'; window.toggleStats(true); };
         window.toggleImport = (s) => document.getElementById('import-overlay').classList.toggle('hidden', !s);
         window.startImport = async () => { const t = document.getElementById('import-text').value.trim(); if(!t) return; const batch = writeBatch(db); t.split('\n').forEach(line => { const [w, r, m, c, l] = line.split(',').map(s => s?.trim()); if (w && m) batch.set(doc(vocabsCol), { word: w, reading: r || "", meaning: m, category: c || "n.", lesson: l || '未分類', createdAt: new Date() }); }); await batch.commit(); window.toggleImport(false); window.showToast("✅ 已同步匯入"); };
-        window.renderTypeUI = () => { const container = document.getElementById('type-filter'); if(!container) return; const types = window.selectedLessons.includes('附錄') ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.toggleType('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedTypes.includes(t)?'type-active text-white':'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
-        window.renderNewCategoryUI = () => { const container = document.getElementById('new-category-picker'); if(!container) return; const types = window.selectedNewLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setNewCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedNewCat === t ? 'active-new-cat text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
         window.toggleLesson = (l) => { const i = window.selectedLessons.indexOf(l); if(i>-1) window.selectedLessons.splice(i,1); else window.selectedLessons.push(l); window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
         window.toggleType = (t) => { const i = window.selectedTypes.indexOf(t); if(i>-1) window.selectedTypes.splice(i,1); else window.selectedTypes.push(t); window.renderTypeUI(); window.renderList(); };
         window.setNewLesson = (l) => { window.selectedNewLesson = l; window.selectedNewCat = (l === '附錄' ? '數字' : 'n.'); window.renderNewLessonUI(); window.renderNewCategoryUI(); };
@@ -353,36 +332,28 @@
         window.addNewUserAction = () => { const n = prompt("使用者:"); if(n && n.trim()){ const name = n.trim(); if(!userHistory.includes(name)) userHistory.unshift(name); localStorage.setItem('jp_user_history', JSON.stringify(userHistory.slice(0,8))); window.switchUser(name); } };
         window.deleteWord = async (id) => { if(confirm("確定刪除？")) await deleteDoc(doc(vocabsCol, id)); };
 
-        // --- 修正編輯相關 UI ---
+        // 編輯邏輯
         window.setEditBook = (b) => { window.editWordBook = b; window.selectedEditLesson = (b==='note'?'個人筆記':(b===1?'附錄':'L13')); window.selectedEditCat = (window.selectedEditLesson === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
         window.renderEditLessonUI = () => { const c = document.getElementById('edit-lesson-container'); if(window.editWordBook==='note') c.innerHTML=""; else c.innerHTML = BOOK_MAP[window.editWordBook].map(l => `<button onclick="window.setEditLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedEditLesson===l?'active-edit-cat bg-indigo-600 text-white':'bg-white'}">${l}</button>`).join(''); setupDraggable(); };
         window.setEditLesson = (l) => { window.selectedEditLesson = l; window.selectedEditCat = (l === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
-        window.renderEditCategoryUI = () => { const container = document.getElementById('edit-category-picker'); if(!container) return; const types = window.selectedEditLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setEditCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedEditCat === t ? 'active-edit-cat bg-indigo-600 text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
+        window.renderEditCategoryUI = () => { const container = document.getElementById('edit-category-picker'); if(!container) return; const types = window.selectedEditLesson === '附錄' ? APPENDIX_ORDER : STANDARD_CAT; container.innerHTML = types.map(t => `<button onclick="window.setEditCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedEditCat === t ? 'active-edit-cat bg-indigo-600 text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
         window.setEditCategory = (c) => { window.selectedEditCat = c; window.renderEditCategoryUI(); };
-
         window.openEditAction = (id) => { 
             const v = window.vocabs.find(x => x.id === id); 
-            if(!v) return; 
-            window.currentEditId = id; 
+            if(!v) return; window.currentEditId = id; 
             document.getElementById('edit-word').value = v.word; 
             document.getElementById('edit-reading').value = v.reading || ""; 
             document.getElementById('edit-meaning').value = v.meaning; 
             const idx = LESSON_ORDER.indexOf(v.lesson); 
             window.editWordBook = v.lesson === '個人筆記' ? 'note' : ((idx >= 0 && idx <= 13) ? 1 : 2); 
-            window.selectedEditLesson = v.lesson; 
-            window.selectedEditCat = v.category || 'n.'; 
-            window.renderEditLessonUI(); 
-            window.renderEditCategoryUI(); 
+            window.selectedEditLesson = v.lesson; window.selectedEditCat = v.category || 'n.'; 
+            window.renderEditLessonUI(); window.renderEditCategoryUI(); 
             document.getElementById('edit-modal').classList.remove('hidden'); 
         };
-
         window.saveWordEdit = async () => { 
             const data = { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat };
-            if (window.selectedEditLesson === '個人筆記') data.uid = currentUser;
-            else data.uid = null;
-            await updateDoc(doc(db, "vocabs", window.currentEditId), data); 
-            document.getElementById('edit-modal').classList.add('hidden'); 
-            window.showToast("✅ 已更新"); 
+            if (window.selectedEditLesson === '個人筆記') data.uid = currentUser; else data.uid = null;
+            await updateDoc(doc(db, "vocabs", window.currentEditId), data); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 已更新"); 
         };
 
         const setupDraggable = () => { document.querySelectorAll('.no-scrollbar').forEach(el => { let isDown = false, startX, scrollLeft; el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; }; el.onmouseleave = () => isDown = false; el.onmouseup = () => isDown = false; el.onmousemove = (e) => { if(!isDown) return; e.preventDefault(); const x = e.pageX - el.offsetLeft; const dist = x - startX; el.scrollLeft = scrollLeft - dist; }; }); };
@@ -400,5 +371,3 @@
     </script>
 </body>
 </html>
-
-
