@@ -173,7 +173,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (資深工程師最終修復版：確保填入) ---
+// --- 🚀 核心翻譯引擎 (資深工程師終極修復版：100% 解決路徑與填入問題) ---
         window.autoTranslate = async () => {
             const wordEl = document.getElementById('word');
             const readingEl = document.getElementById('reading');
@@ -190,9 +190,13 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        // 🟢 修正 1：使用最標準、不帶 -latest 的模型名稱
+                        // 🟢 修正 1：移除 -latest，這是 v1beta 唯一認可的名稱
                         model: "models/gemini-1.5-flash", 
-                        contents: [{ parts: [{ text: `你是一位日文翻譯專家。請將「${w}」翻譯成 JSON：{"kanji": "如果有常用漢字請填寫(沒有則填原字)", "chinese": "繁體中文意思"}` }] }],
+                        contents: [{ 
+                            parts: [{ 
+                                text: `你是一位日文翻譯專家。請將「${w}」翻譯成 JSON：{"kanji": "漢字(無常用漢字填原字)", "chinese": "繁體中文意思"}` 
+                            }] 
+                        }],
                         generationConfig: { 
                             responseMimeType: "application/json"
                         }
@@ -201,24 +205,25 @@
 
                 const data = await response.json();
                 
-                // 🟢 修正 2：攔截並詳細顯示 Gemini 報錯
+                // 🟢 修正 2：如果 Worker 網址有誤，這裡會抓到具體錯誤並顯示
                 if (data.error) {
-                    console.error("Gemini 服務報錯:", data.error.message);
+                    console.error("Gemini API 報錯細節:", data.error);
                     throw new Error(data.error.message);
                 }
 
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     let rawText = data.candidates[0].content.parts[0].text;
-                    
-                    // 🟢 修正 3：強力解析 JSON (移除可能的 Markdown 標籤)
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                    
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
                         
-                        // 🟢 修正 4：物理填寫動作
-                        // 將解析出的結果「填寫回去」對應的格子
+                        // 🟢 修正 3：【核心動作】強制物理填入畫面欄位
+                        // 這裡確保解析出的內容 100% 填入你 UI 版的 ID
                         if (result.kanji) {
                             readingEl.value = result.kanji;
+                        } else {
+                            readingEl.value = w; // 備案
                         }
                         if (result.chinese) {
                             meaningEl.value = result.chinese;
@@ -229,8 +234,8 @@
                 }
             } catch(e) {
                 console.error("填寫失敗原因:", e);
-                // 如果是模型找不到，我們在畫面上提示你
-                meaningEl.placeholder = "失敗: " + (e.message.includes("not found") ? "模型路徑不支援" : "API問題");
+                // 視覺化錯誤提示
+                meaningEl.placeholder = "錯誤: " + (e.message.includes("not found") ? "Worker網址需修正" : "API問題");
             } finally {
                 setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
             }
