@@ -173,7 +173,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (最終修正版：解決 Referer 阻擋與自動填入) ---
+// --- 🚀 核心翻譯引擎 (解決模型找不著與自動填入問題) ---
         window.autoTranslate = async () => {
             const wordEl = document.getElementById('word');
             const readingEl = document.getElementById('reading');
@@ -191,13 +191,15 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請「只」回傳 JSON 格式內容：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }],
-                        generationConfig: { responseMimeType: "application/json" }
+                        generationConfig: { 
+                            responseMimeType: "application/json"
+                        }
                     })
                 });
 
                 const data = await response.json();
                 
-                // 檢查 Google API 是否噴錯 (例如剛才的 Referer 錯誤)
+                // 檢查 Google API 報錯
                 if (data.error) {
                     console.error("Google API 報錯:", data.error.message);
                     throw new Error(data.error.message);
@@ -210,7 +212,7 @@
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
                         
-                        // 🟢 物理填入欄位：確保對準 id="reading" 與 id="meaning"
+                        // 🟢 強制填入欄位：reading(漢字), meaning(中文意思)
                         readingEl.value = result.kanji || "";
                         meaningEl.value = result.chinese || "";
                         
@@ -219,8 +221,7 @@
                 }
             } catch(e) {
                 console.error("翻譯填充失敗:", e);
-                // 顯示具體原因，幫助你確認 Google 設定是否生效
-                meaningEl.placeholder = "翻譯失敗: " + (e.message.includes("referer") ? "API權限問題" : "設定錯誤");
+                meaningEl.placeholder = "翻譯失敗: 模型設定錯誤";
             } finally {
                 setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
             }
