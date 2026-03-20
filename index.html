@@ -14,6 +14,7 @@
         .sticky-header { z-index: 200 !important; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); position: sticky; top: 0; }
         .lesson-active, .type-active, .active-new-cat { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
         .note-active { background-color: #f97316 !important; color: white !important; border-color: #f97316 !important; }
+        .active-edit-cat { background-color: #4f46e5 !important; color: white !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; overflow-x: auto; display: flex; gap: 0.5rem; -webkit-overflow-scrolling: touch; cursor: grab; }
         #input-section { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.4s ease; }
@@ -155,14 +156,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase 初始化 (保持原樣)
+        // --- Firebase Config ---
         const firebaseConfig = { apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4", authDomain: "jpnote-5f436.firebaseapp.com", projectId: "jpnote-5f436", storageBucket: "jpnote-5f436.firebasestorage.app", messagingSenderId: "881660892658", appId: "1:881660892658:web:9d88f9b2332aa9e2b3076b", measurementId: "G-QV2NRXQSY7" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
-        // 全域變數定義
+        // --- 全域變數 ---
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
@@ -171,14 +172,13 @@
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
         
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
-        const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
+        const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (資深工程師終極修復版：100% 解決路徑與填入問題) ---
+        // --- 🚀 自動翻譯修正核心 ---
         window.autoTranslate = async () => {
             const wordEl = document.getElementById('word');
             const readingEl = document.getElementById('reading');
             const meaningEl = document.getElementById('meaning');
-            
             const w = wordEl.value.trim();
             if(!w) return;
 
@@ -190,58 +190,35 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        // 🟢 修正 1：移除 -latest，這是 v1beta 唯一認可的名稱
-                        model: "models/gemini-1.5-flash", 
-                        contents: [{ 
-                            parts: [{ 
-                                text: `你是一位日文翻譯專家。請將「${w}」翻譯成 JSON：{"kanji": "漢字(無常用漢字填原字)", "chinese": "繁體中文意思"}` 
-                            }] 
-                        }],
-                        generationConfig: { 
-                            responseMimeType: "application/json"
-                        }
+                        contents: [{ parts: [{ text: `你是一位日文翻譯專家。請將「${w}」翻譯成 JSON 格式：{"kanji": "如果有常用漢字請填寫(沒有則填原字)", "chinese": "繁體中文意思"}` }] }],
+                        generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
                 const data = await response.json();
-                
-                // 🟢 修正 2：如果 Worker 網址有誤，這裡會抓到具體錯誤並顯示
-                if (data.error) {
-                    console.error("Gemini API 報錯細節:", data.error);
-                    throw new Error(data.error.message);
-                }
+                if (data.error) throw new Error(data.error.message);
 
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    let rawText = data.candidates[0].content.parts[0].text;
+                    const rawText = data.candidates[0].content.parts[0].text;
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                    
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
-                        
-                        // 🟢 修正 3：【核心動作】強制物理填入畫面欄位
-                        // 這裡確保解析出的內容 100% 填入你 UI 版的 ID
-                        if (result.kanji) {
-                            readingEl.value = result.kanji;
-                        } else {
-                            readingEl.value = w; // 備案
-                        }
-                        if (result.chinese) {
-                            meaningEl.value = result.chinese;
-                        }
-                        
+                        // 🟢 強制物理填入
+                        if (result.kanji) readingEl.value = result.kanji;
+                        if (result.chinese) meaningEl.value = result.chinese;
                         window.showToast("✅ 翻譯已填入");
                     }
                 }
             } catch(e) {
-                console.error("填寫失敗原因:", e);
-                // 視覺化錯誤提示
-                meaningEl.placeholder = "錯誤: " + (e.message.includes("not found") ? "Worker網址需修正" : "API問題");
+                console.error("翻譯失敗:", e);
+                meaningEl.placeholder = "失敗: " + (e.message.includes("not found") ? "網址錯誤" : "API問題");
             } finally {
                 setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
             }
         };
-        // --- 其餘功能代碼 (保持原樣，不作任何變動) ---
-        window.fixScroll = () => { setTimeout(() => { const section = document.getElementById('input-section'); if(section && section.classList.contains('show')) { const headerHeight = 280; const elementPosition = section.getBoundingClientRect().top; const offsetPosition = elementPosition + window.pageYOffset - headerHeight; window.scrollTo({ top: offsetPosition, behavior: 'smooth' }); } }, 300); };
+
+        // --- UI & 功能邏輯 (原樣保留) ---
+        window.fixScroll = () => { setTimeout(() => { const section = document.getElementById('input-section'); if(section && section.classList.contains('show')) { const headerHeight = 280; const offsetPosition = section.getBoundingClientRect().top + window.pageYOffset - headerHeight; window.scrollTo({ top: offsetPosition, behavior: 'smooth' }); } }, 300); };
         window.showToast = (msg) => { const t = document.getElementById('toast'); if(t){ t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); } };
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
@@ -289,7 +266,6 @@
         onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); window.renderList(); });
         onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => { window.userProgress = {}; snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); }); window.renderList(); });
 
-        window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
         window.renderUserHistory();
         window.switchBook(1);
         window.renderNewLessonUI();
