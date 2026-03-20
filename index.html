@@ -173,42 +173,59 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 核心翻譯引擎 (安全對接 Cloudflare Worker) ---
+        // --- 🚀 翻譯引擎 (資深工程師加強版：自動填入與容錯解析) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
-            if(!w) return;
+            if (!w) return;
 
-            // 你的 Worker 網址
-            const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
+        // 1. 本地單位庫備案 (快速攔截)
+            const unitLibrary = { "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"], "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"], "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"], "じゅうさんにち": ["13號", "13日"], "じゅうよっか": ["14號", "14日"], "じゅうごにち": ["15號", "15日"], "じゅうろくにち": ["16號", "16日"], "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"], "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"], "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"], "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"], "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"], "にじゅうしちにch": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"], "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"], "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"], "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"], "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"] };
+            const cleanW = w.toLowerCase().replace(/\s+/g, '');
+            if (unitLibrary[cleanW]) {
+                document.getElementById('reading').value = unitLibrary[cleanW][1];
+                document.getElementById('meaning').value = unitLibrary[cleanW][0];
+                return;
+            }
+
+        // 2. Gemini API 翻譯
+            const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev";
             const meaningInput = document.getElementById('meaning');
             const readingInput = document.getElementById('reading');
-            meaningInput.placeholder = "Gemini 翻譯中...";
+             meaningInput.placeholder = "Gemini 翻譯中...";
 
-            try {
-                const response = await fetch(WORKER_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請回傳 JSON 格式，包含："kanji" (漢字) 與 "chinese" (中文意思) 欄位。` }] }],
-                        generationConfig: { responseMimeType: "application/json" }
-                    })
-                });
+    try {
+        const response = await fetch(WORKER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: `你是一個日文學習助手。請翻譯單字「${w}」。請嚴格回傳 JSON：{"kanji": "如果有常用漢字請填入，否則填入原單字", "chinese": "繁體中文意思"}` }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            })
+        });
 
-                const data = await response.json();
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    const result = JSON.parse(data.candidates[0].content.parts[0].text);
-                    readingInput.value = result.kanji || "";
-                    meaningInput.value = result.chinese || "";
-                    window.showToast("✅ 翻譯成功");
-                }
-            } catch(e) {
-                console.error("翻譯出錯:", e);
-                meaningInput.placeholder = "翻譯失敗";
-            } finally {
-                setTimeout(() => { meaningInput.placeholder = "中文意思"; }, 2000);
-            }
-        };
+        const data = await response.json();
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+            const result = JSON.parse(data.candidates[0].content.parts[0].text);
+            
+            // --- 仔細的欄位對應與自動填入 ---
+            // 自動偵測漢字欄位 (kanji 或 reading)
+            const kanjiValue = result.kanji || result.reading || result.Kanji || "";
+            // 自動偵測中文欄位 (chinese 或 meaning)
+            const chineseValue = result.chinese || result.meaning || result.Chinese || "";
 
+            // 正式填入 HTML 欄位
+            readingInput.value = kanjiValue;
+            meaningInput.value = chineseValue;
+
+            window.showToast("✅ 翻譯已填入");
+        }
+    } catch (e) {
+        console.error("翻譯填充失敗:", e);
+        meaningInput.placeholder = "翻譯失敗，請手動輸入";
+    } finally {
+        setTimeout(() => { meaningInput.placeholder = "中文意思"; }, 1500);
+    }
+};
         // --- UI 操作邏輯 (全數補回) ---
         window.fixScroll = () => {
             setTimeout(() => {
