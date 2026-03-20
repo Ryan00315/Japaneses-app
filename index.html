@@ -176,20 +176,24 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 核心：翻譯與填寫邏輯 (配額防禦 + 物理填入) ---
+// --- 🚀 核心：翻譯與填寫邏輯 (配額防禦 + 物理填入) ---
         window.isTranslating = false; // 全域鎖
         
         window.autoTranslate = async () => {
-            if (window.isTranslating) return;
+            // 🟢 強制保護：如果正在翻譯中，或距離上次請求不到 3 秒，直接拒絕
+            const now = Date.now();
+            if (window.isTranslating || (window.lastReqTime && (now - window.lastReqTime < 3000))) {
+                return; 
+            }
         
             const wordEl = document.getElementById('word');
-            const readingEl = document.getElementById('reading'); // 漢字格子
-            const meaningEl = document.getElementById('meaning'); // 中文意思格子
+            const readingEl = document.getElementById('reading');
+            const meaningEl = document.getElementById('meaning');
             
             const w = wordEl.value.trim();
             if (!w) return;
         
-            // 1. 【本地快取】如果單字庫已有，直接填寫，0 耗費 API
+            // 1. 【本地快取】完全不耗配額
             const cached = window.vocabs.find(v => v.word === w);
             if (cached) {
                 readingEl.value = cached.reading || "";
@@ -198,7 +202,9 @@
                 return;
             }
         
+            // 2. 啟動防禦鎖
             window.isTranslating = true;
+            window.lastReqTime = now;
             meaningEl.placeholder = "Gemini 翻譯中...";
             const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
         
@@ -211,34 +217,37 @@
                     })
                 });
         
-                // 2. 處理 API 限速
+                // 3. 處理 API 限速 (429)
                 if (response.status === 429) {
-                    window.showToast("⚠️ API 限速中，請等一分鐘");
-                    meaningEl.placeholder = "配額已滿...";
+                    window.showToast("⚠️ 請求過快，請休息一分鐘");
+                    meaningEl.placeholder = "配額限制中...";
+                    // 這裡刻意讓 isTranslating 維持 true 一陣子，防止使用者狂按
+                    setTimeout(() => { window.isTranslating = false; }, 10000); 
                     return;
                 }
         
                 const data = await response.json();
                 
-                // 3. 【核心解讀與物理填寫】
+                // 4. 解讀與物理填寫
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     const rawText = data.candidates[0].content.parts[0].text;
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
-                        
-                        // 強制賦值，解決「沒填寫」問題
+                        // 強制寫入對應格子
                         if (result.kanji) readingEl.value = result.kanji;
                         if (result.chinese) meaningEl.value = result.chinese;
-                        
                         window.showToast("✅ 翻譯已填入");
                     }
                 }
             } catch(e) {
                 console.error("翻譯錯誤:", e);
             } finally {
-                window.isTranslating = false;
-                setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
+                // 延遲解鎖，確保不會瞬間連發
+                setTimeout(() => { 
+                    window.isTranslating = false; 
+                    meaningEl.placeholder = "中文意思";
+                }, 2000);
             }
         };
         // --- 核心 UI 函式實作 ---
