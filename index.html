@@ -173,57 +173,62 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (資深工程師最終修正版) ---
+// --- 🚀 核心翻譯引擎 (資深工程師徹底修復版) ---
         window.autoTranslate = async () => {
-            const wordElem = document.getElementById('word');
-            const readingElem = document.getElementById('reading');
-            const meaningElem = document.getElementById('meaning');
+            // 1. 先抓取 HTML 元素
+            const wordEl = document.getElementById('word');
+            const readingEl = document.getElementById('reading');
+            const meaningEl = document.getElementById('meaning');
             
-            const w = wordElem.value.trim();
+            const w = wordEl.value.trim();
             if(!w) return;
 
             const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
-            meaningElem.placeholder = "Gemini 翻譯中...";
+            meaningEl.placeholder = "Gemini 翻譯中...";
 
             try {
                 const response = await fetch(WORKER_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請「只」回傳 JSON 格式內容：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }],
+                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請只回傳 JSON：{"kanji": "漢字(無常用漢字則填原字)", "chinese": "繁體中文意思"}` }] }],
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
                 const data = await response.json();
                 
-                // 1. 取得 AI 回傳的內容 (字串)
-                let rawText = data.candidates[0].content.parts[0].text;
-                
-                // 2. 【強力脫殼解析】先移除標籤，再抓取第一個 { 到最後一個 } 之間的內容
-                // 這能解決所有的 "Unexpected token" 或 "無效回傳結構" 報錯
-                const jsonContent = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-                const startIdx = jsonContent.indexOf('{');
-                const endIdx = jsonContent.lastIndexOf('}');
-                
-                if (startIdx !== -1 && endIdx !== -1) {
-                    const cleanJson = jsonContent.substring(startIdx, endIdx + 1);
-                    const result = JSON.parse(cleanJson);
+                // 2. 防禦性檢查：確保 API 回傳結構完整
+                if (data && data.candidates && data.candidates[0] && data.candidates[0].content) {
+                    let rawText = data.candidates[0].content.parts[0].text;
                     
-                    // 3. 【實體填寫】確保文字進入 HTML 欄位
-                    if (result.kanji) readingElem.value = result.kanji;
-                    if (result.chinese) meaningElem.value = result.chinese;
-                    
-                    window.showToast("✅ 翻譯已填入");
+                    // 3. 提取 JSON (處理 Markdown 標籤)
+                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        const result = JSON.parse(jsonMatch[0]);
+                        
+                        // 4. 【核心動作】強制寫入文字到畫面欄位
+                        // 使用正確的 ID：reading 對應漢字，meaning 對應中文意思
+                        if (result.kanji) readingEl.value = result.kanji;
+                        if (result.chinese) meaningEl.value = result.chinese;
+                        
+                        window.showToast("✅ 翻譯已填入");
+                    } else {
+                        throw new Error("JSON 格式解析失敗");
+                    }
+                } else if (data.error) {
+                    // 如果是 API 層級的錯誤（例如 Key 沒設好）
+                    throw new Error(data.error.message || "API 服務錯誤");
                 } else {
-                    throw new Error("JSON 結構不完整");
+                    throw new Error("API 未回傳有效候選內容");
                 }
 
             } catch(e) {
                 console.error("翻譯填充失敗:", e);
-                meaningElem.placeholder = "翻譯失敗，請手動輸入";
+                meaningEl.placeholder = "翻譯失敗，請檢查 API 設定";
+                window.showToast("❌ 翻譯失敗");
             } finally {
-                setTimeout(() => { meaningElem.placeholder = "中文意思"; }, 1500);
+                setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 1500);
             }
         };
         // --- 其餘功能代碼 (保持原樣，不作任何變動) ---
