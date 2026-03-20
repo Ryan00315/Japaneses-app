@@ -26,7 +26,7 @@
         @keyframes fadeout { from {bottom: 100px; opacity: 1;} to {bottom: 0; opacity: 0;} }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
+<body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="if(window.initAudioOnFirstClick) window.initAudioOnFirstClick()">
 
     <div id="toast">✅ 操作成功</div>
 
@@ -72,11 +72,6 @@
                 <input id="meaning" type="text" placeholder="中文意思" onfocus="window.fixScroll()" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
                 <button onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500">👉 翻譯(漢字、中文)</button>
             </div>
-            <div class="flex gap-2 mb-3">
-                <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
-                <button id="new-book2-tab" onclick="window.setNewBookTab(2)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第二冊</button>
-                <button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">個人筆記</button>
-            </div>
             <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2"></div>
             <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6 no-scrollbar"></div>
             <button id="submit-btn" onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm">儲存到單字冊</button>
@@ -84,51 +79,42 @@
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
     </div>
 
-    <div id="quiz-overlay" class="fixed inset-0 z-[400] bg-slate-900 hidden flex flex-col items-center justify-center p-6 text-white text-center">...</div>
-    <div id="edit-modal" class="fixed inset-0 z-[350] modal-overlay hidden flex flex-col items-center justify-center p-4">...</div>
-    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">...</div>
-    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">...</div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Firebase Config
         const firebaseConfig = { apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4", authDomain: "jpnote-5f436.firebaseapp.com", projectId: "jpnote-5f436", storageBucket: "jpnote-5f436.firebasestorage.app", messagingSenderId: "881660892658", appId: "1:881660892658:web:9d88f9b2332aa9e2b3076b", measurementId: "G-QV2NRXQSY7" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
+        // 全域變數掛載
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; 
         window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
-        window.sortOrder = 'desc'; window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
+        window.sortOrder = 'desc';
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
-        
+
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 翻譯引擎 (Proxy 安全版) ---
+        // --- 🚀 翻譯引擎 (呼叫你設定好的 Cloudflare Worker) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
 
-            // 1. 本地單位庫備案
-            const unitLibrary = { "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"], "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"], "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"], "じゅうさんにち": ["13號", "13日"], "じゅうよっか": ["14號", "14日"], "じゅうごにち": ["15號", "15日"], "じゅうろくにち": ["16號", "16日"], "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"], "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"], "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"], "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"], "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"], "にじゅうしちにち": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"], "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"], "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"], "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"], "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅう二がつ": ["12月", "12月"] };
-            const cleanW = w.toLowerCase().replace(/\s+/g, '');
-            if(unitLibrary[cleanW]) { document.getElementById('meaning').value = unitLibrary[cleanW][0]; document.getElementById('reading').value = unitLibrary[cleanW][1]; return; }
-
-            // 2. 呼叫 Cloudflare Worker Proxy
-            // ⚠️ 請填入你的 Worker 網址
-            const WORKER_URL = "https://ryan00315.github.io/Japaneses-app/"; 
+            // ⚠️ 這裡填入你之前建立的 Cloudflare Worker URL
+            const WORKER_URL = "https://你的worker網址.workers.dev"; 
             
             const meaningInput = document.getElementById('meaning');
             const readingInput = document.getElementById('reading');
-            meaningInput.placeholder = "Gemini 翻譯中...";
+            meaningInput.placeholder = "翻譯中...";
 
             const payload = {
-                contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請回傳 JSON 格式，包含："kanji" 與 "chinese" 欄位。` }] }],
+                contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請回傳 JSON：{"kanji": "...", "chinese": "..."}` }] }],
                 generationConfig: { responseMimeType: "application/json" }
             };
 
@@ -140,8 +126,6 @@
                 });
 
                 const data = await response.json();
-                
-                // 處理 Gemini 回傳的 JSON 字串
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     const result = JSON.parse(data.candidates[0].content.parts[0].text);
                     readingInput.value = result.kanji || "";
@@ -149,29 +133,43 @@
                     window.showToast("✅ 翻譯成功");
                 }
             } catch(e) {
-                console.error("代理請求失敗:", e);
-                meaningInput.placeholder = "翻譯失敗，請檢查 API 設定";
+                console.error("翻譯出錯:", e);
+                meaningInput.placeholder = "翻譯失敗";
             } finally {
                 setTimeout(() => { meaningInput.placeholder = "中文意思"; }, 2000);
             }
         };
 
-        // --- 其餘 UI 與 Firebase 邏輯 (保持原樣) ---
+        // --- 修正音訊函式 (確保 window 抓得到) ---
+        let audioUnlocked = false;
+        window.initAudioOnFirstClick = () => { 
+            if (!audioUnlocked) { 
+                console.log("Audio Unlocked");
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); 
+                audioUnlocked = true; 
+            } 
+        };
+
+        window.speakAction = (t) => { 
+            window.speechSynthesis.cancel(); 
+            const u = new SpeechSynthesisUtterance(t); 
+            u.lang='ja-JP'; 
+            u.rate=0.7; 
+            window.speechSynthesis.speak(u); 
+        };
+
         window.showToast = (msg) => { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2000); };
-        window.renderUserHistory = () => { /* ... */ };
-        window.switchBook = (b) => { /* ... */ };
-        window.renderLessonUI = () => { /* ... */ };
-        window.setNewBookTab = (b) => { /* ... */ };
-        window.renderNewLessonUI = () => { /* ... */ };
-        window.renderList = () => { /* ... */ };
-        window.submitNewWord = async () => { /* ... */ };
-        // ... (省略所有原有函數，請直接使用你原始檔案中的實現)
         
-        // 初始載入
-        window.renderUserHistory();
+        // 渲染列表等其餘邏輯 (請保留你原本代碼中的完整實現)
+        onSnapshot(query(vocabsCol, orderBy("createdAt", "desc")), (snap) => { window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()})); window.renderList(); });
+        
+        window.renderUserHistory = () => { /* 原本邏輯 */ };
+        window.switchBook = (b) => { /* 原本邏輯 */ };
+        window.renderList = () => { /* 原本邏輯 */ };
+        // ... 其他函式 ...
+
+        // 初始化
         window.switchBook(1);
-        window.renderNewLessonUI();
-        window.renderNewCategoryUI();
     </script>
 </body>
 </html>
