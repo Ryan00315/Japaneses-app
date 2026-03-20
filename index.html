@@ -174,11 +174,12 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 自動翻譯修正核心 ---
+// --- 🚀 核心翻譯引擎 (資深工程師最終對接版) ---
         window.autoTranslate = async () => {
             const wordEl = document.getElementById('word');
             const readingEl = document.getElementById('reading');
             const meaningEl = document.getElementById('meaning');
+            
             const w = wordEl.value.trim();
             if(!w) return;
 
@@ -190,28 +191,41 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `你是一位日文翻譯專家。請將「${w}」翻譯成 JSON 格式：{"kanji": "如果有常用漢字請填寫(沒有則填原字)", "chinese": "繁體中文意思"}` }] }],
+                        contents: [{ 
+                            parts: [{ 
+                                text: `請將日文「${w}」翻譯成 JSON：{"kanji": "漢字", "chinese": "繁體中文意思"}` 
+                            }] 
+                        }],
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
                 const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
+                
+                // 檢查 API 是否報錯
+                if (data.error) {
+                    console.error("API 報錯:", data.error.message);
+                    throw new Error(data.error.message);
+                }
 
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     const rawText = data.candidates[0].content.parts[0].text;
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                    
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
-                        // 🟢 強制物理填入
+                        
+                        // 🟢 【關鍵動作】物理強制寫入格子
                         if (result.kanji) readingEl.value = result.kanji;
                         if (result.chinese) meaningEl.value = result.chinese;
+                        
                         window.showToast("✅ 翻譯已填入");
                     }
                 }
             } catch(e) {
-                console.error("翻譯失敗:", e);
-                meaningEl.placeholder = "失敗: " + (e.message.includes("not found") ? "網址錯誤" : "API問題");
+                console.error("翻譯填充失敗:", e);
+                // 錯誤訊息直接顯示在格子裡以便除錯
+                meaningEl.placeholder = "失敗: " + (e.message.includes("not found") ? "Worker網址需更新" : "API問題");
             } finally {
                 setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
             }
