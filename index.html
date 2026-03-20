@@ -175,63 +175,68 @@
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
 // --- 🚀 核心翻譯引擎 (資深工程師最終對接版：解讀並物理填入) ---
-        window.autoTranslate = async () => {
-            const wordEl = document.getElementById('word');
-            const readingEl = document.getElementById('reading'); // 漢字格子
-            const meaningEl = document.getElementById('meaning'); // 中文意思格子
-            
-            const w = wordEl.value.trim();
-            if(!w) return;
+window.autoTranslate = async () => {
+  const wordEl = document.getElementById("word");
+  const readingEl = document.getElementById("reading");
+  const meaningEl = document.getElementById("meaning");
 
-            const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
-            meaningEl.placeholder = "Gemini 翻譯中...";
+  const w = wordEl.value.trim();
+  if (!w) return;
 
-            try {
-                const response = await fetch(WORKER_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ 
-                            parts: [{ 
-                                // 強制 AI 回傳純 JSON，方便我們解讀
-                                text: `你是一位日文翻譯專家。請翻譯日文「${w}」並嚴格回傳 JSON 格式：{"kanji": "漢字", "chinese": "繁體中文意思"}` 
-                            }] 
-                        }]
-                    })
-                });
+  const WORKER_URL = "https://你的-worker.workers.dev";
+  meaningEl.placeholder = "Gemini 翻譯中...";
 
-                const data = await response.json();
-                
-                // 1. 如果還是 404，這裡會立刻攔截並顯示
-                if (data.error) {
-                    console.error("API 原始報錯:", data.error);
-                    throw new Error(data.error.message);
-                }
+  try {
+    const response = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `請翻譯單字「${w}」。請只回傳 JSON：{"kanji":"漢字(無常用漢字則填原字)","chinese":"繁體中文意思"}`
+              }
+            ]
+          }
+        ]
+      })
+    });
 
-                // 2. 【核心解讀邏輯】從回傳字串中挖出 JSON
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    let rawText = data.candidates[0].content.parts[0].text;
-                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                    
-                    if (jsonMatch) {
-                        const result = JSON.parse(jsonMatch[0]);
-                        
-                        // 3. 【核心物理填入】真正把字寫上去
-                        // 這就是你要求的：程式解讀後自動填寫上去
-                        if (result.kanji) readingEl.value = result.kanji;
-                        if (result.chinese) meaningEl.value = result.chinese;
-                        
-                        window.showToast("✅ 翻譯已填入");
-                    }
-                }
-            } catch(e) {
-                console.error("解讀填寫失敗:", e);
-                // 視覺化提示，讓你不用看 Console 也能知道發生什麼事
-                meaningEl.placeholder = "失敗: " + e.message;
-            } finally {
-                setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
-            }
-        };
+    const data = await response.json();
+    console.log("Gemini response:", data);
+
+    if (!response.ok || data.error) {
+      throw new Error(data?.error?.message || `HTTP ${response.status}`);
+    }
+
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      throw new Error("AI 沒有回傳文字內容");
+    }
+
+    let result;
+    try {
+      result = JSON.parse(rawText);
+    } catch {
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("找不到合法 JSON");
+      result = JSON.parse(jsonMatch[0]);
+    }
+
+    readingEl.value = result.kanji || w;
+    meaningEl.value = result.chinese || "";
+
+    if (window.showToast) window.showToast("✅ 翻譯已填入");
+  } catch (e) {
+    console.error("解讀填寫失敗:", e);
+    meaningEl.placeholder = "失敗: " + e.message;
+  } finally {
+    setTimeout(() => {
+      meaningEl.placeholder = "中文意思";
+    }, 3000);
+  }
+};
         
         // --- UI & 功能邏輯 (原樣保留) ---
         window.fixScroll = () => { setTimeout(() => { const section = document.getElementById('input-section'); if(section && section.classList.contains('show')) { const headerHeight = 280; const offsetPosition = section.getBoundingClientRect().top + window.pageYOffset - headerHeight; window.scrollTo({ top: offsetPosition, behavior: 'smooth' }); } }, 300); };
