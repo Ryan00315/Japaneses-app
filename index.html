@@ -174,87 +174,98 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (配合最新版 Worker：解讀並物理填入) ---
-        window.autoTranslate = async () => {
-            const wordEl = document.getElementById('word');
-            const readingEl = document.getElementById('reading'); // 漢字欄位
-            const meaningEl = document.getElementById('meaning'); // 中文意思欄位
-            
-            const w = wordEl.value.trim();
-            if(!w) return;
+// --- 🚀 智慧翻譯引擎 (防噴 + 快取 + 物理填入) ---
+let lastTranslateTime = 0; // 用於計算冷卻時間
 
-            // 確保 URL 與你的 Worker 網址一致
-            const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
-            meaningEl.placeholder = "Gemini 翻譯中...";
+window.autoTranslate = async () => {
+    const wordEl = document.getElementById('word');
+    const readingEl = document.getElementById('reading');
+    const meaningEl = document.getElementById('meaning');
+    
+    const w = wordEl.value.trim();
+    if (!w) return;
 
-            try {
-                // 發送符合你 Worker 預期的 JSON Body
-                const response = await fetch(WORKER_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ 
-                            parts: [{ 
-                                text: `你是一位日文老師。請翻譯「${w}」並嚴格回傳 JSON 格式：{"kanji": "常用漢字", "chinese": "繁體中文意思"}` 
-                            }] 
-                        }]
-                    })
-                });
+    // 1. 【防噴機制】冷卻檢查 (3秒內不重複發送)
+    const now = Date.now();
+    if (now - lastTranslateTime < 3000) {
+        window.showToast("⏳ 請求太快，請稍候...");
+        return;
+    }
 
-                const data = await response.json();
-                
-                // 1. 攔截配額超出 (429) 或其他錯誤
-                if (data.error) {
-                    console.error("Gemini 服務錯誤:", data.error.message);
-                    if (data.error.message.includes("quota")) {
-                        meaningEl.placeholder = "配額已滿，請等一分鐘";
-                    } else {
-                        meaningEl.placeholder = "API 錯誤，請檢查設定";
-                    }
-                    return;
-                }
+    // 2. 【本地快取機制】檢查是否已經存過這個單字 (省配額神器)
+    // 從你目前的 window.vocabs 陣列中找尋是否有相同單字
+    const existing = window.vocabs.find(v => v.word === w);
+    if (existing) {
+        readingEl.value = existing.reading || "";
+        meaningEl.value = existing.meaning || "";
+        window.showToast("⚡ 已從資料庫提取 (不消秏配額)");
+        return; 
+    }
 
-                // 2. 【核心解讀邏輯】從回傳內容中提取 JSON
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    let rawText = data.candidates[0].content.parts[0].text;
-                    
-                    // 使用正則表達式強力提取 {} 內容 (防止 AI 帶 Markdown 標籤)
-                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                    
-                    if (jsonMatch) {
-                        const result = JSON.parse(jsonMatch[0]);
-                        
-                        // 3. 【核心物理填入】真正把字寫上去
-                        // 這是解決「沒填入」問題的最終保險
-                        if (result.kanji) {
-                            readingEl.value = result.kanji;
-                        } else {
-                            readingEl.value = w; // 備案：若無漢字則填入原字
-                        }
+    // 3. 通過檢查後，準備發送 API
+    const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
+    meaningEl.placeholder = "Gemini 翻譯中...";
+    lastTranslateTime = now; // 更新最後請求時間
 
-                        if (result.chinese) {
-                            meaningEl.value = result.chinese;
-                        }
-                        
-                        window.showToast("✅ 翻譯已填入");
-                    }
-                }
-            } catch(e) {
-                console.error("解讀填寫失敗:", e);
-                meaningEl.placeholder = "連線失敗，請檢查網路";
-            } finally {
-                setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
-            }
-        };
-
-        // 為了防止配額過快消耗，建議將 word 欄位的 Enter 鍵綁定 autoTranslate
-        document.getElementById('word').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                window.autoTranslate();
-                document.getElementById('word').blur(); // 隱藏鍵盤
-            }
+    try {
+        const response = await fetch(WORKER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ 
+                    parts: [{ 
+                        text: `你是一位日文老師。請將「${w}」翻譯成 JSON：{"kanji": "常用漢字", "chinese": "繁體中文意思"}` 
+                    }] 
+                }]
+            })
         });
+
+        const data = await response.json();
+        
+        // 4. 攔截 API 錯誤 (特別是 429 配額問題)
+        if (data.error) {
+            console.error("API 報錯:", data.error.message);
+            if (data.error.message.includes("quota")) {
+                meaningEl.placeholder = "配額已滿，請等一分鐘";
+                window.showToast("⚠️ Google API 限速中");
+            } else {
+                meaningEl.placeholder = "API 錯誤，請檢查 Worker";
+            }
+            return;
+        }
+
+        // 5. 【核心解讀與物理填寫】
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+            let rawText = data.candidates[0].content.parts[0].text;
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/); // 提取 JSON 部分
+            
+            if (jsonMatch) {
+                const result = JSON.parse(jsonMatch[0]);
+                
+                // 物理強制填入 UI 欄位
+                if (result.kanji) readingEl.value = result.kanji;
+                if (result.chinese) meaningEl.value = result.chinese;
+                
+                window.showToast("✅ 翻譯填寫成功");
+            }
+        }
+    } catch(e) {
+        console.error("翻譯程序崩潰:", e);
+        meaningEl.placeholder = "連線失敗";
+    } finally {
+        setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
+    }
+};
+
+// --- 🎯 觸發優化：綁定 Enter 鍵 ---
+// 確保只有在輸入完按 Enter 才觸發，避免打一個字噴一次請求
+document.getElementById('word').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault(); // 防止換行
+        window.autoTranslate();
+        document.getElementById('word').blur(); // 縮起手機鍵盤
+    }
+});
         
         // --- UI & 功能邏輯 (原樣保留) ---
         window.fixScroll = () => { setTimeout(() => { const section = document.getElementById('input-section'); if(section && section.classList.contains('show')) { const headerHeight = 280; const offsetPosition = section.getBoundingClientRect().top + window.pageYOffset - headerHeight; window.scrollTo({ top: offsetPosition, behavior: 'smooth' }); } }, 300); };
