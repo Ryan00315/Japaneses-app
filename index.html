@@ -66,7 +66,8 @@
         
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all overflow-hidden text-center">
              <div class="grid grid-cols-2 gap-3 mb-4 text-left">
-                <input id="word" type="text" placeholder="單語 (日文)" onfocus="window.fixScroll()" onkeydown="if(event.key==='Enter') { window.autoTranslate(); this.blur(); }" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
+                <input id="word" type="text" placeholder="單語 (日文)" 
+       onkeydown="if(event.key === 'Enter') { window.autoTranslate(); this.blur(); }">
                 <input id="reading" type="text" placeholder="漢字" onfocus="window.fixScroll()" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
             </div>
             <div class="relative mb-4 text-left">
@@ -174,38 +175,33 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 智慧翻譯引擎 (防噴 + 快取 + 物理填入) ---
-let lastTranslateTime = 0; // 用於計算冷卻時間
+    // --- 🚀 智慧翻譯引擎 (最終防護整合版) ---
+        let isTranslating = false; // 狀態鎖：防止重複點擊或連點
 
-window.autoTranslate = async () => {
-    const wordEl = document.getElementById('word');
+        window.autoTranslate = async () => {
+        // 如果正在翻譯中，直接擋掉，不准重複發送
+        if (isTranslating) return;
+
+        const wordEl = document.getElementById('word');
     const readingEl = document.getElementById('reading');
     const meaningEl = document.getElementById('meaning');
     
     const w = wordEl.value.trim();
     if (!w) return;
 
-    // 1. 【防噴機制】冷卻檢查 (3秒內不重複發送)
-    const now = Date.now();
-    if (now - lastTranslateTime < 3000) {
-        window.showToast("⏳ 請求太快，請稍候...");
-        return;
-    }
-
-    // 2. 【本地快取機制】檢查是否已經存過這個單字 (省配額神器)
-    // 從你目前的 window.vocabs 陣列中找尋是否有相同單字
+    // 1. 【本地快取優先】檢查資料庫是否已存在 (這行最省配額)
     const existing = window.vocabs.find(v => v.word === w);
     if (existing) {
         readingEl.value = existing.reading || "";
         meaningEl.value = existing.meaning || "";
-        window.showToast("⚡ 已從資料庫提取 (不消秏配額)");
+        window.showToast("⚡ 已從資料庫提取");
         return; 
     }
 
-    // 3. 通過檢查後，準備發送 API
+    // 2. 準備發送 API，開啟狀態鎖
     const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
+    isTranslating = true;
     meaningEl.placeholder = "Gemini 翻譯中...";
-    lastTranslateTime = now; // 更新最後請求時間
 
     try {
         const response = await fetch(WORKER_URL, {
@@ -220,29 +216,30 @@ window.autoTranslate = async () => {
             })
         });
 
-        const data = await response.json();
-        
-        // 4. 攔截 API 錯誤 (特別是 429 配額問題)
-        if (data.error) {
-            console.error("API 報錯:", data.error.message);
-            if (data.error.message.includes("quota")) {
-                meaningEl.placeholder = "配額已滿，請等一分鐘";
-                window.showToast("⚠️ Google API 限速中");
-            } else {
-                meaningEl.placeholder = "API 錯誤，請檢查 Worker";
-            }
+        // 如果 HTTP 狀態碼是 429，代表被限速了
+        if (response.status === 429) {
+            window.showToast("⚠️ 請求太頻繁，請等 10 秒再試");
+            meaningEl.placeholder = "API 限速中...";
             return;
         }
 
-        // 5. 【核心解讀與物理填寫】
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error("API 報錯:", data.error.message);
+            meaningEl.placeholder = "配額已滿，請稍後";
+            return;
+        }
+
+        // 3. 【解讀與物理填寫】
         if (data.candidates && data.candidates[0].content.parts[0].text) {
             let rawText = data.candidates[0].content.parts[0].text;
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/); // 提取 JSON 部分
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/); 
             
             if (jsonMatch) {
                 const result = JSON.parse(jsonMatch[0]);
                 
-                // 物理強制填入 UI 欄位
+                // 物理強制修改 HTML 欄位的 value
                 if (result.kanji) readingEl.value = result.kanji;
                 if (result.chinese) meaningEl.value = result.chinese;
                 
@@ -250,22 +247,13 @@ window.autoTranslate = async () => {
             }
         }
     } catch(e) {
-        console.error("翻譯程序崩潰:", e);
+        console.error("連線錯誤:", e);
         meaningEl.placeholder = "連線失敗";
     } finally {
+        isTranslating = false; // 關閉狀態鎖
         setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
     }
 };
-
-// --- 🎯 觸發優化：綁定 Enter 鍵 ---
-// 確保只有在輸入完按 Enter 才觸發，避免打一個字噴一次請求
-document.getElementById('word').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault(); // 防止換行
-        window.autoTranslate();
-        document.getElementById('word').blur(); // 縮起手機鍵盤
-    }
-});
         
         // --- UI & 功能邏輯 (原樣保留) ---
         window.fixScroll = () => { setTimeout(() => { const section = document.getElementById('input-section'); if(section && section.classList.contains('show')) { const headerHeight = 280; const offsetPosition = section.getBoundingClientRect().top + window.pageYOffset - headerHeight; window.scrollTo({ top: offsetPosition, behavior: 'smooth' }); } }, 300); };
