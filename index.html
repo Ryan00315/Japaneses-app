@@ -173,7 +173,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (資深工程師最終除錯版：修復模型路徑與物理填入) ---
+// --- 🚀 核心翻譯引擎 (資深工程師最終除錯版：修復填寫動作) ---
         window.autoTranslate = async () => {
             // 1. 強制鎖定 HTML 元素 (確保對準你的介面 ID)
             const wordEl = document.getElementById('word');
@@ -183,8 +183,6 @@
             const w = wordEl.value.trim();
             if(!w) return;
 
-            // 🟢 修正關鍵：如果 Worker URL 本身帶有模型名稱，這裡只需發送內容
-            // 但為了防止 Worker 端網址過期，我們在 Payload 強制指定模型
             const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
             meaningEl.placeholder = "Gemini 翻譯中...";
 
@@ -193,22 +191,14 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        // 修正點 1: 使用更穩定的模型識別碼最新版
-                        model: "models/gemini-1.5-flash-latest", 
-                        contents: [{ 
-                            parts: [{ 
-                                text: `你是一位日文翻譯專家。請將「${w}」翻譯成 JSON：{"kanji": "如果有常用漢字請填寫(沒有則填原字)", "chinese": "繁體中文意思"}` 
-                            }] 
-                        }],
-                        generationConfig: { 
-                            responseMimeType: "application/json"
-                        }
+                        contents: [{ parts: [{ text: `你是一位日文翻譯專家。請將「${w}」翻譯成 JSON 格式：{"kanji": "如果有常用漢字請填寫(沒有則填原字)", "chinese": "繁體中文意思"}` }] }],
+                        generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
                 const data = await response.json();
                 
-                // 修正點 2: 攔截 Google 的模型找不到錯誤 (防禦結構)
+                // 2. 攔截 Google 報錯
                 if (data.error) {
                     console.error("Google API 報錯詳情:", data.error);
                     throw new Error(data.error.message);
@@ -217,23 +207,29 @@
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     let rawText = data.candidates[0].content.parts[0].text;
                     
-                    // 修正點 3: 暴力解析 JSON (防止 AI 噴廢話或 Markdown 標籤)
+                    // 3. 提取 JSON (防止 Markdown 標籤干擾)
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
                         
-                        // 修正點 4: 【物理填寫】真正將字寫入格子
-                        // 確保讀取 result.kanji 寫入 readingEl.value
-                        // 確保讀取 result.chinese 寫入 meaningEl.value
-                        if (result.kanji) readingEl.value = result.kanji;
-                        if (result.chinese) meaningEl.value = result.chinese;
+                        // 4. 【核心動作】強制將字「寫入」格子
+                        // 確保讀取 result.kanji 寫入 readingEl.value (漢字欄位)
+                        // 確保讀取 result.chinese 寫入 meaningEl.value (中文意思欄位)
+                        if (result.kanji) {
+                            readingEl.value = result.kanji;
+                        } else {
+                            readingEl.value = w; // 備案：填入原字
+                        }
+
+                        if (result.chinese) {
+                            meaningEl.value = result.chinese;
+                        }
                         
-                        window.showToast("✅ 翻譯填寫成功");
+                        window.showToast("✅ 翻譯已填入");
                     }
                 }
             } catch(e) {
                 console.error("翻譯填充失敗:", e);
-                // 修正點 5: 將錯誤原因直接顯示在 placeholder 讓你知道是哪裡出錯
                 meaningEl.placeholder = "錯誤: " + (e.message.includes("not found") ? "模型路徑錯誤" : "API問題");
             } finally {
                 setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
