@@ -174,62 +174,70 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (資深工程師最終除錯版：100% 解決路徑與填入問題) ---
-        window.autoTranslate = async () => {
-            const wordEl = document.getElementById('word');
-            const readingEl = document.getElementById('reading'); // 漢字欄位
-            const meaningEl = document.getElementById('meaning'); // 中文意思欄位
+// --- 🚀 核心翻譯引擎 (資深工程師最終對接版) ---
+window.autoTranslate = async () => {
+    const wordEl = document.getElementById('word');
+    const readingEl = document.getElementById('reading'); // 漢字欄位
+    const meaningEl = document.getElementById('meaning'); // 中文意思欄位
+    
+    const w = wordEl.value.trim();
+    if(!w) return;
+
+    const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
+    meaningEl.placeholder = "Gemini 翻譯中...";
+
+    try {
+        const response = await fetch(WORKER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ 
+                    parts: [{ 
+                        text: `你是一位日文老師。請將「${w}」翻譯成 JSON：{"kanji": "漢字", "chinese": "繁體中文意思"}` 
+                    }] 
+                }],
+                // 🟢 這裡不需要再傳 model 名稱，Worker 的 URL 已經指定好了
+                generationConfig: { 
+                    // 移除 responseMimeType 以確保最大相容性，改用 Prompt 強制格式
+                }
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error("API 報錯:", data.error.message);
+            throw new Error(data.error.message);
+        }
+
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+            const rawText = data.candidates[0].content.parts[0].text;
+            // 使用正則表達式提取 {} 內容
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
             
-            const w = wordEl.value.trim();
-            if(!w) return;
-
-            const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
-            meaningEl.placeholder = "Gemini 翻譯中...";
-
-            try {
-                const response = await fetch(WORKER_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ 
-                            parts: [{ 
-                                text: `請將日文「${w}」翻譯成 JSON：{"kanji": "漢字(無常用漢字填原字)", "chinese": "繁體中文意思"}` 
-                            }] 
-                        }]
-                        // 注意：v1beta 下不需要額外傳遞 model 名稱，因為 Worker 網址已經寫死了
-                    })
-                });
-
-                const data = await response.json();
+            if (jsonMatch) {
+                const result = JSON.parse(jsonMatch[0]);
                 
-                if (data.error) {
-                    console.error("API 報錯:", data.error.message);
-                    throw new Error(data.error.message);
+                // 🟢 【關鍵填寫動作】
+                // 強制寫入對應的 ID 欄位
+                if (result.kanji) {
+                    readingEl.value = result.kanji;
                 }
-
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    const rawText = data.candidates[0].content.parts[0].text;
-                    // 使用正則表達式提取 JSON {}
-                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                    
-                    if (jsonMatch) {
-                        const result = JSON.parse(jsonMatch[0]);
-                        
-                        // 🟢 【關鍵填寫動作】真正把文字填入格子
-                        // 這裡保證資料會填入你 UI 版對應的 ID
-                        if (result.kanji) readingEl.value = result.kanji;
-                        if (result.chinese) meaningEl.value = result.chinese;
-                        
-                        window.showToast("✅ 翻譯填寫成功");
-                    }
+                if (result.chinese) {
+                    meaningEl.value = result.chinese;
                 }
-            } catch(e) {
-                console.error("翻譯填充失敗:", e);
-                meaningEl.placeholder = "失敗: " + (e.message.includes("not found") ? "Worker網址需更新為v1beta" : "API連線問題");
-            } finally {
-                setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
+                
+                window.showToast("✅ 翻譯填寫成功");
             }
-        };
+        }
+    } catch(e) {
+        console.error("翻譯填充失敗:", e);
+        meaningEl.placeholder = "失敗: " + (e.message.includes("not found") ? "模型路徑不支援" : "API連線問題");
+    } finally {
+        setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
+    }
+};
+        
         // --- UI & 功能邏輯 (原樣保留) ---
         window.fixScroll = () => { setTimeout(() => { const section = document.getElementById('input-section'); if(section && section.classList.contains('show')) { const headerHeight = 280; const offsetPosition = section.getBoundingClientRect().top + window.pageYOffset - headerHeight; window.scrollTo({ top: offsetPosition, behavior: 'smooth' }); } }, 300); };
         window.showToast = (msg) => { const t = document.getElementById('toast'); if(t){ t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); } };
