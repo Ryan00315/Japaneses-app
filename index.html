@@ -173,48 +173,52 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
 
-       // --- 🚀 核心翻譯引擎 (修復版：確保資料填入 HTML 欄位) ---
+     // --- 🚀 核心翻譯引擎 (診斷修復版：確保 100% 提取並強制填入) ---
         window.autoTranslate = async () => {
-            const wordInput = document.getElementById('word');
-            const readingInput = document.getElementById('reading');
+            const wordVal = document.getElementById('word').value.trim();
+            if(!wordVal) return;
+
+            const WORKER_URL = "[https://jpnote-proxy.crypto-pisces315.workers.dev](https://jpnote-proxy.crypto-pisces315.workers.dev)"; 
             const meaningInput = document.getElementById('meaning');
+            const readingInput = document.getElementById('reading');
             
-            const w = wordInput.value.trim();
-            if(!w) return;
-
-            const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
+            // 視覺反饋
             meaningInput.placeholder = "Gemini 翻譯中...";
-
+            
             try {
                 const response = await fetch(WORKER_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請只回傳 JSON：{"kanji": "漢字(無常用漢字則填原字)", "chinese": "繁體中文意思"}` }] }],
+                        contents: [{ parts: [{ text: `請翻譯日文單字「${wordVal}」。請「只」回傳 JSON 格式內容：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }],
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
                 const data = await response.json();
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    let rawText = data.candidates[0].content.parts[0].text;
-                    
-                    // 1. 暴力提取 JSON 內容
-                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        const result = JSON.parse(jsonMatch[0]);
-                        
-                        // 2. 【關鍵修正】真正把字填寫回去對應的欄位
-                        // 確保 kanji 填入漢字欄位，chinese 填入意思欄位
-                        if (result.kanji) readingInput.value = result.kanji;
-                        if (result.chinese) meaningInput.value = result.chinese;
-                        
-                        window.showToast("✅ 翻譯已填入");
-                    }
+                
+                // 1. 取得 API 原始字串內容
+                let rawText = data.candidates[0].content.parts[0].text;
+                console.log("API Raw Response:", rawText); // 供除錯使用
+
+                // 2. 強力提取 JSON 物件 (移除 Markdown 標籤並解析)
+                const jsonStr = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+                const result = JSON.parse(jsonStr);
+                
+                // 3. 【強制寫入】直接對 HTML 元素賦值
+                // 這裡必須使用 .value 才能填入輸入框
+                if (result.kanji) {
+                    document.getElementById('reading').value = result.kanji;
                 }
+                if (result.chinese) {
+                    document.getElementById('meaning').value = result.chinese;
+                }
+                
+                window.showToast("✅ 翻譯已填入");
+
             } catch(e) {
-                console.error("翻譯出錯:", e);
-                meaningInput.placeholder = "翻譯失敗";
+                console.error("翻譯解析或填入失敗:", e);
+                meaningInput.placeholder = "翻譯失敗，請檢查 API 設定";
             } finally {
                 setTimeout(() => { meaningInput.placeholder = "中文意思"; }, 1500);
             }
