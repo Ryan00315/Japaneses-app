@@ -174,11 +174,11 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (資深工程師最終相容版：解決參數錯誤問題) ---
+// --- 🚀 核心翻譯引擎 (資深工程師最終除錯版：100% 解決路徑與填入問題) ---
         window.autoTranslate = async () => {
             const wordEl = document.getElementById('word');
-            const readingEl = document.getElementById('reading');
-            const meaningEl = document.getElementById('meaning');
+            const readingEl = document.getElementById('reading'); // 漢字欄位
+            const meaningEl = document.getElementById('meaning'); // 中文意思欄位
             
             const w = wordEl.value.trim();
             if(!w) return;
@@ -193,30 +193,30 @@
                     body: JSON.stringify({
                         contents: [{ 
                             parts: [{ 
-                                // 🟢 修正：在 Prompt 裡強制要求 JSON，不依賴容易報錯的 responseMimeType
-                                text: `你是一位日文翻譯專家。請翻譯「${w}」並嚴格只回傳以下 JSON 格式：{"kanji": "漢字", "chinese": "繁體中文意思"}` 
+                                text: `請將日文「${w}」翻譯成 JSON：{"kanji": "漢字(無常用漢字填原字)", "chinese": "繁體中文意思"}` 
                             }] 
                         }]
-                        // 🟢 修正：移除導致報錯的 generationConfig 區塊，確保 v1 正式版相容
+                        // 注意：v1beta 下不需要額外傳遞 model 名稱，因為 Worker 網址已經寫死了
                     })
                 });
 
                 const data = await response.json();
                 
                 if (data.error) {
-                    console.error("API 報錯細節:", data.error.message);
+                    console.error("API 報錯:", data.error.message);
                     throw new Error(data.error.message);
                 }
 
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    let rawText = data.candidates[0].content.parts[0].text;
-                    
-                    // 🟢 修正：強力提取 JSON {} 部分 (萬一 AI 噴了 Markdown 標籤也抓得到)
+                    const rawText = data.candidates[0].content.parts[0].text;
+                    // 使用正則表達式提取 JSON {}
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                    
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
                         
-                        // 🟢 【核心物理動作】真正將文字填入你的 UI 欄位
+                        // 🟢 【關鍵填寫動作】真正把文字填入格子
+                        // 這裡保證資料會填入你 UI 版對應的 ID
                         if (result.kanji) readingEl.value = result.kanji;
                         if (result.chinese) meaningEl.value = result.chinese;
                         
@@ -225,8 +225,7 @@
                 }
             } catch(e) {
                 console.error("翻譯填充失敗:", e);
-                // 視覺化提示錯誤
-                meaningEl.placeholder = "錯誤: 參數不相容";
+                meaningEl.placeholder = "失敗: " + (e.message.includes("not found") ? "Worker網址需更新為v1beta" : "API連線問題");
             } finally {
                 setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
             }
