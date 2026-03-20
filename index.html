@@ -173,8 +173,9 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (解決模型找不著與自動填入問題) ---
+// --- 🚀 核心翻譯引擎 (修正模型名稱與強制填寫) ---
         window.autoTranslate = async () => {
+            // 1. 精確抓取 HTML 元素 (對應你 UI 版的 ID)
             const wordEl = document.getElementById('word');
             const readingEl = document.getElementById('reading');
             const meaningEl = document.getElementById('meaning');
@@ -182,6 +183,7 @@
             const w = wordEl.value.trim();
             if(!w) return;
 
+            // 你的 Worker 網址
             const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
             meaningEl.placeholder = "Gemini 翻譯中...";
 
@@ -190,16 +192,17 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請「只」回傳 JSON 格式內容：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }],
-                        generationConfig: { 
-                            responseMimeType: "application/json"
-                        }
+                        // 🟢 關鍵修正：將模型名稱改為最新的完整名稱
+                        contents: [{ parts: [{ text: `你是一個日文翻譯專家。請翻譯日文單字「${w}」。請只回傳 JSON：{"kanji": "常用漢字(無常用漢字則填原字)", "chinese": "繁體中文意思"}` }] }],
+                        // 🟢 關鍵修正：指定正確的模型版本號
+                        model: "models/gemini-1.5-flash-latest",
+                        generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
                 const data = await response.json();
                 
-                // 檢查 Google API 報錯
+                // 檢查 Google 是否回報模型找不到
                 if (data.error) {
                     console.error("Google API 報錯:", data.error.message);
                     throw new Error(data.error.message);
@@ -212,18 +215,20 @@
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
                         
-                        // 🟢 強制填入欄位：reading(漢字), meaning(中文意思)
+                        // 🟢 【關鍵填寫動作】真正把文字填入格子裡
+                        // readingEl 對應「漢字」欄位
+                        // meaningEl 對應「中文意思」欄位
                         readingEl.value = result.kanji || "";
                         meaningEl.value = result.chinese || "";
                         
-                        window.showToast("✅ 翻譯已填入");
+                        window.showToast("✅ 翻譯填寫成功");
                     }
                 }
             } catch(e) {
                 console.error("翻譯填充失敗:", e);
-                meaningEl.placeholder = "翻譯失敗: 模型設定錯誤";
+                meaningEl.placeholder = "翻譯失敗，請檢查 Worker 設定";
             } finally {
-                setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
+                setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 1500);
             }
         };
         // --- 其餘功能代碼 (保持原樣，不作任何變動) ---
