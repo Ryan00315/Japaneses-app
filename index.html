@@ -174,52 +174,51 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (資深工程師最終對接版) ---
-window.autoTranslate = async () => {
-    const wordEl = document.getElementById('word');
-    const readingEl = document.getElementById('reading'); // 漢字欄位
-    const meaningEl = document.getElementById('meaning'); // 中文意思欄位
+        // --- 🚀 核心翻譯引擎 (資深工程師 100% 填入修復版) ---
+        window.autoTranslate = async () => {
+        // 1. 抓取 HTML 元素 (對應你 UI 版的 ID)
+        const wordEl = document.getElementById('word');
+        const readingEl = document.getElementById('reading'); // 漢字欄位
+        const meaningEl = document.getElementById('meaning'); // 中文意思欄位
     
-    const w = wordEl.value.trim();
-    if(!w) return;
+        const w = wordEl.value.trim();
+        if(!w) return;
 
-    const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
-    meaningEl.placeholder = "Gemini 翻譯中...";
+        // 這裡請確保與你的 Worker 網址一致
+        const WORKER_URL = "https://jpnote-proxy.crypto-pisces315.workers.dev"; 
+        meaningEl.placeholder = "Gemini 翻譯中...";
 
-    try {
-        const response = await fetch(WORKER_URL, {
-            method: "POST",
+        try {
+            const response = await fetch(WORKER_URL, {
+            method: "POST", // 👈 這裡發送 POST，Worker 就不會噴那個錯誤訊息了
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: [{ 
                     parts: [{ 
                         text: `你是一位日文老師。請將「${w}」翻譯成 JSON：{"kanji": "漢字", "chinese": "繁體中文意思"}` 
                     }] 
-                }],
-                // 🟢 這裡不需要再傳 model 名稱，Worker 的 URL 已經指定好了
-                generationConfig: { 
-                    // 移除 responseMimeType 以確保最大相容性，改用 Prompt 強制格式
-                }
+                }]
             })
         });
 
         const data = await response.json();
         
+        // 檢查 API 是否有報錯訊息
         if (data.error) {
-            console.error("API 報錯:", data.error.message);
+            console.error("Gemini 報錯:", data.error.message);
             throw new Error(data.error.message);
         }
 
         if (data.candidates && data.candidates[0].content.parts[0].text) {
-            const rawText = data.candidates[0].content.parts[0].text;
-            // 使用正則表達式提取 {} 內容
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            let rawText = data.candidates[0].content.parts[0].text;
             
+            // 2. 提取 JSON (處理 Markdown 標籤)
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
                 const result = JSON.parse(jsonMatch[0]);
                 
-                // 🟢 【關鍵填寫動作】
-                // 強制寫入對應的 ID 欄位
+                // 3. 🟢 【物理寫入動作】強制將字填入格子裡
+                // readingEl 對應「漢字」欄位，meaningEl 對應「中文意思」
                 if (result.kanji) {
                     readingEl.value = result.kanji;
                 }
@@ -227,12 +226,12 @@ window.autoTranslate = async () => {
                     meaningEl.value = result.chinese;
                 }
                 
-                window.showToast("✅ 翻譯填寫成功");
+                window.showToast("✅ 翻譯已填入");
             }
         }
     } catch(e) {
         console.error("翻譯填充失敗:", e);
-        meaningEl.placeholder = "失敗: " + (e.message.includes("not found") ? "模型路徑不支援" : "API連線問題");
+        meaningEl.placeholder = "失敗: " + (e.message.includes("Unexpected") ? "請檢查網路" : "API問題");
     } finally {
         setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
     }
