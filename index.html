@@ -177,8 +177,8 @@
 // --- 🚀 核心翻譯引擎 (資深工程師最終除錯版：解讀並物理填入) ---
         window.autoTranslate = async () => {
             const wordEl = document.getElementById('word');
-            const readingEl = document.getElementById('reading'); // 漢字格子
-            const meaningEl = document.getElementById('meaning'); // 中文意思格子
+            const readingEl = document.getElementById('reading'); // 漢字欄位
+            const meaningEl = document.getElementById('meaning'); // 中文意思欄位
             
             const w = wordEl.value.trim();
             if(!w) return;
@@ -193,7 +193,7 @@
                     body: JSON.stringify({
                         contents: [{ 
                             parts: [{ 
-                                text: `你是一位日文老師。請將「${w}」翻譯成 JSON：{"kanji": "常用漢字", "chinese": "繁體中文意思"}` 
+                                text: `你是一位日文老師。請將「${w}」翻譯成 JSON：{"kanji": "漢字", "chinese": "繁體中文意思"}` 
                             }] 
                         }]
                     })
@@ -201,31 +201,27 @@
 
                 const data = await response.json();
                 
-                // 1. 檢查 API 是否有報錯 (解決 404/Not Found)
+                // 1. 如果 API 真的還是報錯，我們直接在 Console 看原始資料
                 if (data.error) {
-                    console.error("API 報錯:", data.error.message);
+                    console.error("API 原始報錯內容:", data.error);
                     throw new Error(data.error.message);
                 }
 
-                // 2. 【核心解讀邏輯】從回傳內容中提取資料
+                // 2. 【核心解讀】從回傳中「提取」漢字與意思
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     let rawText = data.candidates[0].content.parts[0].text;
                     
-                    // 使用正則表達式強力解讀 {} 之間的內容 (防止 AI 噴廢話)
+                    // 使用正則表達式強力挖出 {} 之間的內容 (防止 AI 帶 Markdown 標籤)
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                     
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
                         
-                        // 3. 【核心填寫邏輯】物理填入對應格子
-                        // 這裡保證解讀出來的 kanji 填入 readingEl
-                        // 這裡保證解讀出來的 chinese 填入 meaningEl
+                        // 3. 【核心填寫】把解讀到的東西寫入格子
+                        // 這兩行就是你要求的：把解讀出來的內容填上去
                         if (result.kanji) {
                             readingEl.value = result.kanji;
-                        } else {
-                            readingEl.value = w; // 沒漢字就填原字
                         }
-
                         if (result.chinese) {
                             meaningEl.value = result.chinese;
                         }
@@ -234,9 +230,9 @@
                     }
                 }
             } catch(e) {
-                console.error("翻譯填充失敗:", e);
-                // 顯示具體錯誤，讓你看到是 API 路徑還是解析問題
-                meaningEl.placeholder = "失敗: " + (e.message.includes("not found") ? "模型路徑錯誤" : "解析失敗");
+                console.error("解讀填寫失敗:", e);
+                // 為了讓你直接看到問題，失敗時把錯誤原因寫在 placeholder
+                meaningEl.placeholder = "失敗: " + e.message;
             } finally {
                 setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
             }
