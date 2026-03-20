@@ -173,9 +173,8 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (資深工程師徹底修復版) ---
+// --- 🚀 核心翻譯引擎 (診斷修復版：確保 100% 提取並強制填入) ---
         window.autoTranslate = async () => {
-            // 1. 先抓取 HTML 元素
             const wordEl = document.getElementById('word');
             const readingEl = document.getElementById('reading');
             const meaningEl = document.getElementById('meaning');
@@ -191,36 +190,36 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請只回傳 JSON：{"kanji": "漢字(無常用漢字則填原字)", "chinese": "繁體中文意思"}` }] }],
+                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請只回傳 JSON：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }],
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
                 const data = await response.json();
                 
-                // 2. 防禦性檢查：確保 API 回傳結構完整
-                if (data && data.candidates && data.candidates[0] && data.candidates[0].content) {
-                    let rawText = data.candidates[0].content.parts[0].text;
+                // 1. 防禦檢查：檢查是否為 API 錯誤訊息或結構不全
+                if (!data || data.error || !data.candidates || !data.candidates[0]) {
+                    console.error("API 回傳異常資料:", data);
+                    throw new Error(data?.error?.message || "Worker 未能取得翻譯結果");
+                }
+
+                // 2. 取得 AI 回傳的字串
+                let rawText = data.candidates[0].content.parts[0].text;
+                
+                // 3. 提取 JSON {} 內容 (防止 Markdown 標籤干擾)
+                const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const result = JSON.parse(jsonMatch[0]);
                     
-                    // 3. 提取 JSON (處理 Markdown 標籤)
-                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        const result = JSON.parse(jsonMatch[0]);
-                        
-                        // 4. 【核心動作】強制寫入文字到畫面欄位
-                        // 使用正確的 ID：reading 對應漢字，meaning 對應中文意思
-                        if (result.kanji) readingEl.value = result.kanji;
-                        if (result.chinese) meaningEl.value = result.chinese;
-                        
-                        window.showToast("✅ 翻譯已填入");
-                    } else {
-                        throw new Error("JSON 格式解析失敗");
-                    }
-                } else if (data.error) {
-                    // 如果是 API 層級的錯誤（例如 Key 沒設好）
-                    throw new Error(data.error.message || "API 服務錯誤");
+                    // 4. 【核心動作】直接填入對應 ID 欄位
+                    // readingEl 對應 id="reading" (漢字)
+                    // meaningEl 對應 id="meaning" (中文意思)
+                    if (result.kanji) readingEl.value = result.kanji;
+                    if (result.chinese) meaningEl.value = result.chinese;
+                    
+                    window.showToast("✅ 翻譯已填入");
                 } else {
-                    throw new Error("API 未回傳有效候選內容");
+                    throw new Error("找不到 JSON 結構");
                 }
 
             } catch(e) {
