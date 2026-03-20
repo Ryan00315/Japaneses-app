@@ -173,7 +173,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (診斷修復版：確保 100% 提取並強制填入) ---
+// --- 🚀 核心翻譯引擎 (最終修正版：解決 Referer 阻擋與自動填入) ---
         window.autoTranslate = async () => {
             const wordEl = document.getElementById('word');
             const readingEl = document.getElementById('reading');
@@ -190,44 +190,39 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請只回傳 JSON：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }],
+                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請「只」回傳 JSON 格式內容：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }],
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
                 const data = await response.json();
                 
-                // 1. 防禦檢查：檢查是否為 API 錯誤訊息或結構不全
-                if (!data || data.error || !data.candidates || !data.candidates[0]) {
-                    console.error("API 回傳異常資料:", data);
-                    throw new Error(data?.error?.message || "Worker 未能取得翻譯結果");
+                // 檢查 Google API 是否噴錯 (例如剛才的 Referer 錯誤)
+                if (data.error) {
+                    console.error("Google API 報錯:", data.error.message);
+                    throw new Error(data.error.message);
                 }
 
-                // 2. 取得 AI 回傳的字串
-                let rawText = data.candidates[0].content.parts[0].text;
-                
-                // 3. 提取 JSON {} 內容 (防止 Markdown 標籤干擾)
-                const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const result = JSON.parse(jsonMatch[0]);
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    let rawText = data.candidates[0].content.parts[0].text;
+                    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                     
-                    // 4. 【核心動作】直接填入對應 ID 欄位
-                    // readingEl 對應 id="reading" (漢字)
-                    // meaningEl 對應 id="meaning" (中文意思)
-                    if (result.kanji) readingEl.value = result.kanji;
-                    if (result.chinese) meaningEl.value = result.chinese;
-                    
-                    window.showToast("✅ 翻譯已填入");
-                } else {
-                    throw new Error("找不到 JSON 結構");
+                    if (jsonMatch) {
+                        const result = JSON.parse(jsonMatch[0]);
+                        
+                        // 🟢 物理填入欄位：確保對準 id="reading" 與 id="meaning"
+                        readingEl.value = result.kanji || "";
+                        meaningEl.value = result.chinese || "";
+                        
+                        window.showToast("✅ 翻譯已填入");
+                    }
                 }
-
             } catch(e) {
                 console.error("翻譯填充失敗:", e);
-                meaningEl.placeholder = "翻譯失敗，請檢查 API 設定";
-                window.showToast("❌ 翻譯失敗");
+                // 顯示具體原因，幫助你確認 Google 設定是否生效
+                meaningEl.placeholder = "翻譯失敗: " + (e.message.includes("referer") ? "API權限問題" : "設定錯誤");
             } finally {
-                setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 1500);
+                setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
             }
         };
         // --- 其餘功能代碼 (保持原樣，不作任何變動) ---
