@@ -170,47 +170,93 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 翻譯引擎 (整合 Gemini API) ---
-        window.autoTranslate = async () => {
-            const w = document.getElementById('word').value.trim();
-            if(!w) return;
+        // --- 🚀 翻譯引擎 (資深工程師加強版：強化 JSON 解析與錯誤偵測) ---
+window.autoTranslate = async () => {
+    const w = document.getElementById('word').value.trim();
+    if (!w) return;
 
-            // 1. 本地單位庫備案
-            const unitLibrary = {
-                "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"],
-                "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"],
-                "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"],
-                "じゅうさんにち": ["13號", "13日"], "じゅうよっか": ["14號", "14日"], "じゅうごにち": ["15號", "15日"], "じゅうろくにち": ["16號", "16日"],
-                "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"], "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"],
-                "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"], "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"],
-                "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"], "にじゅうしちにち": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"],
-                "にじゅうくにち": ["29號", "29日"], "さんじゅうにch": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"],
-                "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"],
-                "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"],
-                "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"],
-                "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"],
-                "ごじ": ["5點", "5時"], "ろくじ": ["6點", "6時"], "しちじ": ["7點", "7時"], "はちじ": ["8點", "8時"],
-                "くじ": ["9點", "9時"], "じゅうじ": ["10點", "10時"], "じゅういちじ": ["11點", "11時"], "じゅうにじ": ["12點", "12時"],
-                "いっぷん": ["1分", "1分"], "にふん": ["2分", "2分"], "さんぷん": ["3分", "3分"], "よんぷん": ["4分", "4分"],
-                "ごふん": ["5分", "5分"], "ろっぷん": ["6分", "6分"], "ななふん": ["7分", "7分"], "はっぷん": ["8分", "8分"],
-                "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"]
-            };
-            const cleanW = w.toLowerCase().replace(/\s+/g, '');
-            if(unitLibrary[cleanW]) { document.getElementById('meaning').value = unitLibrary[cleanW][0]; document.getElementById('reading').value = unitLibrary[cleanW][1]; return; }
-            
-            // 2. Gemini API 翻譯
-            const API_KEY = "YOUR_GEMINI_API_KEY_HERE"; 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-            const meaningInput = document.getElementById('meaning');
-            const readingInput = document.getElementById('reading');
-            meaningInput.placeholder = "翻譯中...";
+    // 1. 本地單位庫備案 (快速攔截)
+    const unitLibrary = {
+        "ついたち": ["1號", "1日"], "ふつか": ["2號", "2日"], "みっか": ["3號", "3日"], "よっか": ["4號", "4日"],
+        "いつか": ["5號", "5日"], "むいか": ["6號", "6日"], "なのか": ["7號", "7日"], "ようか": ["8號", "8日"],
+        "ここのか": ["9號", "9日"], "とおか": ["10號", "10日"], "じゅういちにち": ["11號", "11日"], "じゅうににち": ["12號", "12日"],
+        "じゅうさんにち": ["13號", "13日"], "じゅうよっか": ["14號", "14日"], "じゅうごにち": ["15號", "15日"], "じゅうろくにち": ["16號", "16日"],
+        "じゅうしちにち": ["17號", "17日"], "じゅうはちにち": ["18號", "18日"], "じゅうくにち": ["19號", "19日"], "はつか": ["20號", "20日"],
+        "にじゅういちにち": ["21號", "21日"], "にじゅうににち": ["22號", "22日"], "にじゅうさんにち": ["23號", "23日"], "にじゅうよっか": ["24號", "24日"],
+        "にじゅうごにち": ["25號", "25日"], "にじゅうろくにち": ["26號", "26日"], "にじゅうしちにち": ["27號", "27日"], "にじゅうはちにち": ["28號", "28日"],
+        "にじゅうくにち": ["29號", "29日"], "さんじゅうにち": ["30號", "30日"], "さんじゅういちにち": ["31號", "31日"],
+        "いちがつ": ["1月", "1月"], "にがつ": ["2月", "2月"], "さんがつ": ["3月", "3月"], "しがつ": ["4月", "4月"],
+        "ごがつ": ["5月", "5月"], "ろくがつ": ["6月", "6月"], "しちがつ": ["7月", "7月"], "はちがつ": ["8月", "8月"],
+        "くがつ": ["9月", "9月"], "じゅうがつ": ["10月", "10月"], "じゅういちがつ": ["11月", "11月"], "じゅうにがつ": ["12月", "12月"],
+        "いちじ": ["1點", "1時"], "にじ": ["2點", "2時"], "さんじ": ["3點", "3時"], "よじ": ["4點", "4時"],
+        "ごじ": ["5點", "5時"], "ろくじ": ["6點", "6時"], "しちじ": ["7點", "7時"], "はちじ": ["8點", "8時"],
+        "くじ": ["9點", "9時"], "じゅうじ": ["10點", "10時"], "じゅういちじ": ["11點", "11時"], "じゅうにじ": ["12點", "12時"],
+        "いっぷん": ["1分", "1分"], "にふん": ["2分", "2分"], "さんぷん": ["3分", "3分"], "よんぷん": ["4分", "4分"],
+        "ごふん": ["5分", "5分"], "ろっぷん": ["6分", "6分"], "ななふん": ["7分", "7分"], "はっぷん": ["8分", "8分"],
+        "きゅうふん": ["9分", "9分"], "じゅっぷん": ["10分", "10分"]
+    };
+    const cleanW = w.toLowerCase().replace(/\s+/g, '');
+    if(unitLibrary[cleanW]) {
+        document.getElementById('meaning').value = unitLibrary[cleanW][0];
+        document.getElementById('reading').value = unitLibrary[cleanW][1];
+        return;
+    }
+    
+    // 2. Gemini API 翻譯
+    const API_KEY = "YOUR_GEMINI_API_KEY_HERE"; // ⚠️ 務必確認這裡有填入正確的金鑰
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+    
+    const meaningInput = document.getElementById('meaning');
+    const readingInput = document.getElementById('reading');
+    meaningInput.placeholder = "Gemini 正在翻譯...";
 
-            const promptText = `你是一個精通日文的老師。請翻譯日文單字「${w}」。
-            請嚴格依照 JSON 格式回傳，不要有任何多餘文字或 Markdown 標籤：
-            {
-              "kanji": "如果有對應的常用漢字請填入，若無則填入原本輸入的內容",
-              "chinese": "精確的繁體中文意思"
-            }`;
+    const promptText = `你是一個日文學習助手。請翻譯單字「${w}」。
+    請嚴格依照此 JSON 格式回傳（不要 Markdown 標籤）：
+    {"kanji": "漢字內容", "chinese": "意思內容"}`;
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+        });
+
+        const data = await response.json();
+
+        // 檢查 API 是否回傳錯誤訊息 (如 API Key 錯誤)
+        if (data.error) {
+            console.error("Gemini API 回傳錯誤:", data.error.message);
+            alert("API 錯誤: " + data.error.message);
+            return;
+        }
+
+        if (data.candidates && data.candidates[0]) {
+            let resText = data.candidates[0].content.parts[0].text;
+            console.log("Gemini 原始回傳:", resText);
+
+            // 【關鍵修正】使用正則表達式只抓取 { ... } 之間的內容，防止 Markdown 干擾
+            const jsonMatch = resText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const result = JSON.parse(jsonMatch[0]);
+                console.log("解析後的結果:", result);
+
+                // 填入文字
+                if (result.kanji) readingInput.value = result.kanji;
+                if (result.chinese) meaningInput.value = result.chinese;
+                
+                // 成功後給予小提示
+                window.showToast("✅ 翻譯完成");
+            } else {
+                throw new Error("無法從回傳中找到 JSON 格式");
+            }
+        }
+    } catch(e) {
+        console.error("翻譯過程發生例外:", e);
+        meaningInput.placeholder = "翻譯失敗，請檢查 API Key";
+    } finally {
+        setTimeout(() => { meaningInput.placeholder = "中文意思"; }, 2000);
+    }
+};
 
             try {
                 const response = await fetch(url, {
