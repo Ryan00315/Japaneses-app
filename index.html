@@ -171,9 +171,9 @@
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
         
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
-        const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
+        const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "衰L23", "L24", "L25", "個人筆記"];
 
-        // --- 🚀 修復版翻譯引擎 (強力 JSON 提取) ---
+        // --- 🚀 核心翻譯引擎 (修復版：加入 JSON 剝離與填入邏輯) ---
         window.autoTranslate = async () => {
             const w = document.getElementById('word').value.trim();
             if(!w) return;
@@ -188,7 +188,7 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `請翻譯日文單字「${w}」。請嚴格只回傳 JSON 格式內容：{"kanji": "常用漢字(無常用漢字則填原字)", "chinese": "繁體中文意思"}` }] }],
+                        contents: [{ parts: [{ text: `請翻譯單字「${w}」。請只回傳 JSON：{"kanji": "漢字(無常用漢字則填原字)", "chinese": "繁體中文意思"}` }] }],
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
@@ -197,27 +197,25 @@
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     let rawText = data.candidates[0].content.parts[0].text;
                     
-                    // --- 核心修復：使用正則表達式提取 JSON {} 部分，防止 Markdown 標籤干擾 ---
+                    // --- 修復邏輯：使用正則表達式提取 {} 內部的內容，防止 Markdown 標籤干擾 ---
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
-                        // 正式將翻譯結果填入 HTML 欄位
+                        // 🟢 正式填入 HTML 欄位
                         readingInput.value = result.kanji || "";
                         meaningInput.value = result.chinese || "";
-                        window.showToast("✅ 翻譯填充成功");
-                    } else {
-                        throw new Error("找不到 JSON 結構");
+                        window.showToast("✅ 翻譯已填入");
                     }
                 }
             } catch(e) {
                 console.error("翻譯出錯:", e);
-                meaningInput.placeholder = "翻譯失敗，請檢查 API";
+                meaningInput.placeholder = "翻譯失敗";
             } finally {
                 setTimeout(() => { meaningInput.placeholder = "中文意思"; }, 1500);
             }
         };
 
-        // --- 其餘功能代碼 (保持原樣，絕不變更) ---
+        // --- 其餘功能代碼 (保持原樣，不作任何變動) ---
         window.fixScroll = () => { setTimeout(() => { const section = document.getElementById('input-section'); if(section && section.classList.contains('show')) { const headerHeight = 280; const elementPosition = section.getBoundingClientRect().top; const offsetPosition = elementPosition + window.pageYOffset - headerHeight; window.scrollTo({ top: offsetPosition, behavior: 'smooth' }); } }, 300); };
         window.showToast = (msg) => { const t = document.getElementById('toast'); if(t){ t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); } };
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
