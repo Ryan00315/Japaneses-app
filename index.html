@@ -174,7 +174,7 @@
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-// --- 🚀 核心翻譯引擎 (資深工程師最終除錯版：解讀並填寫) ---
+// --- 🚀 核心翻譯引擎 (資深工程師最終對接版：解讀並物理填入) ---
         window.autoTranslate = async () => {
             const wordEl = document.getElementById('word');
             const readingEl = document.getElementById('reading'); // 漢字格子
@@ -193,8 +193,8 @@
                     body: JSON.stringify({
                         contents: [{ 
                             parts: [{ 
-                                // 強制要求 AI 吐出 JSON，方便我們解讀
-                                text: `你是一位日文翻譯專家。請翻譯「${w}」並嚴格回傳 JSON：{"kanji": "漢字", "chinese": "繁體中文意思"}` 
+                                // 強制 AI 回傳純 JSON，方便我們解讀
+                                text: `你是一位日文翻譯專家。請翻譯日文「${w}」並嚴格回傳 JSON 格式：{"kanji": "漢字", "chinese": "繁體中文意思"}` 
                             }] 
                         }]
                     })
@@ -202,13 +202,13 @@
 
                 const data = await response.json();
                 
-                // 1. 如果資料回傳 404，這裡會抓到
+                // 1. 如果還是 404，這裡會立刻攔截並顯示
                 if (data.error) {
-                    console.error("API 報錯詳情:", data.error);
+                    console.error("API 原始報錯:", data.error);
                     throw new Error(data.error.message);
                 }
 
-                // 2. 【核心解讀】從回傳中抓取 JSON 字串
+                // 2. 【核心解讀邏輯】從回傳字串中挖出 JSON
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     let rawText = data.candidates[0].content.parts[0].text;
                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -216,7 +216,8 @@
                     if (jsonMatch) {
                         const result = JSON.parse(jsonMatch[0]);
                         
-                        // 3. 【核心填寫】把解讀到的漢字和中文填寫上去
+                        // 3. 【核心物理填入】真正把字寫上去
+                        // 這就是你要求的：程式解讀後自動填寫上去
                         if (result.kanji) readingEl.value = result.kanji;
                         if (result.chinese) meaningEl.value = result.chinese;
                         
@@ -225,6 +226,7 @@
                 }
             } catch(e) {
                 console.error("解讀填寫失敗:", e);
+                // 視覺化提示，讓你不用看 Console 也能知道發生什麼事
                 meaningEl.placeholder = "失敗: " + e.message;
             } finally {
                 setTimeout(() => { meaningEl.placeholder = "中文意思"; }, 3000);
