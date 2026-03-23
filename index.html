@@ -139,7 +139,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- Firebase Config ---
+        // --- Firebase Config (保持原樣) ---
         const firebaseConfig = { apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4", authDomain: "jpnote-5f436.firebaseapp.com", projectId: "jpnote-5f436", storageBucket: "jpnote-5f436.firebasestorage.app", messagingSenderId: "881660892658", appId: "1:881660892658:web:9d88f9b2332aa9e2b3076b", measurementId: "G-QV2NRXQSY7" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -172,65 +172,66 @@
             }
         };
 
-        // --- 🚀 終極指令與萬用模糊匹配方案 🚀 ---
+        // --- 🚀 最終大絕招：全方位數據偵測與回填 🚀 ---
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
-            const targetWord = document.getElementById('word').value.trim();
-            if (!targetWord) return;
-
-            // 本地快取
-            const cached = window.vocabs.find(v => v.word === targetWord);
-            if (cached) { 
-                document.getElementById('reading').value = cached.reading || "";
-                document.getElementById('meaning').value = cached.meaning || "";
-                window.checkDuplicate();
-                return;
-            }
+            const inputWord = document.getElementById('word').value.trim();
+            if (!inputWord) return;
 
             window.isTranslating = true;
-            document.getElementById('meaning').placeholder = "AI 連線中...";
+            document.getElementById('meaning').placeholder = "AI 正在解讀中...";
 
             try {
                 const response = await fetch("https://jpnote-proxy.crypto-pisces315.workers.dev", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    // 升級 Prompt：加入防廢話指令與標籤說明
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `請翻譯日文「${targetWord}」。要求：1.只回傳結果。2.格式必須為 [K]漢字[M]意思。例如輸入「りんご」，回傳：[K]林檎[M]蘋果。嚴禁回傳標籤以外的任何字。` }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位翻譯官。請翻譯日文「${inputWord}」。
+                    要求：
+                    1. 只回傳結果，不准廢話。
+                    2. 格式：[K]漢字[K][M]意思[M]
+                    例如：[K]林檎[K][M]蘋果[M]` }] }] })
                 });
                 
-                const rawText = await response.text();
+                const raw = await response.text();
                 
-                // 1. 優先嘗試嚴格標籤匹配
-                let finalK = (rawText.match(/\[K\](.*?)(?=\[M\]|\[\/K\]|$)/i) || [])[1];
-                let finalM = (rawText.match(/\[M\](.*?)(?=$|\[\/M\])/i) || [])[1];
+                // 1. 解析邏輯 A: 標籤掃描
+                let finalK = (raw.match(/\[K\](.*?)\[K\]/) || [])[1];
+                let finalM = (raw.match(/\[M\](.*?)\[M\]/) || [])[1];
 
-                // 2. 模糊匹配機制 (如果標籤失敗，嘗試抓取 JSON 鍵值或冒號後的文字)
-                if (!finalK) finalK = (rawText.match(/"kanji"\s*:\s*"([^"]+)"/i) || rawText.match(/漢字[：:]\s*(.*?)(\s|$)/) || [""])[1];
-                if (!finalM) finalM = (rawText.match(/"chinese"\s*:\s*"([^"]+)"/i) || rawText.match(/意思[：:]\s*(.*?)(\s|$)/) || [""])[1];
+                // 2. 解析邏輯 B: 如果標籤失敗，掃描 JSON 鍵值
+                if(!finalK) finalK = (raw.match(/"kanji"\s*:\s*"([^"]+)"/i) || [])[1];
+                if(!finalM) finalM = (raw.match(/"chinese"\s*:\s*"([^"]+)"/i) || [])[1];
 
-                // 3. 地毯式強制回填
-                const forceWrite = () => {
+                // 3. 解析邏輯 C: 暴力行掃描 (最後手段)
+                if(!finalK || !finalM) {
+                    const lines = raw.split(/[\n,;]/);
+                    lines.forEach(line => {
+                        if(line.includes("漢字") || line.includes("kanji")) finalK = line.split(/[:：]/)[1]?.trim();
+                        if(line.includes("意思") || line.includes("chinese")) finalM = line.split(/[:：]/)[1]?.trim();
+                    });
+                }
+
+                // 清理殘留標籤
+                const clean = (str) => (str || "").replace(/[\[\]{}"]/g, "").trim();
+                const resK = clean(finalK);
+                const resM = clean(finalM);
+
+                // 【物理級別寫入：執行 3 次】
+                const forceApply = () => {
                     const r = document.getElementById('reading');
                     const m = document.getElementById('meaning');
-                    if(r && m) {
-                        r.value = (finalK || "").replace(/\[.*?\]/g, "").trim();
-                        m.value = (finalM || "").replace(/\[.*?\]/g, "").trim();
-                        r.dispatchEvent(new Event('input', { bubbles: true }));
-                        m.dispatchEvent(new Event('input', { bubbles: true }));
-                        window.checkDuplicate();
-                    }
+                    if (r) r.value = resK;
+                    if (m) m.value = resM;
+                    r?.dispatchEvent(new Event('input', { bubbles: true }));
+                    m?.dispatchEvent(new Event('input', { bubbles: true }));
+                    window.checkDuplicate();
                 };
 
-                forceWrite(); 
-                setTimeout(forceWrite, 150); // 150ms 後再釘一次
+                forceApply();
+                setTimeout(forceApply, 50);
+                setTimeout(forceApply, 300);
 
-                if (finalK || finalM) {
-                    window.showToast("✅ 翻譯已填入");
-                } else {
-                    // 如果還是失敗，顯示 AI 給了什麼方便除錯
-                    console.log("AI回傳內容:", rawText);
-                    document.getElementById('meaning').value = "解析失敗，請手動輸入";
-                    window.showToast("⚠️ 格式不符");
-                }
+                if (resK || resM) window.showToast("✅ 翻譯已填入");
+                else window.showToast("⚠️ 解析失敗，請手動填寫");
 
             } catch(e) {
                 window.showToast("❌ 連線異常");
@@ -240,7 +241,7 @@
             }
         };
 
-        // 其餘功能完全保持原樣...
+        // 其餘基礎功能完全保持原樣...
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder === 'desc' ? '↓' : '↑'}`; window.renderList(); };
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
