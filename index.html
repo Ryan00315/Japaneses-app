@@ -79,7 +79,7 @@
             </div>
             <div class="relative mb-4 text-left">
                 <input id="meaning" type="text" placeholder="中文意思" oninput="window.checkDuplicate()" onfocus="window.fixScroll()" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-                <button onclick="if(!window.isTranslating) window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500">👉 翻譯(漢字、中文)</button>
+                <button id="translate-btn-action" onclick="if(!window.isTranslating) window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500">👉 翻譯(漢字、中文)</button>
             </div>
             <div class="flex gap-2 mb-3">
                 <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
@@ -171,15 +171,13 @@
             }
         };
 
-        // --- 🚀 終極暴力修正：全格式相容回填 🚀 ---
+        // --- 終極修正方案：避開 JSON 解析，採用純文字流掃描回填 ---
         window.autoTranslate = async () => {
-            const now = Date.now();
-            if (window.isTranslating || (window.lastReqTime && (now - window.lastReqTime < 2000))) return; 
-            
+            if (window.isTranslating) return;
             const wordVal = document.getElementById('word').value.trim();
             if (!wordVal) return;
 
-            // 本地快取
+            // 本地快取檢查
             const cached = window.vocabs.find(v => v.word === wordVal);
             if (cached) { 
                 document.getElementById('reading').value = cached.reading || "";
@@ -189,8 +187,8 @@
             }
 
             window.isTranslating = true;
-            window.lastReqTime = now;
-            document.getElementById('meaning').placeholder = "AI 正在解讀中...";
+            const meaningInput = document.getElementById('meaning');
+            meaningInput.placeholder = "AI 正在連線中...";
 
             try {
                 const response = await fetch("https://jpnote-proxy.crypto-pisces315.workers.dev", {
@@ -198,55 +196,43 @@
                     body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位日文老師。請翻譯「${wordVal}」並嚴格回傳格式：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }] })
                 });
                 
-                const data = await response.json();
-                let rawText = "";
+                // 【重點：不使用 .json()，改用 .text() 避免連線異常報錯】
+                const rawText = await response.text();
+                
+                // 用正則表達式硬挖 (不分大小寫)
+                const kanjiMatch = rawText.match(/"kanji"\s*:\s*"([^"]+)"/i);
+                const chineseMatch = rawText.match(/"chinese"\s*:\s*"([^"]+)"/i);
+                
+                const finalKanji = kanjiMatch ? kanjiMatch[1] : "";
+                const finalChinese = chineseMatch ? chineseMatch[1] : "";
 
-                // 1. 自動偵測回傳路徑 (Gemini 原生格式 vs 簡化格式)
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    rawText = data.candidates[0].content.parts[0].text;
-                } else if (typeof data === "string") {
-                    rawText = data;
-                } else {
-                    rawText = JSON.stringify(data);
+                // 強力回填
+                const targetR = document.getElementById('reading');
+                const targetM = document.getElementById('meaning');
+
+                if (targetR && targetM) {
+                    targetR.value = finalKanji;
+                    targetM.value = finalChinese;
+                    
+                    // 模擬輸入，觸發 UI 聯動
+                    targetR.dispatchEvent(new Event('input', { bubbles: true }));
+                    targetM.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    if (finalKanji || finalChinese) window.showToast("✅ 翻譯已填入");
+                    window.checkDuplicate();
                 }
 
-                // 2. 核心：不論格式，強制用正則表達式硬挖數值
-                const kanjiMatch = rawText.match(/"kanji":\s*"([^"]+)"/i);
-                const chineseMatch = rawText.match(/"chinese":\s*"([^"]+)"/i);
-                
-                const kanjiFinal = kanjiMatch ? kanjiMatch[1] : "";
-                const chineseFinal = chineseMatch ? chineseMatch[1] : "";
-
-                // 3. 終極回填：多重保險定時器 (解決非同步 UI 競爭問題)
-                const forceFill = () => {
-                    const r = document.getElementById('reading');
-                    const m = document.getElementById('meaning');
-                    if (r && m) {
-                        r.value = kanjiFinal;
-                        m.value = chineseFinal;
-                        r.dispatchEvent(new Event('input', { bubbles: true }));
-                        m.dispatchEvent(new Event('input', { bubbles: true }));
-                        window.checkDuplicate();
-                    }
-                };
-
-                forceFill(); // 立即填寫
-                setTimeout(forceFill, 50);  // 50ms 後補填
-                setTimeout(forceFill, 250); // 250ms 後強填
-
-                if (kanjiFinal || chineseFinal) window.showToast("✅ 翻譯已就緒");
-                else throw new Error("未偵測到內容");
-
             } catch(e) {
-                console.error("翻譯連線或解析失敗", e);
-                window.showToast("❌ 翻譯連線異常");
+                console.error("翻譯錯誤", e);
+                // 只有真的連不到網路才會跳這個
+                window.showToast("❌ 連線超時，請再試一次");
             } finally { 
                 window.isTranslating = false; 
                 document.getElementById('meaning').placeholder = "中文意思"; 
             }
         };
 
-        // --- 以下其餘功能完全保持原樣 ---
+        // --- 基礎功能實作完全維持原樣 ---
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder === 'desc' ? '↓' : '↑'}`; window.renderList(); };
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
