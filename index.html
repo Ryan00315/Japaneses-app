@@ -26,7 +26,6 @@
         @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 100px; opacity: 1;} }
         @keyframes fadeout { from {bottom: 100px; opacity: 1;} to {bottom: 0; opacity: 0;} }
         
-        /* 選擇題按鈕樣式 */
         .option-btn { transition: all 0.2s ease; border: 2px solid rgba(255,255,255,0.1); word-break: break-all; }
         .option-btn:disabled { opacity: 0.8; }
         .opt-correct { background-color: #10b981 !important; border-color: #059669 !important; color: white !important; }
@@ -144,10 +143,13 @@
                 </div>
             </div>
 
-            <div id="choice-area" class="grid grid-cols-1 gap-3 mb-6 hidden">
-                <button onclick="window.submitChoice(0)" id="opt-0" class="option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg"></button>
-                <button onclick="window.submitChoice(1)" id="opt-1" class="option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg"></button>
-                <button onclick="window.submitChoice(2)" id="opt-2" class="option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg"></button>
+            <div id="choice-area" class="mb-6 hidden">
+                <div class="grid grid-cols-1 gap-3 mb-4">
+                    <button onclick="window.submitChoice(0)" id="opt-0" class="option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg"></button>
+                    <button onclick="window.submitChoice(1)" id="opt-1" class="option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg"></button>
+                    <button onclick="window.submitChoice(2)" id="opt-2" class="option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg"></button>
+                </div>
+                <button onclick="window.quizFail()" class="w-full bg-rose-500/10 border-2 border-rose-500/30 text-rose-500 py-4 rounded-2xl font-black text-sm">不知道 / 加強練習</button>
             </div>
 
             <div id="spelling-input-area" class="mb-4 hidden"><input type="text" id="spelling-input" placeholder="按 Enter 檢查..." class="w-full p-4 bg-white/10 border-2 border-white/20 rounded-2xl text-center text-xl font-bold text-white outline-none focus:border-indigo-400"><p id="feedback-msg" class="mt-2 text-[10px] font-bold h-5"></p></div>
@@ -197,20 +199,18 @@
         const vocabsCol = collection(db, "vocabs");
         const progressCol = collection(db, "user_progress");
 
-        // --- 全域變數 ---
         window.vocabs = []; window.userProgress = {}; window.selectedLessons = []; window.selectedTypes = [];
         window.currentBook = 1; window.newWordBook = 1; window.selectedNewCat = 'n.'; window.selectedNewLesson = '未分類';
         window.sortOrder = 'desc'; window.isTranslating = false;
         window.quizPool = []; window.remainingPool = []; window.currentQuizWord = null; window.quizMode = 'standard';
-        window.choiceSub = 'jp-ch'; // 選擇題子模式
-        window.currentChoices = [];
+        window.choiceSub = 'jp-ch'; window.currentChoices = [];
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
         
         const BOOK_MAP = { 1: ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12"], 2: ["L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25"] };
         const LESSON_ORDER = ["附錄", "未分類", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16", "L17", "L18", "L19", "L20", "L21", "L22", "L23", "L24", "L25", "個人筆記"];
 
-        // --- 核心邏輯 (其餘功能不變) ---
+        // --- 核心邏輯 (其餘功能皆保持原樣) ---
         window.autoTranslate = async () => {
             const now = Date.now();
             if (window.isTranslating || (window.lastReqTime && (now - window.lastReqTime < 3000))) return; 
@@ -226,7 +226,6 @@
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位日文老師。請翻譯「${w}」並嚴格回傳 JSON：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }] })
                 });
-                if (response.status === 429) { window.showToast("⚠️ 請求過快"); setTimeout(() => { window.isTranslating = false; }, 10000); return; }
                 const data = await response.json();
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     const jsonMatch = data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/);
@@ -321,7 +320,6 @@
             card.classList.remove('is-flipped');
             document.getElementById('spelling-input').value = '';
             
-            // 重置選項按鈕樣式
             for(let i=0; i<3; i++) {
                 const btn = document.getElementById(`opt-${i}`);
                 btn.className = "option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg";
@@ -334,7 +332,6 @@
             const isH = window.quizMode === 'hearing';
             const isC = window.quizMode === 'choice';
 
-            // 處理顯示文字
             if (isH) {
                 document.getElementById('q-meaning-front').innerText = "";
             } else if (isC) {
@@ -348,25 +345,19 @@
             document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
             document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
 
-            // 判斷是否為選擇題區域
             if (isC || isH) {
                 document.getElementById('choice-area').classList.remove('hidden');
                 document.getElementById('standard-actions').classList.add('hidden');
                 document.getElementById('quiz-card-container').classList.add('pointer-events-none');
 
-                // 生成干擾項
                 const others = window.quizPool.filter(v => v.id !== window.currentQuizWord.id);
                 const shuffled = others.sort(() => Math.random() - 0.5);
                 window.currentChoices = [window.currentQuizWord, shuffled[0], shuffled[1]].sort(() => Math.random() - 0.5);
 
                 window.currentChoices.forEach((choice, idx) => {
                     const btn = document.getElementById(`opt-${idx}`);
-                    // 聽力模式下固定給中文，一般選擇題看子模式
-                    if (isH) {
-                        btn.innerText = choice.meaning;
-                    } else {
-                        btn.innerText = (window.choiceSub === 'jp-ch') ? choice.meaning : choice.word;
-                    }
+                    if (isH) btn.innerText = choice.meaning;
+                    else btn.innerText = (window.choiceSub === 'jp-ch') ? choice.meaning : choice.word;
                 });
             } else {
                 document.getElementById('choice-area').classList.add('hidden');
@@ -397,7 +388,7 @@
             }
         };
 
-        // --- 基礎功能實作 (其餘皆不變) ---
+        // --- 基礎 API 與 UI 邏輯保持不變 ---
         window.submitNewWord = async () => {
             const w = document.getElementById('word').value.trim(), r = document.getElementById('reading').value.trim(), m = document.getElementById('meaning').value.trim();
             if (!w || !m) return alert("內容不完整");
@@ -433,10 +424,23 @@
         window.fixScroll = () => { setTimeout(() => { const s = document.getElementById('input-section'); if(s && s.classList.contains('show')) { const h = 280; const pos = s.getBoundingClientRect().top + window.pageYOffset - h; window.scrollTo({ top: pos, behavior: 'smooth' }); } }, 300); };
         window.showToast = (msg) => { const t = document.getElementById('toast'); if(t){ t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); } };
         window.backToQuizSetup = () => { document.getElementById('quiz-content').classList.add('hidden'); document.getElementById('quiz-setup').classList.remove('hidden'); };
-        window.handleCardClick = (e) => { if(e.target.closest('button')) return; const card = document.getElementById('quiz-card'); card.classList.toggle('is-flipped'); if(card.classList.contains('is-flipped')) window.speakAction(window.currentQuizWord.word); };
+        window.handleCardClick = (e) => { if(window.quizMode === 'choice' || window.quizMode === 'hearing') return; if(e.target.closest('button')) return; const card = document.getElementById('quiz-card'); card.classList.toggle('is-flipped'); if(card.classList.contains('is-flipped')) window.speakAction(window.currentQuizWord.word); };
         window.playCurrentWord = (e) => { e.stopPropagation(); window.speakAction(window.currentQuizWord.word); };
         window.quizPass = async () => { await updateProg(window.currentQuizWord.id, true); window.nextQuestion(); };
-        window.quizFail = async () => { await updateProg(window.currentQuizWord.id, false); window.nextQuestion(); };
+        window.quizFail = async () => { 
+            // 如果是選擇題模式，手動加強時要翻轉顯示正確答案
+            if(window.quizMode === 'choice' || window.quizMode === 'hearing') {
+                document.getElementById('quiz-card').classList.add('is-flipped');
+                window.speakAction(window.currentQuizWord.word);
+                // 停用按鈕防止點擊
+                for(let i=0; i<3; i++) document.getElementById(`opt-${i}`).disabled = true;
+                await updateProg(window.currentQuizWord.id, false); 
+                setTimeout(() => window.nextQuestion(), 2000);
+            } else {
+                await updateProg(window.currentQuizWord.id, false); 
+                window.nextQuestion();
+            }
+        };
         const updateProg = async (id, correct) => { const docId = `${currentUser}_${id}`; const ex = window.userProgress[id] || { wrongCount: 0 }; await setDoc(doc(progressCol, docId), { uid: currentUser, vocabId: id, wrongCount: correct ? ex.wrongCount : (ex.wrongCount + 1), lastTested: new Date() }); };
         window.toggleStats = (s) => document.getElementById('stats-modal').classList.toggle('hidden', !s);
         window.showStatsModal = () => { const c = document.getElementById('devil-list'); const sorted = Object.values(window.userProgress).filter(p => p.wrongCount > 0).sort((a,b) => b.wrongCount - a.wrongCount).slice(0, 15); c.innerHTML = sorted.length ? sorted.map(p => { const v = window.vocabs.find(x => x.id === p.vocabId); return v ? `<div class="flex justify-between items-center border-b border-slate-100 py-3 font-bold"><div><span class="text-slate-800">${v.word}</span><span class="text-[9px] text-indigo-400 ml-2 uppercase">${v.lesson}</span></div><span class="text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full text-xs">錯 ${p.wrongCount} 次</span></div>` : ''; }).join('') : '<p class="text-center py-8">尚無紀錄</p>'; window.toggleStats(true); };
@@ -446,7 +450,7 @@
         window.setEditBook = (b) => { window.editWordBook = b; window.selectedEditLesson = (b==='note'?'個人筆記':(b===1?'附錄':'L13')); window.selectedEditCat = (window.selectedEditLesson === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
         window.renderEditLessonUI = () => { const c = document.getElementById('edit-lesson-container'); if(window.editWordBook==='note') c.innerHTML=""; else c.innerHTML = BOOK_MAP[window.editWordBook].map(l => `<button onclick="window.setEditLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedEditLesson===l?'active-edit-cat bg-indigo-600 text-white':'bg-white'}">${l}</button>`).join(''); setupDraggable(); };
         window.setEditLesson = (l) => { window.selectedEditLesson = l; window.selectedEditCat = (l === '附錄' ? '數字' : 'n.'); window.renderEditLessonUI(); window.renderEditCategoryUI(); };
-        window.renderEditCategoryUI = () => { const container = document.getElementById('edit-category-picker'); if(!container) return; const types = window.selectedEditLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setEditCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedEditCat === t ? 'active-edit-cat bg-indigo-600 text-white' : 'bg-white'}">${t}</button>`).join(''); setupDraggable(); };
+        window.renderEditCategoryUI = () => { const container = document.getElementById('edit-category-picker'); if(!container) return; const types = window.selectedEditLesson === '附錄' ? ['數字', '時間', '量詞', '期間'] : ['n.', 'v.', 'adj.', '其他']; container.innerHTML = types.map(t => `<button onclick="window.setEditCategory('${t}')" class="ls-btn-style border px-3 py-1 rounded-lg ${window.selectedEditCat === t ? 'active-edit-cat bg-indigo-600 text-white' : 'bg-white'}">${t}</button>`); setupDraggable(); };
         window.setEditCategory = (c) => { window.selectedEditCat = c; window.renderEditCategoryUI(); };
         window.saveWordEdit = async () => { const data = { word: document.getElementById('edit-word').value, reading: document.getElementById('edit-reading').value, meaning: document.getElementById('edit-meaning').value, lesson: window.selectedEditLesson, category: window.selectedEditCat }; if (window.selectedEditLesson === '個人筆記') data.uid = currentUser; else data.uid = null; await updateDoc(doc(db, "vocabs", window.currentEditId), data); document.getElementById('edit-modal').classList.add('hidden'); window.showToast("✅ 已更新"); };
         const setupDraggable = () => { document.querySelectorAll('.no-scrollbar').forEach(el => { let isDown = false, startX, scrollLeft; el.onmousedown = (e) => { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; }; el.onmouseleave = () => isDown = false; el.onmouseup = () => isDown = false; el.onmousemove = (e) => { if(!isDown) return; e.preventDefault(); const x = e.pageX - el.offsetLeft; const dist = x - startX; el.scrollLeft = scrollLeft - dist; }; }); };
