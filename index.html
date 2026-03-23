@@ -79,7 +79,7 @@
             </div>
             <div class="relative mb-4 text-left">
                 <input id="meaning" type="text" placeholder="中文意思" oninput="window.checkDuplicate()" onfocus="window.fixScroll()" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-                <button onclick="if(!window.isTranslating) window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500">👉 翻譯(漢字、中文)</button>
+                <button id="translate-btn-action" onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500">👉 翻譯(漢字、中文)</button>
             </div>
             <div class="flex gap-2 mb-3">
                 <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
@@ -127,6 +127,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // --- Firebase Config ---
         const firebaseConfig = { apiKey: "AIzaSyDOsqjX7FknZOKTdEUiofhIwIwGVRUIdN4", authDomain: "jpnote-5f436.firebaseapp.com", projectId: "jpnote-5f436", storageBucket: "jpnote-5f436.firebasestorage.app", messagingSenderId: "881660892658", appId: "1:881660892658:web:9d88f9b2332aa9e2b3076b", measurementId: "G-QV2NRXQSY7" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -159,78 +160,58 @@
             }
         };
 
-        // --- 🚀 終極必殺修正：強制回填邏輯 🚀 ---
+        // --- 終極修正：直接注入狀態回填 ---
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
-            const targetWord = document.getElementById('word').value.trim();
-            if (!targetWord) return;
-
-            // 1. 本地快取檢查
-            const cached = window.vocabs.find(v => v.word === targetWord);
-            if (cached) { 
-                const rField = document.getElementById('reading');
-                const mField = document.getElementById('meaning');
-                rField.value = cached.reading || "";
-                mField.value = cached.meaning || "";
-                window.checkDuplicate();
-                return;
-            }
+            const inputWord = document.getElementById('word').value.trim();
+            if (!inputWord) return;
 
             window.isTranslating = true;
-            document.getElementById('meaning').placeholder = "AI 正在解讀...";
+            const meaningInput = document.getElementById('meaning');
+            const readingInput = document.getElementById('reading');
+            meaningInput.placeholder = "AI 解讀中...";
 
             try {
                 const response = await fetch("https://jpnote-proxy.crypto-pisces315.workers.dev", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位日文老師。請翻譯「${targetWord}」並嚴格回傳：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位日文老師。請翻譯「${inputWord}」並嚴格按此格式回傳：{"kanji": "漢字", "chinese": "繁體中文意思"}` }] }] })
                 });
                 
-                // 【重點：改用文字流以防解析失敗】
-                const textStream = await response.text();
+                const rawText = await response.text();
                 
-                // 暴力掃描 (無視格式)
-                const kanjiMatch = textStream.match(/"kanji"\s*:\s*"([^"]+)"/i);
-                const chineseMatch = textStream.match(/"chinese"\s*:\s*"([^"]+)"/i);
-                
-                const finalK = kanjiMatch ? kanjiMatch[1] : "";
-                const finalC = chineseMatch ? chineseMatch[1] : "";
+                // 採用最暴力正則，無視任何包裹字串
+                const kResult = (rawText.match(/"kanji"\s*:\s*"([^"]+)"/i) || [])[1] || "";
+                const cResult = (rawText.match(/"chinese"\s*:\s*"([^"]+)"/i) || [])[1] || "";
 
-                // 【地毯式強制回填函數】
-                const doForceFill = () => {
-                    const r = document.getElementById('reading');
-                    const m = document.getElementById('meaning');
-                    if(r && m) {
-                        // 強制修改所有可能的值屬性
-                        r.value = finalK;
-                        m.value = finalC;
-                        r.setAttribute('value', finalK);
-                        m.setAttribute('value', finalC);
-                        
-                        // 激發所有瀏覽器事件
-                        ['input', 'change', 'blur'].forEach(evName => {
-                            r.dispatchEvent(new Event(evName, { bubbles: true }));
-                            m.dispatchEvent(new Event(evName, { bubbles: true }));
-                        });
-                        window.checkDuplicate();
-                    }
+                // 強制在主執行緒和微任務中重複寫入
+                const forceWrite = () => {
+                    const rEl = document.getElementById('reading');
+                    const mEl = document.getElementById('meaning');
+                    if (rEl) rEl.value = kResult;
+                    if (mEl) mEl.value = cResult;
+                    
+                    // 觸發原生事件流
+                    rEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    mEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    window.checkDuplicate();
                 };
 
-                // 分三階段執行回填，確保跨過任何 UI 鎖定
-                doForceFill(); 
-                setTimeout(doForceFill, 100);
-                setTimeout(doForceFill, 500);
+                forceWrite(); 
+                // 防止渲染競爭，100ms 後再釘一次
+                setTimeout(forceWrite, 100);
 
-                if (finalK || finalC) window.showToast("✅ 翻譯已同步");
+                if (kResult || cResult) window.showToast("✅ 翻譯完畢");
+                else window.showToast("⚠️ AI 未回傳預期格式");
 
             } catch(e) {
-                console.error("翻譯回填失敗", e);
+                window.showToast("❌ 連線失敗");
             } finally { 
                 window.isTranslating = false; 
-                document.getElementById('meaning').placeholder = "中文意思"; 
+                meaningInput.placeholder = "中文意思"; 
             }
         };
 
-        // 其餘功能保持完全不變...
+        // 其餘基礎功能保持完全不變...
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder === 'desc' ? '↓' : '↑'}`; window.renderList(); };
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
