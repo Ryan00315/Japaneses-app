@@ -171,10 +171,10 @@
             }
         };
 
-        // --- 核心暴力修正：翻譯回填 ---
+        // --- 🚀 最終暴力修正：翻譯回填邏輯 🚀 ---
         window.autoTranslate = async () => {
             const now = Date.now();
-            if (window.isTranslating || (window.lastReqTime && (now - window.lastReqTime < 3000))) return; 
+            if (window.isTranslating || (window.lastReqTime && (now - window.lastReqTime < 2500))) return; 
             
             const rawWord = document.getElementById('word').value.trim();
             if (!rawWord) return;
@@ -200,34 +200,46 @@
                 const data = await response.json();
                 
                 if (data && data.candidates) {
-                    const txt = data.candidates[0].content.parts[0].text;
-                    const jsonMatch = txt.match(/\{[\s\S]*?\}/);
-                    if (jsonMatch) { 
-                        const result = JSON.parse(jsonMatch[0]); 
-                        const kanji = result.kanji || result.Kanji || "";
-                        const chinese = result.chinese || result.Chinese || "";
+                    const rawText = data.candidates[0].content.parts[0].text;
+                    
+                    // 【寬鬆解析】使用正則表達式直接提取，不管它有沒有包裹 Markdown
+                    const kanjiMatch = rawText.match(/"kanji":\s*"([^"]+)"/i);
+                    const chineseMatch = rawText.match(/"chinese":\s*"([^"]+)"/i);
+                    
+                    const kanjiResult = kanjiMatch ? kanjiMatch[1] : "";
+                    const chineseResult = chineseMatch ? chineseMatch[1] : "";
 
-                        // 【最暴力回填】直接操作原始 DOM ID，不經過任何變數
-                        document.getElementById('reading').value = kanji;
-                        document.getElementById('meaning').value = chinese;
+                    // 【多重賦值保險】
+                    const applyValues = () => {
+                        const rField = document.getElementById('reading');
+                        const mField = document.getElementById('meaning');
                         
-                        // 雙重保險：手動發送 input 事件流
-                        document.getElementById('reading').dispatchEvent(new Event('input', { bubbles: true }));
-                        document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
+                        rField.value = kanjiResult;
+                        mField.value = chineseResult;
+                        
+                        // 觸發 Input 事件確保重複檢查觸發
+                        rField.dispatchEvent(new Event('input', { bubbles: true }));
+                        mField.dispatchEvent(new Event('input', { bubbles: true }));
+                        window.checkDuplicate();
+                    };
 
-                        window.showToast("✅ 翻譯成功"); 
-                        window.checkDuplicate(); 
-                    }
+                    // 立即賦值一次
+                    applyValues();
+                    // 100ms 後強制再次賦值一次（防止非同步 UI 競爭）
+                    setTimeout(applyValues, 100);
+
+                    window.showToast("✅ 翻譯已填入"); 
                 }
             } catch(e) {
                 console.error("翻譯回填失敗", e);
+                window.showToast("❌ 翻譯連線異常");
             } finally { 
                 window.isTranslating = false; 
                 document.getElementById('meaning').placeholder = "中文意思"; 
             }
         };
 
-        // --- 其餘功能實作保持原樣 ---
+        // --- 以下其餘功能完全保持原樣 ---
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder === 'desc' ? '↓' : '↑'}`; window.renderList(); };
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
