@@ -162,33 +162,6 @@
         </div>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 z-[350] modal-overlay hidden flex flex-col items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h2 class="text-xl font-black mb-6 border-b pb-4 text-center text-indigo-600 uppercase tracking-tighter">編輯單語</h2>
-            <div class="space-y-4">
-                <input id="edit-word" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
-                <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
-                <input id="edit-meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm font-bold">
-                <div class="flex gap-2">
-                    <button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第一冊</button>
-                    <button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第二冊</button>
-                    <button id="edit-book-note-btn" onclick="window.setEditBook('note')" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">個人筆記</button>
-                </div>
-                <div id="edit-lesson-container" class="no-scrollbar pb-3"></div>
-                <div id="edit-category-picker" class="flex flex-wrap gap-2 no-scrollbar"></div>
-                <div class="flex gap-3 pt-4 border-t mt-4"><button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="flex-1 bg-slate-100 py-3 rounded-2xl font-bold">取消</button><button onclick="window.saveWordEdit()" class="flex-1 bg-indigo-600 text-white py-3 rounded-2xl font-bold">更新保存</button></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="stats-modal" class="fixed inset-0 z-[450] modal-overlay hidden flex flex-col items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[40px] p-8 shadow-2xl overflow-y-auto max-h-[80vh]"><h2 class="text-xl font-black mb-4 text-indigo-600 text-center uppercase tracking-tighter">個人弱點排行</h2><div id="devil-list" class="space-y-2 p-2"></div><button onclick="window.toggleStats(false)" class="w-full mt-6 bg-slate-100 py-3 rounded-2xl font-bold">關閉</button></div>
-    </div>
-
-    <div id="import-overlay" class="fixed inset-0 z-[500] bg-slate-900/90 hidden flex flex-col items-center justify-center p-6 text-white">
-        <div class="w-full max-w-md"><h3 class="text-xl font-bold mb-4 px-2 tracking-tight uppercase">批量匯入</h3><textarea id="import-text" rows="8" class="w-full bg-slate-800 rounded-2xl p-4 text-sm outline-none mb-4" placeholder="單語,漢字,意思,詞性,課數"></textarea><div class="flex gap-2"><button onclick="window.toggleImport(false)" class="flex-1 bg-slate-700 py-3 rounded-xl font-bold">取消</button><button onclick="window.startImport()" class="flex-1 bg-indigo-500 py-3 rounded-xl font-bold">同步匯入</button></div></div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -238,16 +211,28 @@
             }
         };
 
+        // --- 修正翻譯填入邏輯 ---
         window.autoTranslate = async () => {
             const now = Date.now();
             if (window.isTranslating || (window.lastReqTime && (now - window.lastReqTime < 3000))) return; 
             const wordEl = document.getElementById('word'), readingEl = document.getElementById('reading'), meaningEl = document.getElementById('meaning');
             const w = wordEl.value.trim();
             if (!w) return;
+
+            // 本地提取
             const cached = window.vocabs.find(v => v.word === w);
-            if (cached) { readingEl.value = cached.reading || ""; meaningEl.value = cached.meaning || ""; window.showToast("⚡ 本地提取成功"); window.checkDuplicate(); return; }
-            window.isTranslating = true; window.lastReqTime = now;
+            if (cached) { 
+                readingEl.value = cached.reading || ""; 
+                meaningEl.value = cached.meaning || ""; 
+                window.showToast("⚡ 本地提取成功"); 
+                window.checkDuplicate(); // 填寫後立即觸發檢查
+                return; 
+            }
+
+            window.isTranslating = true; 
+            window.lastReqTime = now;
             meaningEl.placeholder = "Gemini 翻譯中...";
+
             try {
                 const response = await fetch("https://jpnote-proxy.crypto-pisces315.workers.dev", {
                     method: "POST", headers: { "Content-Type": "application/json" },
@@ -256,12 +241,27 @@
                 const data = await response.json();
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     const jsonMatch = data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) { const r = JSON.parse(jsonMatch[0]); if (r.kanji) readingEl.value = r.kanji; if (r.chinese) meaningEl.value = r.chinese; window.showToast("✅ 翻譯已填入"); window.checkDuplicate(); }
+                    if (jsonMatch) { 
+                        const r = JSON.parse(jsonMatch[0]); 
+                        // 強制填寫
+                        if (r.kanji) readingEl.value = r.kanji; 
+                        if (r.chinese) meaningEl.value = r.chinese; 
+                        
+                        window.showToast("✅ 翻譯已填入"); 
+                        window.checkDuplicate(); // 關鍵修正：翻譯填寫完畢後立即觸發一次檢查
+                    }
                 }
-            } catch(e) {} finally { setTimeout(() => { window.isTranslating = false; meaningEl.placeholder = "中文意思"; }, 2000); }
+            } catch(e) {
+                console.error("翻譯錯誤", e);
+            } finally { 
+                setTimeout(() => { 
+                    window.isTranslating = false; 
+                    meaningEl.placeholder = "中文意思"; 
+                }, 2000); 
+            }
         };
 
-        // --- 其餘功能實作保持原樣 ---
+        // --- 以下其餘功能完全保持原樣 ---
         window.renderUserHistory = () => {
             const list = document.getElementById('user-history-list');
             list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`;
