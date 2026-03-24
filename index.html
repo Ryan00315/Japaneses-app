@@ -207,14 +207,15 @@
             try {
                 // 2. 呼叫你的 Cloudflare Worker
                 // 請確保網址是你目前的 Worker 網址
-                const response = await fetch("https://purple-recipe-eb33.crypto-pisces315.workers.dev", {
-                    method: "POST", 
-                    headers: { 
-                        "Content-Type": "application/json" // 告訴 Worker 這是 JSON 格式
-                    },
-                    // 🚀 重點：必須將資料轉為字串格式
-                    body: JSON.stringify({ text: inputVal }) 
-                });
+            // 在你的 HTML 檔案中修正這一段
+            const response = await fetch("https://purple-recipe-eb33.crypto-pisces315.workers.dev", {
+                method: "POST", 
+                headers: { 
+                    "Content-Type": "application/json" // 🚀 必須告訴 Worker 這是 JSON
+                },
+                // 🚀 必須將物件轉為字串，且 key 必須是 "text"
+                body: JSON.stringify({ text: inputVal }) 
+            });
                 
                 const data = await response.json();
                 
