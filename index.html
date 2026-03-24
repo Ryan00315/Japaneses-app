@@ -185,49 +185,33 @@
                 else { btn.innerText = "儲存到單字冊"; btn.className = "w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm"; }
             }
         };
-        //翻譯
+// 翻譯功能
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
             
-        // 1. 先抓到那個輸入框元素
             const wordField = document.getElementById('word');
-            
-            // 🚀 重點：這行要放在 fetch 之前！
-            // 確保按下按鈕的瞬間，才去讀取框框裡的文字
             const inputVal = wordField ? wordField.value.trim() : "";
             
             if (!inputVal) {
                 alert("請先輸入日文單字");
                 return;
             }
-            // ... 中間省略一些按鈕變色的程式碼 ...
 
-    try {
-        // 2. 這時候才發送請求，包裹裡的 text 才會是 inputVal
-        const response = await fetch("https://purple-recipe-eb33.crypto-pisces315.workers.dev", {
-            method: "POST", 
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: inputVal }) // 👈 這裡就會帶入你剛剛抓到的文字
-        });
-        
             window.isTranslating = true;
             const transBtn = document.getElementById('translate-btn-action');
             if (transBtn) {
                 transBtn.disabled = true; 
                 transBtn.innerText = "⏳ 翻譯中...";
             }
-        
+
             try {
-                // 2. 呼叫你的 Cloudflare Worker
+                // 🚀 呼叫你的 Cloudflare Worker
                 const response = await fetch("https://purple-recipe-eb33.crypto-pisces315.workers.dev", {
                     method: "POST", 
-                    // 🚀 關鍵：必須告訴伺服器我們傳的是 JSON
-                    headers: {  "Content-Type": "application/json"    },
-                    // 🚀 關鍵：必須使用 JSON.stringify 打包成物件
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ text: inputVal }) 
                 });
                 
-                // 🛡️ 增加安全檢查：如果 Worker 回傳不是 JSON，這裡會擋住
                 const textData = await response.text();
                 if (!textData) throw new Error("Worker 回傳了空內容");
                 
@@ -236,20 +220,20 @@
                 if (data.error) {
                     alert("翻譯失敗：\n" + data.error + (data.detail ? "\n詳情: " + data.detail : ""));
                 } else {
-                    // 3. 填入結果
+                    // 填入翻譯結果
                     const rField = document.getElementById('reading');
                     const mField = document.getElementById('meaning');
                     if (rField) rField.value = data.kanji || "";   
                     if (mField) mField.value = data.chinese || ""; 
-        
-                    // 觸發 input 事件讓 checkDuplicate() 運作
+
+                    // 觸發事件讓 checkDuplicate 運作
                     if (rField) rField.dispatchEvent(new Event('input', { bubbles: true }));
                     if (mField) mField.dispatchEvent(new Event('input', { bubbles: true }));
                     
                     if (window.showToast) window.showToast("✅ Azure 同步成功");
                 }
             } catch(e) {
-                alert("連線異常：請檢查 HTML 是否有正確傳送資料。");
+                alert("連線異常：" + e.message);
                 console.error("Fetch Error:", e);
             } finally { 
                 window.isTranslating = false; 
