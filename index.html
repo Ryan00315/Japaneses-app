@@ -74,7 +74,7 @@
                <input id="word" type="text" placeholder="單語 (日文)" 
                     class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300"
                     oninput="window.checkDuplicate()"
-                    onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.autoTranslate(); this.blur(); }">
+                    onkeydown="if(event.key === 'Enter') { event.preventDefault(); window.autoTranslate(); }">
                 <input id="reading" type="text" placeholder="漢字" onfocus="window.fixScroll()" class="bg-slate-50 p-4 rounded-2xl outline-none text-sm border focus:border-indigo-300">
             </div>
             <div class="relative mb-4 text-left">
@@ -186,40 +186,68 @@
             }
         };
 
+        // --- 🚀 最終優化翻譯：動態鎖定與錯誤過濾 🚀 ---
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
             const inputVal = document.getElementById('word').value.trim();
             if (!inputVal) return;
+
+            // 本地快取
             const cached = window.vocabs.find(v => v.word === inputVal);
-            if (cached) { document.getElementById('reading').value = cached.reading || ""; document.getElementById('meaning').value = cached.meaning || ""; window.checkDuplicate(); return; }
+            if (cached) { 
+                document.getElementById('reading').value = cached.reading || "";
+                document.getElementById('meaning').value = cached.meaning || "";
+                window.checkDuplicate();
+                return;
+            }
+
+            // UI 狀態更新
             window.isTranslating = true;
             const transBtn = document.getElementById('translate-btn-action');
             const meaningInput = document.getElementById('meaning');
-            transBtn.disabled = true; transBtn.innerText = "⏳...";
-            meaningInput.placeholder = "AI 正在同步內容...";
+            transBtn.disabled = true; 
+            transBtn.innerText = "⏳...";
+            meaningInput.placeholder = "AI 正在解讀中...";
+
             try {
                 const response = await fetch("https://jpnote-proxy.crypto-pisces315.workers.dev", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: `你是翻譯助手。翻譯「${inputVal}」僅回傳：漢字,意思。例如：林檎,蘋果。嚴禁廢話。` }] }] })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `你是日文翻譯專家。翻譯「${inputVal}」，格式：漢字,意思。例如：林檎,蘋果。只給答案，禁止廢話。` }] }] })
                 });
+                
                 const rawText = await response.text();
-                if (rawText.includes("429") || rawText.includes("error")) { window.showToast("⚠️ API 忙碌，請等 30 秒"); } 
-                else {
+                
+                // RPM / 配額限制檢查 (429)
+                if (response.status === 429 || rawText.includes("429") || rawText.includes("Too Many Requests")) {
+                    window.showToast("⚠️ API 忙碌中，請稍後再試");
+                    // 故意不填入欄位，保持原本輸入
+                } else {
                     const filtered = rawText.replace(/"kanji"|"chinese"|[\{\}\[\]"']/gi, "").trim();
                     const parts = filtered.split(/[,，;；\n]/).map(s => s.trim()).filter(s => s !== "");
                     const k = parts[0] || ""; const m = parts[1] || parts[0] || ""; 
-                    if (!k.toLowerCase().includes("error") && !k.includes("429")) {
-                        document.getElementById('reading').value = k; document.getElementById('meaning').value = m;
+
+                    // 確保內容不是報錯字眼
+                    if (!k.toLowerCase().includes("error") && !k.toLowerCase().includes("code")) {
+                        document.getElementById('reading').value = k;
+                        document.getElementById('meaning').value = m;
                         document.getElementById('reading').dispatchEvent(new Event('input', { bubbles: true }));
                         document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
-                        window.checkDuplicate(); window.showToast("✅ 翻譯已同步");
+                        window.checkDuplicate();
+                        window.showToast("✅ 翻譯已同步");
                     }
                 }
-            } catch(e) { window.showToast("❌ 翻譯失敗"); } finally { 
-                setTimeout(() => { window.isTranslating = false; transBtn.disabled = false; transBtn.innerText = "👉 翻譯(漢字、中文)"; meaningInput.placeholder = "中文意思"; }, 3000);
+            } catch(e) { window.showToast("❌ 連線超時"); } finally { 
+                // 異步解鎖，避免立刻按又觸發
+                setTimeout(() => {
+                    window.isTranslating = false; 
+                    transBtn.disabled = false;
+                    transBtn.innerText = "👉 翻譯(漢字、中文)";
+                    meaningInput.placeholder = "中文意思"; 
+                }, 1000);
             }
         };
 
+        // --- 其餘基礎功能保持完全不變 ---
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder === 'desc' ? '↓' : '↑'}`; window.renderList(); };
         window.switchBook = (b) => { window.currentBook = b; window.selectedLessons = (b === 'note' ? ['個人筆記'] : []); window.selectedTypes = []; window.renderLessonUI(); window.renderTypeUI(); window.renderList(); };
@@ -233,14 +261,10 @@
         window.nextQuestion = () => {
             if (!window.remainingPool.length) return location.reload();
             const card = document.getElementById('quiz-card'); card.classList.remove('is-flipped');
-            const spellingInput = document.getElementById('spelling-input');
-            spellingInput.value = '';
-            
-            // --- 重點修正：補回對答案功能 ---
+            const spellingInput = document.getElementById('spelling-input'); spellingInput.value = '';
             spellingInput.onkeydown = (e) => {
                 if (e.key === 'Enter') {
-                    const ans = spellingInput.value.trim();
-                    const correctAns = window.currentQuizWord.word;
+                    const ans = spellingInput.value.trim(); const correctAns = window.currentQuizWord.word;
                     if (ans === correctAns) { window.quizPass(); } 
                     else {
                         document.getElementById('feedback-msg').innerText = `❌ 正確答案：${correctAns}`;
@@ -250,7 +274,6 @@
                     }
                 }
             };
-
             for(let i=0; i<3; i++) { const btn = document.getElementById(`opt-${i}`); btn.className = "option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg"; btn.disabled = false; }
             window.currentQuizWord = window.remainingPool.shift();
             document.getElementById('quiz-progress-display').innerText = `剩：${window.remainingPool.length} 題`;
