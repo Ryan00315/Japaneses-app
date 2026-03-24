@@ -189,14 +189,26 @@
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
             
-            // 1. 確保正確抓取 ID 為 "word" 的輸入框數值
+        // 1. 先抓到那個輸入框元素
             const wordField = document.getElementById('word');
+            
+            // 🚀 重點：這行要放在 fetch 之前！
+            // 確保按下按鈕的瞬間，才去讀取框框裡的文字
             const inputVal = wordField ? wordField.value.trim() : "";
             
             if (!inputVal) {
                 alert("請先輸入日文單字");
                 return;
             }
+            // ... 中間省略一些按鈕變色的程式碼 ...
+
+    try {
+        // 2. 這時候才發送請求，包裹裡的 text 才會是 inputVal
+        const response = await fetch("https://purple-recipe-eb33.crypto-pisces315.workers.dev", {
+            method: "POST", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: inputVal }) // 👈 這裡就會帶入你剛剛抓到的文字
+        });
         
             window.isTranslating = true;
             const transBtn = document.getElementById('translate-btn-action');
