@@ -210,9 +210,7 @@
                 const response = await fetch("https://purple-recipe-eb33.crypto-pisces315.workers.dev", {
                     method: "POST", 
                     // 🚀 關鍵：必須告訴伺服器我們傳的是 JSON
-                    headers: { 
-                        "Content-Type": "application/json" 
-                    },
+                    headers: {  "Content-Type": "application/json"    },
                     // 🚀 關鍵：必須使用 JSON.stringify 打包成物件
                     body: JSON.stringify({ text: inputVal }) 
                 });
