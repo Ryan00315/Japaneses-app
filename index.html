@@ -186,57 +186,48 @@
             }
         };
 
-        // --- 🚀 Azure 專用翻譯與回填邏輯 🚀 ---
-        window.autoTranslate = async () => {
-            if (window.isTranslating) return;
-            const inputVal = document.getElementById('word').value.trim();
-            if (!inputVal) return;
+       window.autoTranslate = async () => {
+    if (window.isTranslating) return;
+    const inputVal = document.getElementById('word').value.trim();
+    if (!inputVal) return;
 
-            const cached = window.vocabs.find(v => v.word === inputVal);
-            if (cached) { 
-                document.getElementById('reading').value = cached.reading || "";
-                document.getElementById('meaning').value = cached.meaning || "";
-                window.checkDuplicate();
-                return;
-            }
+    window.isTranslating = true;
+    const transBtn = document.getElementById('translate-btn-action');
+    const meaningInput = document.getElementById('meaning');
+    transBtn.disabled = true; transBtn.innerText = "⏳...";
+    meaningInput.placeholder = "連線 Azure 中...";
 
-            window.isTranslating = true;
-            const transBtn = document.getElementById('translate-btn-action');
-            const meaningInput = document.getElementById('meaning');
-            transBtn.disabled = true; transBtn.innerText = "⏳...";
-            meaningInput.placeholder = "Azure 翻譯中...";
-
-            try {
-                const response = await fetch("https://purple-recipe-eb33.crypto-pisces315.workers.dev", {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ text: inputVal })
-                });
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    window.showToast("❌ 翻譯失敗：" + data.error);
-                } else {
-                    const rField = document.getElementById('reading');
-                    const mField = document.getElementById('meaning');
-                    
-                    rField.value = data.kanji || "";
-                    mField.value = data.chinese || "";
-
-                    rField.dispatchEvent(new Event('input', { bubbles: true }));
-                    mField.dispatchEvent(new Event('input', { bubbles: true }));
-                    window.checkDuplicate();
-                    window.showToast("✅ Azure 翻譯成功");
-                }
-            } catch(e) {
-                window.showToast("❌ 連線失敗，請檢查金鑰設定");
-            } finally { 
-                window.isTranslating = false; 
-                transBtn.disabled = false;
-                transBtn.innerText = "👉 翻譯(漢字、中文)";
-                meaningInput.placeholder = "中文意思"; 
-            }
-        };
+    try {
+        const response = await fetch("https://purple-recipe-eb33.crypto-pisces315.workers.dev", {
+            method: "POST", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: inputVal })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            // 這裡會彈出具體的 Azure 報錯原因，請截圖給我或直接看原因
+            alert("翻譯失敗原因：\n" + data.error);
+        } else {
+            const rField = document.getElementById('reading');
+            const mField = document.getElementById('meaning');
+            rField.value = data.kanji || "";
+            mField.value = data.chinese || "";
+            rField.dispatchEvent(new Event('input', { bubbles: true }));
+            mField.dispatchEvent(new Event('input', { bubbles: true }));
+            window.checkDuplicate();
+            window.showToast("✅ Azure 同步成功");
+        }
+    } catch(e) {
+        alert("Worker 連線異常，請檢查網路或 Worker 網址是否正確。");
+    } finally { 
+        window.isTranslating = false; 
+        transBtn.disabled = false;
+        transBtn.innerText = "👉 翻譯(漢字、中文)";
+        meaningInput.placeholder = "中文意思"; 
+    }
+};
 
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder === 'desc' ? '↓' : '↑'}`; window.renderList(); };
