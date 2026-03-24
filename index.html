@@ -185,10 +185,12 @@
                 else { btn.innerText = "儲存到單字冊"; btn.className = "w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm"; }
             }
         };
-// 翻譯功能
+// 翻譯功能 (最終修正版)
         window.autoTranslate = async () => {
+            // 1. 防止重複點擊
             if (window.isTranslating) return;
             
+            // 2. 核心：在點擊的瞬間才去抓 HTML 裡 id="word" 的值
             const wordField = document.getElementById('word');
             const inputVal = wordField ? wordField.value.trim() : "";
             
@@ -197,6 +199,7 @@
                 return;
             }
 
+            // 3. 介面反饋：按鈕變色
             window.isTranslating = true;
             const transBtn = document.getElementById('translate-btn-action');
             if (transBtn) {
@@ -205,7 +208,7 @@
             }
 
             try {
-                // 🚀 呼叫你的 Cloudflare Worker
+                // 4. 發送請求：確保 JSON.stringify 裡面有 text 欄位
                 const response = await fetch("https://purple-recipe-eb33.crypto-pisces315.workers.dev", {
                     method: "POST", 
                     headers: { "Content-Type": "application/json" },
@@ -213,14 +216,15 @@
                 });
                 
                 const textData = await response.text();
-                if (!textData) throw new Error("Worker 回傳了空內容");
+                if (!textData) throw new Error("Worker 沒有回傳內容");
                 
                 const data = JSON.parse(textData);
                 
                 if (data.error) {
+                    // 如果 Azure 報錯 (如 401)，會顯示在這裡
                     alert("翻譯失敗：\n" + data.error + (data.detail ? "\n詳情: " + data.detail : ""));
                 } else {
-                    // 填入翻譯結果
+                    // 5. 填入翻譯結果
                     const rField = document.getElementById('reading');
                     const mField = document.getElementById('meaning');
                     if (rField) rField.value = data.kanji || "";   
@@ -234,7 +238,6 @@
                 }
             } catch(e) {
                 alert("連線異常：" + e.message);
-                console.error("Fetch Error:", e);
             } finally { 
                 window.isTranslating = false; 
                 if (transBtn) {
