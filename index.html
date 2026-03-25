@@ -186,7 +186,7 @@
             }
         };
 
-// 🚀 翻譯功能 (精準翻譯 + 漢字回填優化版)
+// 🚀 翻譯功能 (辭典模式：解決假名翻錯漢字與意思的問題)
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
 
@@ -202,45 +202,48 @@
             if (transBtn) { transBtn.disabled = true; transBtn.innerText = "⏳..."; }
 
             try {
-                // 🚀 使用對齊翻譯 (Alignment)，讓 Azure 嘗試找出最正確的對應
-                const response = await fetch("https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=zh-Hant&to=ja", {
+                // 1️⃣ 第一步：使用 Dictionary Lookup 尋找最正確的漢字對應
+                const lookupRes = await fetch("https://api.cognitive.microsofttranslator.com/dictionary/lookup?api-version=3.0&from=ja&to=en", {
                     method: "POST",
                     headers: { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/json" },
                     body: JSON.stringify([{ "Text": inputVal }])
                 });
+                const lookupData = await lookupRes.json();
+                
+                let targetText = inputVal;
+                let kanjiFound = "";
 
-                const data = await response.json();
+                // 如果辭典有找到對應的漢字 (例如 さんじゅうにち -> 30日)
+                if (lookupData[0] && lookupData[0].translations && lookupData[0].translations.length > 0) {
+                    // 抓取第一個最常用的漢字寫法
+                    kanjiFound = lookupData[0].translations[0].normalizedTarget;
+                    targetText = kanjiFound; // 用這個漢字去翻中文會準得多
+                }
 
-                if (data[0] && data[0].translations) {
-                    // translations[0] 是繁體中文 (zh-Hant)
-                    // translations[1] 是日文標準體 (ja) - 通常會帶漢字
-                    let chineseRes = data[0].translations[0].text;
-                    let kanjiRes = data[0].translations[1].text;
+                // 2️⃣ 第二步：用最準確的詞彙去翻譯中文
+                const transRes = await fetch("https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=zh-Hant", {
+                    method: "POST",
+                    headers: { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/json" },
+                    body: JSON.stringify([{ "Text": targetText }])
+                });
+                const transData = await transRes.json();
 
-                    // 🔍 針對特定日期與數字的暴力修正 (解決「三柱日」這類亂翻)
-                    if (inputVal.includes("にち") || inputVal.includes("じゅう")) {
-                        chineseRes = chineseRes.replace("三柱日", "30號").replace("三十日", "30號");
+                if (transData[0] && transData[0].translations) {
+                    let chineseRes = transData[0].translations[0].text;
+                    
+                    // 填入漢字欄位
+                    if (document.getElementById('reading')) {
+                        document.getElementById('reading').value = kanjiFound || "";
                     }
                     
-                    // 常用術語修正
+                    // 填入中文意思 (繁體優化)
                     chineseRes = chineseRes.replace(/软件/g, "軟體").replace(/信息/g, "訊息").replace(/打印/g, "列印");
-
-                    // 填入中文意思
                     document.getElementById('meaning').value = chineseRes;
 
-                    // 填入漢字：如果翻譯出來的日文跟輸入的不同 (代表 AI 幫你寫成漢字了)，就填入
-                    // 例如：輸入 さんじゅうにち -> 翻譯出 30日
-                    if (kanjiRes !== inputVal) {
-                        document.getElementById('reading').value = kanjiRes;
-                    } else {
-                        // 如果一模一樣，代表 AI 找不到漢字，保持空白讓使用者手動輸入
-                        document.getElementById('reading').value = "";
-                    }
-                    
                     document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
                 }
                 
-                if (window.showToast) window.showToast("✅ 翻譯同步完成");
+                if (window.showToast) window.showToast("✅ 辭典同步成功");
 
             } catch (e) {
                 alert("翻譯失敗：" + e.message);
