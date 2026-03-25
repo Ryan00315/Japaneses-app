@@ -186,7 +186,7 @@
             }
         };
 
-// 🚀 翻譯功能 (辭典模式：解決假名翻錯漢字與意思的問題)
+// 🚀 Gemini AI 智能翻譯 (解決三柱日亂翻問題，完全免費版)
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
 
@@ -194,65 +194,66 @@
             const inputVal = wordField ? wordField.value.trim() : "";
             if (!inputVal) return alert("請輸入單字");
 
-            const encodedKey = "Qmk3aU9keW1kQkpFb2ZVMFNxMjFqRm9XRUt3ell2QVpZVHdDMlN6dWlQWHpIdW9LYm5xSEpRUUo5OUNDQUNVTHlDcFhKM3czQUFBYkFDT0dGeTB1Cg=="; 
-            const key = atob(encodedKey).trim(); 
+            // 🛡️ 這裡貼上你的 Gemini API Key (建議也用 Base64 混淆)
+            const GEMINI_KEY = "這裡貼上你的_GEMINI_API_KEY"; 
 
             window.isTranslating = true;
             const transBtn = document.getElementById('translate-btn-action');
-            if (transBtn) { transBtn.disabled = true; transBtn.innerText = "⏳..."; }
+            if (transBtn) {
+                transBtn.disabled = true; 
+                transBtn.innerText = "⏳ AI 思考中...";
+            }
 
             try {
-                // 1️⃣ 第一步：使用 Dictionary Lookup 尋找最正確的漢字對應
-                const lookupRes = await fetch("https://api.cognitive.microsofttranslator.com/dictionary/lookup?api-version=3.0&from=ja&to=en", {
+                // 🧠 Gemini 1.5 Flash：目前最適合這種小型單字翻譯，速度極快
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
                     method: "POST",
-                    headers: { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/json" },
-                    body: JSON.stringify([{ "Text": inputVal }])
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `你是一位精通《大家的日本語》的老師。請將輸入的日文假名或單字，轉換為『最常見的日文漢字』與『繁體中文意思』。
+                                若輸入的是數字日期假名，例如「さんじゅうにち」，請務必回傳「30日」與「30號」。
+                                格式請嚴格遵守 JSON：{"kanji": "日文漢字或假名", "chinese": "繁體中文意思"}`
+                            }, {
+                                text: `輸入單字：${inputVal}`
+                            }]
+                        }],
+                        generationConfig: {
+                            response_mime_type: "application/json"
+                        }
+                    })
                 });
-                const lookupData = await lookupRes.json();
+
+                const data = await response.json();
                 
-                let targetText = inputVal;
-                let kanjiFound = "";
+                // 檢查是否報錯 (例如 API Key 錯誤)
+                if (data.error) throw new Error(data.error.message);
 
-                // 如果辭典有找到對應的漢字 (例如 さんじゅうにち -> 30日)
-                if (lookupData[0] && lookupData[0].translations && lookupData[0].translations.length > 0) {
-                    // 抓取第一個最常用的漢字寫法
-                    kanjiFound = lookupData[0].translations[0].normalizedTarget;
-                    targetText = kanjiFound; // 用這個漢字去翻中文會準得多
-                }
+                const resultText = data.candidates[0].content.parts[0].text;
+                const result = JSON.parse(resultText);
 
-                // 2️⃣ 第二步：用最準確的詞彙去翻譯中文
-                const transRes = await fetch("https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=zh-Hant", {
-                    method: "POST",
-                    headers: { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/json" },
-                    body: JSON.stringify([{ "Text": targetText }])
-                });
-                const transData = await transRes.json();
-
-                if (transData[0] && transData[0].translations) {
-                    let chineseRes = transData[0].translations[0].text;
-                    
-                    // 填入漢字欄位
-                    if (document.getElementById('reading')) {
-                        document.getElementById('reading').value = kanjiFound || "";
-                    }
-                    
-                    // 填入中文意思 (繁體優化)
-                    chineseRes = chineseRes.replace(/软件/g, "軟體").replace(/信息/g, "訊息").replace(/打印/g, "列印");
-                    document.getElementById('meaning').value = chineseRes;
-
-                    document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
-                }
+                // 填入結果
+                document.getElementById('reading').value = result.kanji || "";
+                document.getElementById('meaning').value = result.chinese || "";
                 
-                if (window.showToast) window.showToast("✅ 辭典同步成功");
+                // 觸發 Firebase 重複檢查邏輯
+                document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
+                
+                if (window.showToast) window.showToast("✨ Gemini AI 翻譯完成");
 
             } catch (e) {
-                alert("翻譯失敗：" + e.message);
+                alert("AI 暫時無法連線：" + e.message);
+                console.error("Gemini Error:", e);
             } finally {
                 window.isTranslating = false;
-                if (transBtn) { transBtn.disabled = false; transBtn.innerText = "👉 翻譯(漢字、中文)"; }
+                if (transBtn) {
+                    transBtn.disabled = false;
+                    transBtn.innerText = "👉 翻譯(漢字、中文)";
+                }
             }
         };
-
+        
         // Firebase 資料監聽與所有 UI 邏輯 (完整保留)
         window.renderUserHistory = () => { const list = document.getElementById('user-history-list'); list.innerHTML = userHistory.map(name => `<button onclick="window.switchUser('${name}')" class="text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${name === currentUser ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}">${name}</button>`).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`; };
         window.toggleSort = () => { window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc'); document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder === 'desc' ? '↓' : '↑'}`; window.renderList(); };
