@@ -186,7 +186,7 @@
             }
         };
 
-// 🚀 Gemini AI 智能翻譯 (修正版本與路徑)
+// 🚀 Gemini AI 智能翻譯 (2026 穩定相容版)
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
 
@@ -194,7 +194,7 @@
             const inputVal = wordField ? wordField.value.trim() : "";
             if (!inputVal) return alert("請輸入單字");
 
-            // 🛡️ 請在此貼上你的 Gemini API Key
+            // 🛡️ 貼上你的 Gemini API Key
             const GEMINI_KEY = "AIzaSyABIKLPDP6MGrFXXwU9n6DF3uii55YxgZw"; 
 
             window.isTranslating = true;
@@ -205,8 +205,8 @@
             }
 
             try {
-                // 修正後的 API URL：使用 v1 版本，並確保模型路徑正確
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+                // 改回 v1beta 並使用更保險的 JSON 指令
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
 
                 const response = await fetch(url, {
                     method: "POST",
@@ -214,39 +214,32 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [{
-                                text: `你是一位精通《大家的日本語》的老師。請將輸入的日文假名或單字，轉換為『最常見的日文漢字』與『繁體中文意思』。
-                                範例：輸入「さんじゅうにち」，回傳 {"kanji": "30日", "chinese": "30號"}。
-                                格式請嚴格遵守 JSON：{"kanji": "...", "chinese": "..."}`
-                            }, {
-                                text: `輸入單字：${inputVal}`
+                                text: `你是一位精通《大家的日本語》的老師。請將輸入的假名或單字，轉換為『最常見的日文漢字』與『繁體中文意思』。
+                                特別注意：數字日期（如 さんじゅうにち）請翻成「30日」與「30號」。
+                                
+                                請【僅】回傳 JSON 格式，不要有任何 Markdown 標籤或多餘文字。
+                                格式範例：{"kanji": "30日", "chinese": "30號"}
+                                
+                                輸入單字：${inputVal}`
                             }]
-                        }],
-                        // 強制輸出 JSON 格式
-                        generationConfig: {
-                            response_mime_type: "application/json"
-                        }
+                        }]
                     })
                 });
 
                 const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+
+                // 解析 AI 回傳的文字（移除可能存在的 Markdown 符號）
+                let resultText = data.candidates[0].content.parts[0].text;
+                resultText = resultText.replace(/```json|```/g, "").trim();
                 
-                // 處理 API 回傳錯誤
-                if (data.error) {
-                    throw new Error(data.error.message || "API 連線錯誤");
-                }
-
-                if (!data.candidates || data.candidates.length === 0) {
-                    throw new Error("AI 無法生成內容，請確認 API Key 是否有效。");
-                }
-
-                const resultText = data.candidates[0].content.parts[0].text;
                 const result = JSON.parse(resultText);
 
-                // 填入結果到你的 UI 欄位
+                // 填入 UI 欄位
                 document.getElementById('reading').value = result.kanji || "";
                 document.getElementById('meaning').value = result.chinese || "";
                 
-                // 觸發你的重複檢查與 Firebase 邏輯
+                // 觸發重複檢查與 Firebase 邏輯
                 document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
                 
                 if (window.showToast) window.showToast("✨ AI 翻譯成功");
