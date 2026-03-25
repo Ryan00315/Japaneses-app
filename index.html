@@ -189,26 +189,24 @@
 // 🚀 Gemini AI 終極相容版 (修正 models/gemini-1.5-flash 找不到的問題)
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
-
-            const wordField = document.getElementById('word');
+        
+            const wordField = document.getElementById("word");
             const inputVal = wordField ? wordField.value.trim() : "";
-            if (!inputVal) return alert("請輸入單字");
-
-            // 🛡️ 直接使用你的金鑰
-            const GEMINI_KEY = "AIzaSyD_5a6H8tJWlEwzgJhaqxZQf-ysULcAdcQ"; 
-
+        
+            if (!inputVal) {
+                alert("請輸入單字");
+                return;
+            }
+        
             window.isTranslating = true;
-            const transBtn = document.getElementById('translate-btn-action');
+        
+            const transBtn = document.getElementById("translate-btn-action");
             if (transBtn) {
-                transBtn.disabled = true; 
+                transBtn.disabled = true;
                 transBtn.innerText = "⏳ AI 思考中...";
             }
-
+        
             try {
-                // 🚀 2026 終極修正：改用 Google 推薦的正式版 API 端點 (v1)
-                // 模型名稱使用完整的通配符格式
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
-
                 const response = await fetch("/api/translate", {
                     method: "POST",
                     headers: {
@@ -218,40 +216,35 @@
                         text: inputVal
                     })
                 });
-
+        
                 const data = await response.json();
-                
-                // 🚨 關鍵偵錯：如果模型還是找不到，這裡會顯示 Google 建議的可用模型列表
-                if (data.error) {
-                    if (data.error.message.includes("not found")) {
-                        throw new Error("模型名稱不匹配。請確認 Google AI Studio 中該 Key 是否支援 gemini-1.5-flash。");
-                    }
-                    throw new Error(data.error.message);
+        
+                if (!response.ok) {
+                    throw new Error(data?.error || "翻譯失敗");
                 }
-
-                if (!data.candidates || data.candidates.length === 0) {
-                    throw new Error("AI 無法回傳結果，請檢查輸入內容。");
+        
+                const readingEl = document.getElementById("reading");
+                const meaningEl = document.getElementById("meaning");
+        
+                if (readingEl) {
+                    readingEl.value = data.kanji || "";
                 }
-
-                // 清理回傳格式並解析
-                let resultText = data.candidates[0].content.parts[0].text;
-                resultText = resultText.replace(/```json|```/g, "").trim();
-                const result = JSON.parse(resultText);
-
-                // 填入 UI 欄位 (維持原本 UI 與 Firebase 功能不變)
-                if (result.kanji) document.getElementById('reading').value = result.kanji;
-                if (result.chinese) document.getElementById('meaning').value = result.chinese;
-                
-                // 觸發你的重複檢查邏輯
-                document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
-                
-                if (window.showToast) window.showToast("✨ AI 翻譯成功");
-
+        
+                if (meaningEl) {
+                    meaningEl.value = data.chinese || "";
+                    meaningEl.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+        
+                if (window.showToast) {
+                    window.showToast("✨ AI 翻譯成功");
+                }
+        
             } catch (e) {
-                alert("翻譯失敗：" + e.message);
-                console.error("Gemini Error 詳細資料:", e);
+                console.error("翻譯失敗：", e);
+                alert("翻譯失敗：" + (e.message || "未知錯誤"));
             } finally {
                 window.isTranslating = false;
+        
                 if (transBtn) {
                     transBtn.disabled = false;
                     transBtn.innerText = "👉 翻譯(漢字、中文)";
