@@ -186,7 +186,7 @@
             }
         };
 
-// 🚀 DeepL 專業翻譯 (修正 Base64 解析錯誤版)
+// 🚀 DeepL 專業翻譯 (最終穩定版：修正 atob 錯誤與翻譯路徑)
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
 
@@ -194,9 +194,9 @@
             const inputVal = wordField ? wordField.value.trim() : "";
             if (!inputVal) return alert("請輸入單字");
 
-            // 🛡️ 這裡貼上你的 DeepL Base64 加密金鑰
-            // 💡 提示：請確保這串字中間沒有空格或換行
-            const encodedKey = "d9d5f3cc-7dbc-4582-b231-d4f59cdcb23f:fx"; 
+            // 🛡️ 這是你提供的 Key 轉成正確的 Base64 格式
+            // 請確保這串字中間沒有任何空格或換行
+            const encodedKey = "ZDlkNWYzY2MtN2RiYy00NTgyLWIyMzEtZDRmNTljZGNiMjNmOmZ4"; 
 
             window.isTranslating = true;
             const transBtn = document.getElementById('translate-btn-action');
@@ -206,44 +206,50 @@
             }
 
             try {
-                // 🛠️ 修正點：自動過濾掉可能導致 atob 崩潰的空格或換行
-                const DEEPL_KEY = atob(encodedKey.replace(/\s/g, '')).trim(); 
+                // 🛠️ 強制清理字串並解碼，防止空格導致崩潰
+                const cleanEncodedKey = encodedKey.trim().replace(/[\s\n\r]/g, '');
+                const DEEPL_KEY = atob(cleanEncodedKey); 
 
-                const isFree = DEEPL_KEY.endsWith(':fx');
-                const url = isFree 
+                // 判斷是否為免費版網址
+                const url = DEEPL_KEY.endsWith(':fx') 
                     ? "https://api-free.deepl.com/v2/translate" 
                     : "https://api.deepl.com/v2/translate";
 
-                const body = new URLSearchParams();
-                body.append("auth_key", DEEPL_KEY);
-                body.append("text", inputVal);
-                body.append("target_lang", "ZH"); 
+                // 使用 URLSearchParams 確保參數格式正確
+                const params = new URLSearchParams();
+                params.append("auth_key", DEEPL_KEY);
+                params.append("text", inputVal);
+                params.append("target_lang", "ZH"); 
 
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: body
+                    body: params
                 });
 
                 if (!response.ok) {
                     const errorDetail = await response.text();
-                    throw new Error(`DeepL 錯誤 (${response.status}): ${errorDetail}`);
+                    throw new Error(`DeepL 伺服器回應錯誤 (${response.status})`);
                 }
 
                 const data = await response.json();
 
                 if (data.translations && data.translations.length > 0) {
-                    let result = data.translations[0].text;
-                    // 繁體字修正
-                    result = result.replace(/软件/g, "軟體").replace(/信息/g, "訊息").replace(/打印/g, "列印");
+                    let chineseRes = data.translations[0].text;
                     
-                    document.getElementById('meaning').value = result;
+                    // 專業繁體化優化
+                    chineseRes = chineseRes.replace(/软件/g, "軟體").replace(/信息/g, "訊息").replace(/打印/g, "列印");
+                    
+                    // 填入中文意思 (meaning)
+                    document.getElementById('meaning').value = chineseRes;
 
-                    // 漢字回填邏輯：如果是假名輸入且結果含數字/漢字
-                    if (result !== inputVal && (result.match(/[\u4E00-\u9FFF]/) || result.match(/\d/))) {
-                        document.getElementById('reading').value = result;
+                    // 💡 漢字回填邏輯 (reading)
+                    // 如果輸入是假名，且結果含漢字或數字，自動填入漢字欄位
+                    if (chineseRes !== inputVal && (chineseRes.match(/[\u4E00-\u9FFF]/) || chineseRes.match(/\d/))) {
+                        document.getElementById('reading').value = chineseRes;
                     }
 
+                    // 觸發 Firebase 重複檢查
                     document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
                 }
                 
