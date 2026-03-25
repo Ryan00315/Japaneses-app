@@ -186,7 +186,7 @@
             }
         };
 
-// 🚀 翻譯功能 (增加自動平假名讀音功能)
+// 🚀 翻譯功能 (精準翻譯 + 漢字回填優化版)
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
 
@@ -202,38 +202,45 @@
             if (transBtn) { transBtn.disabled = true; transBtn.innerText = "⏳..."; }
 
             try {
-                // 1. 呼叫翻譯 (日翻中)
-                const transRes = await fetch("https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=zh-Hant", {
+                // 🚀 使用對齊翻譯 (Alignment)，讓 Azure 嘗試找出最正確的對應
+                const response = await fetch("https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=zh-Hant&to=ja", {
                     method: "POST",
                     headers: { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/json" },
                     body: JSON.stringify([{ "Text": inputVal }])
                 });
 
-                // 2. 呼叫轉寫 (將漢字轉為平假名)
-                // 這裡的 toScript=Hira 代表轉為平假名
-                const translitRes = await fetch("https://api.cognitive.microsofttranslator.com/transliterate?api-version=3.0&language=ja&fromScript=Jpan&toScript=Hira", {
-                    method: "POST",
-                    headers: { "Ocp-Apim-Subscription-Key": key, "Content-Type": "application/json" },
-                    body: JSON.stringify([{ "Text": inputVal }])
-                });
+                const data = await response.json();
 
-                const transData = await transRes.json();
-                const translitData = await translitRes.json();
+                if (data[0] && data[0].translations) {
+                    // translations[0] 是繁體中文 (zh-Hant)
+                    // translations[1] 是日文標準體 (ja) - 通常會帶漢字
+                    let chineseRes = data[0].translations[0].text;
+                    let kanjiRes = data[0].translations[1].text;
 
-                if (transData[0] && transData[0].translations) {
-                    let chineseRes = transData[0].translations[0].text;
-                    // 字典優化
+                    // 🔍 針對特定日期與數字的暴力修正 (解決「三柱日」這類亂翻)
+                    if (inputVal.includes("にち") || inputVal.includes("じゅう")) {
+                        chineseRes = chineseRes.replace("三柱日", "30號").replace("三十日", "30號");
+                    }
+                    
+                    // 常用術語修正
                     chineseRes = chineseRes.replace(/软件/g, "軟體").replace(/信息/g, "訊息").replace(/打印/g, "列印");
-                    document.getElementById('meaning').value = chineseRes;
-                }
 
-                if (translitData[0] && translitData[0].text) {
-                    // 這裡會填入平假名讀音，例如：せんせい
-                    document.getElementById('reading').value = translitData[0].text;
+                    // 填入中文意思
+                    document.getElementById('meaning').value = chineseRes;
+
+                    // 填入漢字：如果翻譯出來的日文跟輸入的不同 (代表 AI 幫你寫成漢字了)，就填入
+                    // 例如：輸入 さんじゅうにち -> 翻譯出 30日
+                    if (kanjiRes !== inputVal) {
+                        document.getElementById('reading').value = kanjiRes;
+                    } else {
+                        // 如果一模一樣，代表 AI 找不到漢字，保持空白讓使用者手動輸入
+                        document.getElementById('reading').value = "";
+                    }
+                    
+                    document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
                 }
                 
-                document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
-                if (window.showToast) window.showToast("✅ 翻譯+讀音同步成功");
+                if (window.showToast) window.showToast("✅ 翻譯同步完成");
 
             } catch (e) {
                 alert("翻譯失敗：" + e.message);
