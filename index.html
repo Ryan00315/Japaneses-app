@@ -194,7 +194,7 @@
             const inputVal = wordField ? wordField.value.trim() : "";
             if (!inputVal) return alert("請輸入單字");
 
-            // 🛡️ 貼上你的 Gemini API Key
+            // 🛡️ 這裡貼上你的 Gemini API Key
             const GEMINI_KEY = "AIzaSyABIKLPDP6MGrFXXwU9n6DF3uii55YxgZw"; 
 
             window.isTranslating = true;
@@ -205,7 +205,7 @@
             }
 
             try {
-                // 🚀 修正點：使用 v1 版本，並確保冒號前後格式正確
+                // 🚀 2026 修正：確保使用 v1 正式版路徑與完整的模型名稱
                 const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
 
                 const response = await fetch(url, {
@@ -217,7 +217,7 @@
                                 text: `你是一位日文老師。請將輸入的假名或單字，轉換為『最常見的日文漢字』與『繁體中文意思』。
                                 範例：輸入「さんじゅうにち」，回傳 {"kanji": "30日", "chinese": "30號"}。
                                 
-                                請【僅】回傳 JSON 格式，不要包含 Markdown 標籤或 ```json 字樣。
+                                請【僅】回傳 JSON 格式，不要包含 Markdown 標籤。
                                 格式範例：{"kanji": "...", "chinese": "..."}`
                             }, {
                                 text: `輸入單字：${inputVal}`
@@ -229,10 +229,10 @@
                 const data = await response.json();
                 
                 if (data.error) {
-                    throw new Error(data.error.message || "API 版本不相容");
+                    throw new Error(data.error.message || "API 連線錯誤");
                 }
 
-                // 取得 AI 回傳文字並清理 JSON 格式
+                // 解析 AI 回傳文字並清理 JSON 格式
                 let resultText = data.candidates[0].content.parts[0].text;
                 resultText = resultText.replace(/```json|```/g, "").trim();
                 
