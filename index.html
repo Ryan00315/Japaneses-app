@@ -209,22 +209,13 @@
                 // 模型名稱使用完整的通配符格式
                 const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
 
-                const response = await fetch(url, {
+                const response = await fetch("/api/translate", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: `你是一位精通《大家的日本語》的日文老師。
-                                請將輸入的假名或單字，轉換為『日文漢字』與『繁體中文意思』。
-                                範例：輸入「さんじゅうにち」，回傳 {"kanji": "30日", "chinese": "30號"}。
-                                
-                                請【僅】回傳純 JSON 格式，嚴禁 Markdown 標籤。
-                                格式範例：{"kanji": "30日", "chinese": "30號"}`
-                            }, {
-                                text: `輸入單字：${inputVal}`
-                            }]
-                        }]
+                        text: inputVal
                     })
                 });
 
