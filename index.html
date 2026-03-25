@@ -186,7 +186,7 @@
             }
         };
 
-// 🚀 DeepL API 專業翻譯 (解決亂翻問題，維持 UI 不變)
+// 🚀 DeepL 專業翻譯 (修正發送格式與報錯處理)
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
 
@@ -194,67 +194,66 @@
             const inputVal = wordField ? wordField.value.trim() : "";
             if (!inputVal) return alert("請輸入單字");
 
-            // 🛡️ 這裡貼上你的 DeepL API Key (Base64 混淆版)
-            // 注意：DeepL Key 通常以 :fx 結尾 (免費版) 或沒有 (付費版)
-            const encodedKey = "d9d5f3cc-7dbc-4582-b231-d4f59cdcb23f:fx"; 
+            // 🛡️ 這裡貼上你的 DeepL Base64 加密金鑰 (例如：sk-xxx...:fx 轉成的亂碼)
+            const encodedKey = "這裡貼上你的_DeepL_Base64_加密金鑰"; 
             const DEEPL_KEY = atob(encodedKey).trim(); 
 
             window.isTranslating = true;
             const transBtn = document.getElementById('translate-btn-action');
             if (transBtn) {
                 transBtn.disabled = true; 
-                transBtn.innerText = "⏳ DeepL 翻譯中...";
+                transBtn.innerText = "⏳ 翻譯中...";
             }
 
             try {
-                // 1. 同時請求翻譯成「繁體中文」與「標準日文(會自動帶漢字)」
-                // DeepL API 的端點：免費版用 api-free，付費版用 api
-                const isFreeKey = DEEPL_KEY.endsWith(':fx');
-                const baseUrl = isFreeKey 
+                // 判斷是否為免費版 Key (:fx 結尾)
+                const isFree = DEEPL_KEY.endsWith(':fx');
+                const url = isFree 
                     ? "https://api-free.deepl.com/v2/translate" 
                     : "https://api.deepl.com/v2/translate";
 
-                // 我們發送兩次請求或一次多語翻譯，DeepL 支援多個目標語言
-                const params = new URLSearchParams();
-                params.append("auth_key", DEEPL_KEY);
-                params.append("text", inputVal);
-                params.append("target_lang", "ZH"); // 繁體中文
+                // 構建標準的 Form Data 格式
+                const body = new URLSearchParams();
+                body.append("auth_key", DEEPL_KEY);
+                body.append("text", inputVal);
+                body.append("target_lang", "ZH"); // ZH 會自動對應到繁體/簡體，後續我們用程式修正
 
-                const response = await fetch(baseUrl, {
+                const response = await fetch(url, {
                     method: "POST",
-                    body: params
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: body
                 });
+
+                if (!response.ok) {
+                    const errorDetail = await response.text();
+                    throw new Error(`DeepL 伺服器回應錯誤 (${response.status}): ${errorDetail}`);
+                }
 
                 const data = await response.json();
 
                 if (data.translations && data.translations.length > 0) {
-                    let chineseRes = data.translations[0].text;
+                    let result = data.translations[0].text;
 
-                    // 🔍 針對 DeepL 的微調：確保它是繁體中文 (ZH-Hant)
-                    // DeepL 的 ZH 有時會混雜，我們保留你的字典修正邏輯
-                    chineseRes = chineseRes.replace(/软件/g, "軟體").replace(/信息/g, "訊息").replace(/打印/g, "列印");
-
-                    // 填入中文意思
-                    document.getElementById('meaning').value = chineseRes;
-
-                    // 💡 漢字回填邏輯：
-                    // 因為 DeepL 主要做翻譯，如果輸入「さんじゅうにち」，它翻成「30日」
-                    // 我們就把這個帶有數字或漢字的結果填入「漢字」欄位
-                    const rField = document.getElementById('reading');
-                    if (rField) {
-                        // 如果翻譯結果跟輸入不同，且不全是中文，通常就是我們要的漢字形式
-                        // 這裡做一個簡單判斷：如果翻譯結果包含數字或日文漢字
-                        rField.value = (chineseRes.match(/\d+/) || chineseRes.length < 10) ? chineseRes : "";
-                    }
+                    // 🔍 繁體修正與常用語優化
+                    result = result.replace(/软件/g, "軟體").replace(/信息/g, "訊息").replace(/打印/g, "列印").replace(/屏幕/g, "螢幕");
                     
-                    // 觸發重複檢查
+                    // 填入中文意思
+                    document.getElementById('meaning').value = result;
+
+                    // 💡 漢字回填邏輯：如果輸入的是假名，且翻譯結果包含數字或漢字，就填入漢字欄位
+                    // 例如輸入：さんじゅうにち -> DeepL 給 30日
+                    if (result !== inputVal && (result.match(/[\u4E00-\u9FFF]/) || result.match(/\d/))) {
+                        document.getElementById('reading').value = result;
+                    }
+
+                    // 觸發 Firebase 重複檢查
                     document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
                 }
-
-                if (window.showToast) window.showToast("✅ DeepL 專業翻譯成功");
+                
+                if (window.showToast) window.showToast("✅ DeepL 翻譯成功");
 
             } catch (e) {
-                alert("DeepL 連線失敗，請檢查 Key 或網路。");
+                alert("翻譯出錯：" + e.message);
                 console.error("DeepL Error:", e);
             } finally {
                 window.isTranslating = false;
