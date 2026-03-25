@@ -186,17 +186,13 @@
             }
         };
 
-// 🚀 DeepL 專業翻譯 (最終穩定版：修正 atob 錯誤與翻譯路徑)
+// 🚀 穩定版翻譯 (改用 Google 引擎：解決 Failed to fetch 與 漢字翻錯問題)
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
 
             const wordField = document.getElementById('word');
             const inputVal = wordField ? wordField.value.trim() : "";
             if (!inputVal) return alert("請輸入單字");
-
-            // 🛡️ 這是你提供的 Key 轉成正確的 Base64 格式
-            // 請確保這串字中間沒有任何空格或換行
-            const encodedKey = "ZDlkNWYzY2MtN2RiYy00NTgyLWIyMzEtZDRmNTljZGNiMjNmOmZ4"; 
 
             window.isTranslating = true;
             const transBtn = document.getElementById('translate-btn-action');
@@ -206,58 +202,43 @@
             }
 
             try {
-                // 🛠️ 強制清理字串並解碼，防止空格導致崩潰
-                const cleanEncodedKey = encodedKey.trim().replace(/[\s\n\r]/g, '');
-                const DEEPL_KEY = atob(cleanEncodedKey); 
-
-                // 判斷是否為免費版網址
-                const url = DEEPL_KEY.endsWith(':fx') 
-                    ? "https://api-free.deepl.com/v2/translate" 
-                    : "https://api.deepl.com/v2/translate";
-
-                // 使用 URLSearchParams 確保參數格式正確
-                const params = new URLSearchParams();
-                params.append("auth_key", DEEPL_KEY);
-                params.append("text", inputVal);
-                params.append("target_lang", "ZH"); 
-
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: params
-                });
-
-                if (!response.ok) {
-                    const errorDetail = await response.text();
-                    throw new Error(`DeepL 伺服器回應錯誤 (${response.status})`);
-                }
+                // 使用 Google 翻譯的公共接口 (無網域限制，不需金鑰)
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&q=${encodeURIComponent(inputVal)}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("翻譯服務暫時不可用");
 
                 const data = await response.json();
 
-                if (data.translations && data.translations.length > 0) {
-                    let chineseRes = data.translations[0].text;
-                    
+                if (data && data[0] && data[0][0]) {
+                    // [0][0][0] 是中文意思，[0][0][1] 是輸入的原文或自動校正後的漢字
+                    let chineseRes = data[0][0][0];
+                    let kanjiRes = data[0][0][1];
+
                     // 專業繁體化優化
                     chineseRes = chineseRes.replace(/软件/g, "軟體").replace(/信息/g, "訊息").replace(/打印/g, "列印");
                     
-                    // 填入中文意思 (meaning)
+                    // 填入中文意思
                     document.getElementById('meaning').value = chineseRes;
 
-                    // 💡 漢字回填邏輯 (reading)
-                    // 如果輸入是假名，且結果含漢字或數字，自動填入漢字欄位
-                    if (chineseRes !== inputVal && (chineseRes.match(/[\u4E00-\u9FFF]/) || chineseRes.match(/\d/))) {
-                        document.getElementById('reading').value = chineseRes;
+                    // 💡 漢字回填邏輯：
+                    // 如果輸入的是「さんじゅうにち」，Google 通常會在回傳中帶出「30日」
+                    if (kanjiRes !== inputVal && (kanjiRes.match(/[\u4E00-\u9FFF]/) || kanjiRes.match(/\d/))) {
+                        document.getElementById('reading').value = kanjiRes;
+                    } else if (chineseRes.match(/[\u4E00-\u9FFF]/) && chineseRes.length < 5) {
+                        // 如果翻譯結果很短且含漢字，有時它就是我們要的漢字（如：30日）
+                        // 這裡留給使用者微調，或者你可以選擇不自動填入
                     }
 
                     // 觸發 Firebase 重複檢查
                     document.getElementById('meaning').dispatchEvent(new Event('input', { bubbles: true }));
                 }
                 
-                if (window.showToast) window.showToast("✅ DeepL 翻譯成功");
+                if (window.showToast) window.showToast("✅ 翻譯成功");
 
             } catch (e) {
                 alert("翻譯失敗：" + e.message);
-                console.error("DeepL Error:", e);
+                console.error("Translation Error:", e);
             } finally {
                 window.isTranslating = false;
                 if (transBtn) {
