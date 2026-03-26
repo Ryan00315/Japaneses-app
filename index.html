@@ -107,7 +107,7 @@
                 <button id="new-note-tab" onclick="window.setNewBookTab('note')" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">個人筆記</button>
             </div>
             <div id="new-lesson-container" class="no-scrollbar pb-3 mb-2"></div>
-            <div id="new-category-picker" class="flex flex-wrap gap-2 mb-6 no-scrollbar"></div>
+            <div id="new-category-picker" class="no-scrollbar mb-6"></div>
             <button id="submit-btn" onclick="window.submitNewWord()" class="w-3/4 mx-auto bg-slate-900 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm">儲存到單字冊</button>
         </section>
         <ul id="vocab-list" class="space-y-3 mt-4"></ul>
@@ -696,20 +696,24 @@
             window.checkDuplicate();
         };
 
-        window.renderNewLessonUI = () => {
-            const c = document.getElementById('new-lesson-container');
-            document.getElementById('new-book1-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook===1?'lesson-active text-white':'bg-white'}`;
-            document.getElementById('new-book2-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook===2?'lesson-active text-white':'bg-white'}`;
-            document.getElementById('new-note-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook==='note'?'note-active text-white':'bg-white'}`;
-            if (window.newWordBook === 'note') {
-                c.innerHTML = "";
-            } else {
-                c.innerHTML = BOOK_MAP[window.newWordBook].map(l => `
-                    <button onclick="window.setNewLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedNewLesson===l?'active-new-cat text-white':'bg-white'}">${l}</button>
+            window.renderNewCategoryUI = () => {
+                const c = document.getElementById('new-category-picker');
+                if(!c) return;
+            
+                c.classList.add('no-scrollbar'); // ⭐ 確保可滑
+            
+                const t = window.selectedNewLesson === '附錄'
+                    ? APPENDIX_TYPES
+                    : LESSON_TYPES;
+            
+                c.innerHTML = t.map(ty => `
+                    <button onclick="window.setNewCategory('${ty}')"
+                        class="ls-btn-style border px-3 py-1 rounded-lg
+                        ${window.selectedNewCat === ty ? 'active-new-cat text-white' : 'bg-white'}">
+                        ${ty}
+                    </button>
                 `).join('');
-            }
-            setupDraggable();
-        };
+            };
 
         window.renderNewCategoryUI = () => {
             const c = document.getElementById('new-category-picker');
