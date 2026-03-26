@@ -498,8 +498,10 @@
                                 <span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span>
                                 <span class="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full text-[9px]">錯 ${prog.wrongCount}</span>
                             </div>
-                            <div class="text-xl font-bold">${v.word}${v.reading ? `<span class="text-xs text-slate-400 ml-1">【${v.reading}】</span>` : ''}</div>
-                            <div class="text-slate-500 text-xs mt-1 font-bold">${v.meaning}</div>
+                        <div class="text-xl font-bold">
+                            ${v.word}${v.reading ? `<span class="text-sm text-slate-400 ml-1 font-bold">【${v.reading}】</span>` : ''}
+                        </div>
+                        <div class="text-slate-500 text-sm mt-1 font-bold">${v.meaning}</div>
                         </div>
                         <div class="flex gap-1">
                             <button onclick="window.speakAction('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl">🔊</button>
