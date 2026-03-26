@@ -62,7 +62,7 @@
             <div id="type-filter" class="no-scrollbar pb-2"></div>
             <div class="flex gap-2">
                 <input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋單字庫..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
-                <button id="sort-btn" onclick="window.toggleSort()" class="bg-white border border-slate-200 px-4 rounded-2xl text-[11px] font-bold text-slate-600 shadow-sm">排序 ↓</button>
+                <button id="sort-btn" onclick="window.toggleSort()" class="bg-white border border-slate-200 px-4 rounded-2xl text-[11px] font-bold text-slate-600 shadow-sm">時間 ↓</button>
             </div>
         </div>
     </div>
@@ -232,7 +232,8 @@
         window.newWordBook = 1;
         window.selectedNewCat = 'n.';
         window.selectedNewLesson = '未分類';
-        window.sortOrder = 'desc';
+        window.sortMode = 'time-desc'; // time-desc / time-asc / manual
+        window.translateCache = new Map();
         window.isTranslating = false;
         window.quizPool = [];
         window.remainingPool = [];
@@ -286,53 +287,91 @@
             }
         };
 
+         // 🚀 Gemini AI 終極相容版 (加上快取、無漢字留白)
         window.autoTranslate = async () => {
             if (window.isTranslating) return;
-
+        
             const wordField = document.getElementById("word");
             const inputVal = wordField ? wordField.value.trim() : "";
-
+        
             if (!inputVal) {
                 alert("請輸入單字");
                 return;
             }
-
-            window.isTranslating = true;
-
+        
+            const readingEl = document.getElementById("reading");
+            const meaningEl = document.getElementById("meaning");
             const transBtn = document.getElementById("translate-btn-action");
+        
+            const hasKanji = (text) => /[一-龯々]/.test(text || "");
+        
+            // 先吃前端快取：同一個字第二次會非常快
+            if (window.translateCache.has(inputVal)) {
+                const cached = window.translateCache.get(inputVal);
+                if (readingEl) readingEl.value = cached.kanji || "";
+                if (meaningEl) {
+                    meaningEl.value = cached.chinese || "";
+                    meaningEl.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+                window.showToast("⚡ 使用快取翻譯");
+                return;
+            }
+        
+            window.isTranslating = true;
+        
             if (transBtn) {
                 transBtn.disabled = true;
                 transBtn.innerText = "⏳ AI 思考中...";
             }
-
+        
             try {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 12000);
+        
                 const response = await fetch("https://japaneses-app-1q3g.vercel.app/api/translate", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ text: inputVal })
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        text: inputVal
+                    }),
+                    signal: controller.signal
                 });
-
+        
+                clearTimeout(timer);
+        
                 const data = await response.json();
-
+        
                 if (!response.ok) {
                     throw new Error(data?.error || "翻譯失敗");
                 }
-
-                const readingEl = document.getElementById("reading");
-                const meaningEl = document.getElementById("meaning");
-
-                if (readingEl) readingEl.value = data.kanji || "";
+        
+                const kanjiValue = hasKanji(data.kanji) ? data.kanji : "";
+                const chineseValue = data.chinese || "";
+        
+                if (readingEl) {
+                    readingEl.value = kanjiValue;
+                }
+        
                 if (meaningEl) {
-                    meaningEl.value = data.chinese || "";
+                    meaningEl.value = chineseValue;
                     meaningEl.dispatchEvent(new Event("input", { bubbles: true }));
                 }
-
+        
+                window.translateCache.set(inputVal, {
+                    kanji: kanjiValue,
+                    chinese: chineseValue
+                });
+        
                 window.showToast("✨ AI 翻譯成功");
+        
             } catch (e) {
                 console.error("翻譯失敗：", e);
                 alert("翻譯失敗：" + (e.message || "未知錯誤"));
             } finally {
                 window.isTranslating = false;
+        
                 if (transBtn) {
                     transBtn.disabled = false;
                     transBtn.innerText = "👉 翻譯(漢字、中文)";
@@ -352,8 +391,19 @@
         };
 
         window.toggleSort = () => {
-            window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc');
-            document.getElementById('sort-btn').innerText = `排序 ${window.sortOrder === 'desc' ? '↓' : '↑'}`;
+            if (window.sortMode === 'time-desc') {
+                window.sortMode = 'time-asc';
+            } else if (window.sortMode === 'time-asc') {
+                window.sortMode = 'manual';
+            } else {
+                window.sortMode = 'time-desc';
+            }
+        
+            const btn = document.getElementById('sort-btn');
+            if (window.sortMode === 'time-desc') btn.innerText = '時間 ↓';
+            else if (window.sortMode === 'time-asc') btn.innerText = '時間 ↑';
+            else btn.innerText = '手動排序';
+        
             window.renderList();
         };
 
@@ -413,19 +463,24 @@
                 return matchL && matchT && matchS;
             });
 
-            filtered.sort((a, b) => {
-                const lA = LESSON_ORDER.indexOf(a.lesson);
-                const lB = LESSON_ORDER.indexOf(b.lesson);
-                if (lA !== lB) return lA - lB;
-
+        filtered.sort((a, b) => {
+            const lA = LESSON_ORDER.indexOf(a.lesson);
+            const lB = LESSON_ORDER.indexOf(b.lesson);
+            if (lA !== lB) return lA - lB;
+        
+            const tA = a.createdAt?.seconds || 0;
+            const tB = b.createdAt?.seconds || 0;
+        
+            if (window.sortMode === 'manual') {
                 const sA = typeof a.sortIndex === 'number' ? a.sortIndex : Number.MAX_SAFE_INTEGER;
                 const sB = typeof b.sortIndex === 'number' ? b.sortIndex : Number.MAX_SAFE_INTEGER;
                 if (sA !== sB) return sA - sB;
-
-                const tA = a.createdAt?.seconds || 0;
-                const tB = b.createdAt?.seconds || 0;
-                return window.sortOrder === 'desc' ? tB - tA : tA - tB;
-            });
+        
+                return tA - tB;
+            }
+        
+            return window.sortMode === 'time-desc' ? tB - tA : tA - tB;
+        });
 
             const list = document.getElementById('vocab-list');
             list.innerHTML = filtered.map(v => {
@@ -619,26 +674,12 @@
 
             if (!w || !m) return alert('內容不完整');
 
-            const sameGroup = window.vocabs.filter(v =>
-                v.lesson === window.selectedNewLesson &&
-                (v.category || 'n.') === window.selectedNewCat &&
-                (
-                    (window.selectedNewLesson === '個人筆記' && v.uid === currentUser) ||
-                    (window.selectedNewLesson !== '個人筆記' && !v.uid)
-                )
-            );
-
-            const nextSortIndex = sameGroup.length
-                ? Math.max(...sameGroup.map(v => typeof v.sortIndex === 'number' ? v.sortIndex : 0)) + 1
-                : 1;
-
             const data = {
                 word: w,
                 reading: r,
                 meaning: m,
                 lesson: window.selectedNewLesson,
                 category: window.selectedNewCat,
-                sortIndex: nextSortIndex,
                 createdAt: new Date()
             };
 
@@ -848,27 +889,23 @@
             if (!t) return;
 
             const batch = writeBatch(db);
-            const counters = {};
-
-            t.split('\n').forEach(line => {
-                const [w, r, m, c, l] = line.split(',').map(s => s?.trim());
-                if (w && m) {
-                    const lesson = l || '未分類';
-                    const category = c || LESSON_TYPES[0];
-                    const key = `${lesson}__${category}`;
-                    counters[key] = (counters[key] || 0) + 1;
-
-                    batch.set(doc(vocabsCol), {
-                        word: w,
-                        reading: r || '',
-                        meaning: m,
-                        category,
-                        lesson,
-                        sortIndex: counters[key],
-                        createdAt: new Date()
-                    });
-                }
-            });
+            
+        t.split('\n').forEach(line => {
+            const [w, r, m, c, l] = line.split(',').map(s => s?.trim());
+            if (w && m) {
+                const lesson = l || '未分類';
+                const category = c || LESSON_TYPES[0];
+        
+                batch.set(doc(vocabsCol), {
+                    word: w,
+                    reading: r || "",
+                    meaning: m,
+                    category,
+                    lesson,
+                    createdAt: new Date()
+                });
+            }
+        });
 
             await batch.commit();
             window.toggleImport(false);
@@ -956,23 +993,30 @@
         window.initVocabSortable = () => {
             const list = document.getElementById('vocab-list');
             if (!list || typeof Sortable === 'undefined') return;
-
-            if (window.vocabSortable) window.vocabSortable.destroy();
-
+        
+            if (window.vocabSortable) {
+                window.vocabSortable.destroy();
+                window.vocabSortable = null;
+            }
+        
+            if (window.sortMode !== 'manual') return;
+        
             window.vocabSortable = new Sortable(list, {
                 animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'dragging-card',
                 onEnd: async () => {
                     const ids = [...list.querySelectorAll('li[data-id]')].map(el => el.dataset.id);
                     const visibleItems = ids.map(id => window.vocabs.find(v => v.id === id)).filter(Boolean);
                     if (!visibleItems.length) return;
-
+        
                     const batch = writeBatch(db);
                     visibleItems.forEach((item, idx) => {
                         batch.update(doc(db, 'vocabs', item.id), { sortIndex: idx + 1 });
                     });
-
+        
                     await batch.commit();
-                    window.showToast('✅ 排序已更新');
+                    window.showToast('✅ 手動排序已更新');
                 }
             });
         };
