@@ -297,6 +297,34 @@
             }
         };
 
+        window.generateExampleForWord = async (id) => {
+    const vocab = window.vocabs.find(v => v.id === id);
+    if (!vocab) {
+        alert("找不到單字資料");
+        return;
+    }
+
+        window.showToast("⏳ 例句產生中...");
+    
+        try {
+            const example = await window.fetchExampleSentence(vocab.word);
+    
+            if (!example) {
+                alert("找不到合適例句");
+                return;
+            }
+    
+            await updateDoc(doc(db, "vocabs", id), {
+                example: example
+            });
+    
+            window.showToast("✨ 已更新例句");
+        } catch (e) {
+            console.error("產生例句失敗：", e);
+            alert("產生例句失敗");
+        }
+    };
+
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
 
@@ -511,7 +539,7 @@
 
         window.toggleManualSort = () => {
             window.manualSortEnabled = !window.manualSortEnabled;
-
+        
             const btn = document.getElementById('manual-sort-btn');
             if (window.manualSortEnabled) {
                 btn.className = "ml-2 text-[11px] bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0";
@@ -522,7 +550,8 @@
                 btn.innerText = "手動排序";
                 window.showToast("✅ 已關閉手動排序");
             }
-
+        
+            window.renderList();       // 關鍵：重新渲染，按鈕才會出現/消失
             window.initVocabSortable();
         };
 
@@ -604,41 +633,38 @@
             document.getElementById('vocab-list').innerHTML = filtered.map(v => {
                 const prog = window.userProgress[v.id] || { wrongCount: 0 };
                 return `
-                <li data-id="${v.id}" class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100 mb-3">
-                    
-                    <div class="flex-1 pr-4 text-left">
-                        
-                        <div class="flex gap-1.5 mb-1 flex-wrap text-[9px] font-black uppercase">
-                            <span class="${v.lesson==='個人筆記'?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span>
-                            <span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span>
-                            <span class="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full text-[9px]">錯 ${prog.wrongCount}</span>
+                    <li data-id="${v.id}" class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100 mb-3">
+                        <div class="flex-1 pr-4 text-left">
+                            <div class="flex gap-1.5 mb-1 flex-wrap text-[9px] font-black uppercase">
+                                <span class="${v.lesson==='個人筆記'?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span>
+                                <span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span>
+                                <span class="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full text-[9px]">錯 ${prog.wrongCount}</span>
+                            </div>
+                
+                            <div class="text-xl font-bold">
+                                ${v.word}
+                            </div>
+                
+                            <div class="text-sm mt-1 font-bold flex flex-wrap items-center gap-2">
+                                ${v.reading ? `<span class="text-slate-400">【${v.reading}】</span>` : ''}
+                                <span class="text-slate-600">${v.meaning}</span>
+                            </div>
+                
+                            <div class="text-slate-400 text-sm mt-1 leading-relaxed">
+                                ${v.example || '—'}
+                            </div>
                         </div>
                 
-                        <div class="text-xl font-bold">
-                            ${v.word}
+                        <div class="flex gap-1 items-center shrink-0">
+                            ${window.manualSortEnabled ? `
+                                <button onclick="window.generateExampleForWord('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-full text-sm" title="產生例句">句</button>
+                                <button onclick="window.openEditAction('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 rounded-full text-sm" title="編輯">✏️</button>
+                                <button onclick="window.deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-300" title="刪除">✕</button>
+                            ` : ``}
+                
+                            <button onclick="window.speakAction('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl" title="播放">🔊</button>
                         </div>
-                
-                        <div class="text-sm mt-1 font-bold flex gap-2">
-                            ${v.reading ? `<span class="text-slate-400">【${v.reading}】</span>` : ''}
-                            <span class="text-slate-600">${v.meaning}</span>
-                        </div>
-                
-                        <div class="text-slate-400 text-sm mt-1">
-                            ${v.example || '—'}
-                        </div>
-                    </div>
-                
-                    <div class="flex gap-1 items-center">
-                        
-                        ${window.manualSortEnabled ? `
-                        <button onclick="window.openEditAction('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 rounded-full text-sm">✏️</button>
-                        <button onclick="window.deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-300">✕</button>
-                        ` : ``}
-                
-                        <button onclick="window.speakAction('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl">🔊</button>
-                    </div>
-                
-                </li>
+                    </li>
                 `;
             }).join('');
 
