@@ -698,29 +698,88 @@
             setupDraggable();
         };
 
-        window.renderList = () => {
-            const search = document.getElementById('searchInput').value.toLowerCase();
+window.renderList = () => {
+    const search = document.getElementById('searchInput').value.toLowerCase();
 
-                let filtered = window.vocabs.filter(v => {
-                    if (v.lesson === '個人筆記') {
-                        return v.uid === currentUser;
-                    }
-                    return !v.uid;
-                });
-                
-                // 🔥 加這行（關鍵）
-                filtered.sort((a, b) => (a.orderValue || 0) - (b.orderValue || 0));
+    let filtered = window.vocabs.filter(v => {
+        if (v.lesson === '個人筆記') {
+            if (v.uid !== currentUser) return false;
+        } else {
+            if (v.uid) return false;
+        }
 
-                const matchL = window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
-                const matchT = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
-                const matchS =
-                    search === "" ||
-                    v.word.toLowerCase().includes(search) ||
-                    (v.reading && v.reading.toLowerCase().includes(search)) ||
-                    v.meaning.toLowerCase().includes(search);
+        const matchL = window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
+        const matchT = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
+        const matchS =
+            search === "" ||
+            v.word.toLowerCase().includes(search) ||
+            (v.reading && v.reading.toLowerCase().includes(search)) ||
+            v.meaning.toLowerCase().includes(search);
 
-                return matchL && matchT && matchS;
-            });
+        return matchL && matchT && matchS;
+    });
+
+    // 手動排序時，一律照 orderValue 由小到大
+    if (window.manualSortEnabled) {
+        filtered.sort((a, b) => (a.orderValue ?? 999999) - (b.orderValue ?? 999999));
+    } else {
+        // 平常維持原本邏輯
+        filtered.sort((a, b) => {
+            const lA = LESSON_ORDER.indexOf(a.lesson);
+            const lB = LESSON_ORDER.indexOf(b.lesson);
+            if (lA !== lB) return lA - lB;
+
+            const oA = typeof a.orderValue === 'number'
+                ? a.orderValue
+                : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+
+            const oB = typeof b.orderValue === 'number'
+                ? b.orderValue
+                : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+
+            return window.sortOrder === 'desc' ? oB - oA : oA - oB;
+        });
+    }
+
+    document.getElementById('vocab-list').innerHTML = filtered.map(v => {
+        const prog = window.userProgress[v.id] || { wrongCount: 0 };
+        return `
+            <li data-id="${v.id}" class="bg-white p-5 rounded-[32px] flex justify-between items-center shadow-sm border border-slate-100 mb-3">
+                <div class="flex-1 pr-4 text-left">
+                    <div class="flex gap-1.5 mb-1 flex-wrap text-[9px] font-black uppercase">
+                        <span class="${v.lesson==='個人筆記'?'bg-orange-50 text-orange-500':'bg-indigo-50 text-indigo-500'} px-2 py-0.5 rounded-md">${v.lesson}</span>
+                        <span class="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-md">${v.category || 'n.'}</span>
+                        <span class="bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full text-[9px]">錯 ${prog.wrongCount}</span>
+                    </div>
+
+                    <div class="text-xl font-bold">
+                        ${v.word}
+                    </div>
+
+                    <div class="text-sm mt-1 font-bold flex flex-wrap items-center gap-2">
+                        ${v.reading ? `<span class="text-slate-400">【${v.reading}】</span>` : ''}
+                        <span class="text-slate-600">${v.meaning}</span>
+                    </div>
+
+                    <div class="text-slate-400 text-sm mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                        ${v.example || '—'}
+                    </div>
+                </div>
+
+                <div class="flex gap-1 items-center shrink-0">
+                    ${window.manualSortEnabled ? `
+                        <button onclick="window.openEditAction('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 rounded-full text-sm" title="編輯">✏️</button>
+                        <button onclick="window.deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-300" title="刪除">✕</button>
+                    ` : ``}
+
+                    <button onclick="window.speakAction('${v.word}')" class="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-full text-xl" title="播放">🔊</button>
+                </div>
+            </li>
+        `;
+    }).join('');
+
+    window.initVocabSortable();
+};
 
             filtered.sort((a, b) => {
                 const lA = LESSON_ORDER.indexOf(a.lesson);
