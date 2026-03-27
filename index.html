@@ -701,12 +701,15 @@
         window.renderList = () => {
             const search = document.getElementById('searchInput').value.toLowerCase();
 
-            let filtered = window.vocabs.filter(v => {
-                if (v.lesson === '個人筆記') {
-                    if (v.uid !== currentUser) return false;
-                } else {
-                    if (v.uid) return false;
-                }
+                let filtered = window.vocabs.filter(v => {
+                    if (v.lesson === '個人筆記') {
+                        return v.uid === currentUser;
+                    }
+                    return !v.uid;
+                });
+                
+                // 🔥 加這行（關鍵）
+                filtered.sort((a, b) => (a.orderValue || 0) - (b.orderValue || 0));
 
                 const matchL = window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
                 const matchT = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
@@ -1261,25 +1264,18 @@
                 ghostClass: 'sortable-ghost',
                 dragClass: 'dragging-card',
                 onEnd: async () => {
-                    const ids = [...list.querySelectorAll('li[data-id]')].map(el => el.dataset.id);
-                    const visibleItems = ids.map(id => window.vocabs.find(v => v.id === id)).filter(Boolean);
-                    if (!visibleItems.length) return;
-
-                    const base = Date.now();
+                    const items = document.querySelectorAll('#vocab-list li[data-id]');
                     const batch = writeBatch(db);
-
-                    if (window.sortOrder === 'asc') {
-                        visibleItems.forEach((item, idx) => {
-                            batch.update(doc(db, 'vocabs', item.id), { orderValue: base + idx });
+                
+                    items.forEach((item, index) => {
+                        const id = item.dataset.id;
+                        batch.update(doc(db, "vocabs", id), {
+                            orderValue: index
                         });
-                    } else {
-                        visibleItems.forEach((item, idx) => {
-                            batch.update(doc(db, 'vocabs', item.id), { orderValue: base - idx });
-                        });
-                    }
-
+                    });
+                
                     await batch.commit();
-                    window.showToast('✅ 已記住手動排序');
+                    window.showToast("✅ 排序已更新");
                 }
             });
         };
