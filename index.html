@@ -320,8 +320,13 @@
                 .replace(/[］\]]/g, "")
                 .replace(/（.*?）/g, "")
                 .replace(/\(.*?\)/g, "")
-                .replace(/〜|～/g, "")
-                .replace(/\s+/g, "");
+                .replace(/〜|～|～/g, "")
+                .replace(/\s+/g, "")
+                .replace(/　/g, "") // 全形空白
+                .replace(/・/g, "")
+                .replace(/ー/g, "")
+                .replace(/~/g, "")
+                .replace(/[^\u3040-\u30ff\u4e00-\u9faf]/g, ""); // 只留日文
         };
         
         window.fetchExampleSentence = async (word) => {
@@ -332,6 +337,14 @@
         
             if (LOCAL_EXAMPLES[raw]) return LOCAL_EXAMPLES[raw];
             if (LOCAL_EXAMPLES[normalized]) return LOCAL_EXAMPLES[normalized];
+        
+            // 🔥 加這段（關鍵）
+            for (const key in LOCAL_EXAMPLES) {
+                const k = window.normalizeExampleKey(key);
+                if (k === normalized) {
+                    return LOCAL_EXAMPLES[key];
+                }
+            }
         
             return "";
         };
