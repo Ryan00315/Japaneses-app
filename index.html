@@ -320,13 +320,19 @@
             const w = document.getElementById('word').value.trim();
             const m = document.getElementById('meaning').value.trim();
             const btn = document.getElementById('submit-btn');
-            const existing = window.vocabs.find(v => (w && v.word === w) || (m && v.meaning === m));
-
+        
+            const existing = window.vocabs.find(v =>
+                w &&
+                m &&
+                (v.word || "").trim() === w &&
+                (v.meaning || "").trim() === m
+            );
+        
             if (existing) {
                 btn.innerText = `⚠️ 單字已存在 (點擊查看)`;
                 btn.className = "w-3/4 mx-auto bg-yellow-500 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm";
                 btn.onclick = () => {
-                    document.getElementById('searchInput').value = w || m;
+                    document.getElementById('searchInput').value = `${w} ${m}`;
                     window.renderList();
                     window.showToast("已為您搜尋現有單字");
                 };
