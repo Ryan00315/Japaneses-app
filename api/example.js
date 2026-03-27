@@ -20,25 +20,31 @@ export default async function handler(req, res) {
     }
 
     const url =
-      `https://api.tatoeba.org/unstable/sentences?lang=jpn&query=${encodeURIComponent(keyword)}&sort=random&limit=5`;
+      `https://api.tatoeba.org/v1/sentences?lang=jpn&query=${encodeURIComponent(keyword)}&limit=10`;
 
     const response = await fetch(url);
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       return res.status(response.status).json({
-        error: "Example API error"
+        error: data?.error || "Example API error"
       });
     }
 
     const items = Array.isArray(data?.data) ? data.data : [];
 
-    const hit = items.find(item => {
-      const sentence = item?.text || "";
+    // 先找有明確包含關鍵字的句子
+    let hit = items.find(item => {
+      const sentence = String(item?.text || "").trim();
       return sentence.includes(keyword);
-    }) || items[0];
+    });
 
-    const sentence = hit?.text || "";
+    // 找不到就退而求其次，拿第一句
+    if (!hit) {
+      hit = items[0];
+    }
+
+    const sentence = String(hit?.text || "").trim();
 
     return res.status(200).json({
       example: sentence
