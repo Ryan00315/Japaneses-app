@@ -309,10 +309,11 @@
         try {
             const example = await window.fetchExampleSentence(vocab.word);
     
-            if (!example) {
-                alert("找不到合適例句");
-                return;
-            }
+        if (!example) {
+            console.log("例句 API 無結果:", vocab.word);
+            alert(`找不到例句：${vocab.word}`);
+            return;
+        }
     
             await updateDoc(doc(db, "vocabs", id), {
                 example: example
