@@ -71,12 +71,13 @@
 
             <div class="flex items-center justify-between gap-1">
                 <h1 class="text-lg font-black text-indigo-600 tracking-tighter shrink-0">Kingtex JPNote</h1>
-            <div class="flex items-center gap-1">
-                <button id="export-btn" onclick="window.exportWords()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold hidden">匯出</button>
-                <button onclick="window.showStatsModal()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold">進度</button>
-                <button onclick="window.toggleImport(true)" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold">批量</button>
-                <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">隨機測試</button>
-            </div>
+        <div class="flex items-center gap-1">
+            <button id="export-btn" onclick="window.exportWords()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold hidden">匯出</button>
+            <button id="bulk-example-btn" onclick="window.bulkFillExamples()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold hidden">補例句</button>
+            <button onclick="window.showStatsModal()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold">進度</button>
+            <button onclick="window.toggleImport(true)" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold">批量</button>
+            <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">隨機測試</button>
+        </div>
             </div>
         </div>
 
@@ -278,16 +279,62 @@
         window.currentChoices = [];
         window.vocabSortable = null;
 
-window.fetchExampleSentence = async (word) => {
-    const input = String(word || "").trim();
-    if (!input) return "";
+        window.bulkFillExamples = async () => {
+    const targets = window.vocabs.filter(v => {
+        const visibleToCurrentUser =
+            v.lesson === '個人筆記' ? v.uid === currentUser : !v.uid;
 
-    if (LOCAL_EXAMPLES[input]) {
-        return LOCAL_EXAMPLES[input];
+        return visibleToCurrentUser && !(v.example || "").trim();
+    });
+
+    if (!targets.length) {
+        window.showToast("✅ 沒有需要補的例句");
+        return;
     }
 
-    return "";
-};
+    let updated = 0;
+
+    window.showToast(`⏳ 準備更新 ${targets.length} 筆例句`);
+
+    for (const vocab of targets) {
+        const example = await window.fetchExampleSentence(vocab.word);
+        if (!example) continue;
+
+        try {
+            await updateDoc(doc(db, "vocabs", vocab.id), {
+                example
+            });
+            updated += 1;
+        } catch (e) {
+            console.error("更新例句失敗：", vocab.word, e);
+        }
+    }
+
+            window.showToast(`✨ 已更新 ${updated} 筆例句`);
+        };
+        
+        window.normalizeExampleKey = (text) => {
+            return String(text || "")
+                .trim()
+                .replace(/[［\[]/g, "")
+                .replace(/[］\]]/g, "")
+                .replace(/（.*?）/g, "")
+                .replace(/\(.*?\)/g, "")
+                .replace(/〜|～/g, "")
+                .replace(/\s+/g, "");
+        };
+        
+        window.fetchExampleSentence = async (word) => {
+            const raw = String(word || "").trim();
+            if (!raw) return "";
+        
+            const normalized = window.normalizeExampleKey(raw);
+        
+            if (LOCAL_EXAMPLES[raw]) return LOCAL_EXAMPLES[raw];
+            if (LOCAL_EXAMPLES[normalized]) return LOCAL_EXAMPLES[normalized];
+        
+            return "";
+        };
 
         window.generateExampleForWord = async (id) => {
             const vocab = window.vocabs.find(v => v.id === id);
@@ -358,11 +405,17 @@ window.fetchExampleSentence = async (word) => {
             };
 
         window.updateManualModeUI = () => {
-    const exportBtn = document.getElementById('export-btn');
-    if (exportBtn) {
-        exportBtn.classList.toggle('hidden', !window.manualSortEnabled);
-    }
-};
+            const exportBtn = document.getElementById('export-btn');
+            const bulkExampleBtn = document.getElementById('bulk-example-btn');
+        
+            if (exportBtn) {
+                exportBtn.classList.toggle('hidden', !window.manualSortEnabled);
+            }
+        
+            if (bulkExampleBtn) {
+                bulkExampleBtn.classList.toggle('hidden', !window.manualSortEnabled);
+            }
+        };
 
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
