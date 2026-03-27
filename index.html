@@ -298,33 +298,32 @@
         };
 
         window.generateExampleForWord = async (id) => {
-    const vocab = window.vocabs.find(v => v.id === id);
-    if (!vocab) {
-        alert("找不到單字資料");
-        return;
-    }
-
-        window.showToast("⏳ 例句產生中...");
-    
-        try {
-            const example = await window.fetchExampleSentence(vocab.word);
-    
-        if (!example) {
-            console.log("例句 API 無結果:", vocab.word);
-            alert(`找不到例句：${vocab.word}`);
-            return;
-        }
-    
-            await updateDoc(doc(db, "vocabs", id), {
-                example: example
-            });
-    
-            window.showToast("✨ 已更新例句");
-        } catch (e) {
-            console.error("產生例句失敗：", e);
-            alert("產生例句失敗");
-        }
-    };
+            const vocab = window.vocabs.find(v => v.id === id);
+            if (!vocab) {
+                alert("找不到單字資料");
+                return;
+            }
+        
+            window.showToast("⏳ 例句產生中...");
+        
+            try {
+                const example = await window.fetchExampleSentence(vocab.word);
+        
+                if (!example) {
+                    window.showToast("⚠️ Tatoeba 暫時查不到");
+                    return;
+                }
+        
+                await updateDoc(doc(db, "vocabs", id), {
+                    example: example
+                });
+        
+                window.showToast("✨ 已更新例句");
+            } catch (e) {
+                console.error("產生例句失敗：", e);
+                alert("產生例句失敗");
+            }
+        };
 
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
