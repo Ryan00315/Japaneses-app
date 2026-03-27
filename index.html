@@ -235,6 +235,7 @@
     </div>
 
     <script type="module">
+        import { LOCAL_EXAMPLES } from './exampleData.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -277,26 +278,16 @@
         window.currentChoices = [];
         window.vocabSortable = null;
 
-        window.fetchExampleSentence = async (word) => {
-            const input = String(word || "").trim();
-            if (!input) return "";
-        
-            try {
-                const response = await fetch("https://japaneses-app-1q3g.vercel.app/api/example", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ text: input })
-                });
-        
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) return "";
-        
-                return data?.example || "";
-            } catch (e) {
-                console.error("例句取得失敗：", e);
-                return "";
-            }
-        };
+window.fetchExampleSentence = async (word) => {
+    const input = String(word || "").trim();
+    if (!input) return "";
+
+    if (LOCAL_EXAMPLES[input]) {
+        return LOCAL_EXAMPLES[input];
+    }
+
+    return "";
+};
 
         window.generateExampleForWord = async (id) => {
             const vocab = window.vocabs.find(v => v.id === id);
