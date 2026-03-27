@@ -755,14 +755,14 @@
                                 <span class="text-slate-600">${v.meaning}</span>
                             </div>
                 
-                            <div class="text-slate-400 text-sm mt-1 leading-relaxed">
+                            <div class="text-slate-400 text-sm mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
                                 ${v.example || '—'}
                             </div>
                         </div>
                 
                         <div class="flex gap-1 items-center shrink-0">
                             ${window.manualSortEnabled ? `
-                                <button onclick="window.generateExampleForWord('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-full text-sm" title="產生例句">句</button>
+                                
                                 <button onclick="window.openEditAction('${v.id}')" class="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-500 rounded-full text-sm" title="編輯">✏️</button>
                                 <button onclick="window.deleteWord('${v.id}')" class="w-10 h-10 flex items-center justify-center text-slate-300" title="刪除">✕</button>
                             ` : ``}
