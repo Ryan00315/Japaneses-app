@@ -71,11 +71,12 @@
 
             <div class="flex items-center justify-between gap-1">
                 <h1 class="text-lg font-black text-indigo-600 tracking-tighter shrink-0">Kingtex JPNote</h1>
-                <div class="flex items-center gap-1">
-                    <button onclick="window.showStatsModal()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold">進度</button>
-                    <button onclick="window.toggleImport(true)" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold">批量</button>
-                    <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">隨機測試</button>
-                </div>
+            <div class="flex items-center gap-1">
+                <button id="export-btn" onclick="window.exportWords()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold hidden">匯出</button>
+                <button onclick="window.showStatsModal()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold">進度</button>
+                <button onclick="window.toggleImport(true)" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold">批量</button>
+                <button onclick="window.openQuizSetup()" class="bg-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">隨機測試</button>
+            </div>
             </div>
         </div>
 
@@ -325,6 +326,53 @@
             }
         };
 
+            window.exportWords = async () => {
+                const words = window.vocabs
+                    .filter(v => {
+                        if (v.lesson === '個人筆記') {
+                            return v.uid === currentUser;
+                        }
+                        return !v.uid;
+                    })
+                    .map(v => (v.word || "").trim())
+                    .filter(Boolean);
+            
+                const uniqueWords = [...new Set(words)];
+                const content = uniqueWords.join("\n");
+            
+                if (!content) {
+                    alert("沒有可匯出的單字");
+                    return;
+                }
+            
+                // 複製到剪貼簿
+                try {
+                    await navigator.clipboard.writeText(content);
+                    window.showToast(`✅ 已複製 ${uniqueWords.length} 個單字`);
+                } catch (e) {
+                    console.error("複製失敗：", e);
+                    window.showToast("⚠️ 複製失敗，改用下載");
+                }
+            
+                // 同時下載 txt
+                const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `jp_words_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+        window.updateManualModeUI = () => {
+    const exportBtn = document.getElementById('export-btn');
+    if (exportBtn) {
+        exportBtn.classList.toggle('hidden', !window.manualSortEnabled);
+    }
+};
+
         let currentUser = localStorage.getItem('jp_user_shared') || '訪客';
         let userHistory = JSON.parse(localStorage.getItem('jp_user_history') || '["訪客"]');
 
@@ -551,10 +599,10 @@
                 window.showToast("✅ 已關閉手動排序");
             }
         
-            window.renderList();       // 關鍵：重新渲染，按鈕才會出現/消失
+            window.updateManualModeUI();
+            window.renderList();
             window.initVocabSortable();
         };
-
         window.switchBook = (b) => {
             window.currentBook = b;
             window.selectedLessons = (b === 'note' ? ['個人筆記'] : []);
@@ -1234,6 +1282,7 @@
         window.switchBook(1);
         window.renderNewLessonUI();
         window.renderNewCategoryUI();
+        window.updateManualModeUI();
     </script>
 </body>
 </html>
