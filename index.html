@@ -785,26 +785,34 @@
             const r = document.getElementById('reading').value.trim();
             const m = document.getElementById('meaning').value.trim();
             if (!w || !m) return alert("內容不完整");
-
+        
             const now = Date.now();
-
+        
+            let example = "";
+            try {
+                example = await window.fetchExampleSentence(w);
+            } catch (e) {
+                console.error("抓例句失敗：", e);
+            }
+        
             const data = {
                 word: w,
                 reading: r,
                 meaning: m,
+                example: example || "",
                 lesson: window.selectedNewLesson,
                 category: window.selectedNewCat,
                 createdAt: new Date(),
                 orderValue: now
             };
-
+        
             if (window.selectedNewLesson === '個人筆記') data.uid = currentUser;
-
+        
             await addDoc(vocabsCol, data);
             document.getElementById('word').value = "";
             document.getElementById('reading').value = "";
             document.getElementById('meaning').value = "";
-            window.showToast("✅ 已儲存");
+            window.showToast(example ? "✅ 已儲存＋例句" : "✅ 已儲存");
             window.checkDuplicate();
         };
 
@@ -1091,11 +1099,10 @@
                 lesson: window.selectedEditLesson,
                 category: window.selectedEditCat
             };
-            };
-
+        
             if (window.selectedEditLesson === '個人筆記') data.uid = currentUser;
             else data.uid = null;
-
+        
             await updateDoc(doc(db, "vocabs", window.currentEditId), data);
             document.getElementById('edit-modal').classList.add('hidden');
             window.showToast("✅ 已更新");
