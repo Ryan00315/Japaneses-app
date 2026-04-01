@@ -97,7 +97,7 @@
     </div>
 
     <div class="max-w-md mx-auto p-4">
-        <button onclick="document.getElementById('input-section').classList.toggle('show'); window.fixScroll();" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full active:scale-95 transition-all shadow-sm">＋ 新增單語</button>
+       <button onclick="window.openNewWordPanel()" class="mb-4 bg-indigo-50 text-indigo-600 px-6 py-2.5 rounded-full text-sm font-bold border border-indigo-100 w-full active:scale-95 transition-all shadow-sm">＋ 新增單語</button>
         
         <section id="input-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm transition-all overflow-hidden text-center">
              <div class="grid grid-cols-2 gap-3 mb-4 text-left">
@@ -964,6 +964,53 @@ window.renderList = () => {
             window.renderNewLessonUI();
             window.renderNewCategoryUI();
             window.checkDuplicate();
+        };
+
+        window.openNewWordPanel = () => {
+            const section = document.getElementById('input-section');
+            const willShow = !section.classList.contains('show');
+        
+            if (willShow) {
+                // 1. 先跟隨上方目前所在冊別
+                if (window.currentBook === 1 || window.currentBook === 2 || window.currentBook === 'note') {
+                    window.newWordBook = window.currentBook;
+                } else {
+                    window.newWordBook = 1;
+                }
+        
+                // 2. 決定 lesson：
+                //    上方可複選，所以取最後一個
+                let targetLesson = null;
+        
+                if (window.currentBook === 'note') {
+                    targetLesson = '個人筆記';
+                } else if (window.selectedLessons.length > 0) {
+                    targetLesson = window.selectedLessons[window.selectedLessons.length - 1];
+                } else {
+                    // 沒有選 lesson 時給預設
+                    targetLesson = window.newWordBook === 1 ? '未分類'
+                                : window.newWordBook === 2 ? 'L13'
+                                : '個人筆記';
+                }
+        
+                window.selectedNewLesson = targetLesson;
+        
+                // 3. 類別永遠選第一個
+                window.selectedNewCat =
+                    targetLesson === '附錄'
+                        ? APPENDIX_TYPES[0]
+                        : LESSON_TYPES[0];
+        
+                // 4. 重畫新增區塊 UI
+                window.renderNewLessonUI();
+                window.renderNewCategoryUI();
+                window.checkDuplicate();
+            }
+        
+            section.classList.toggle('show');
+        
+            if (!section.classList.contains('show')) return;
+            window.fixScroll();
         };
 
         window.renderNewLessonUI = () => {
