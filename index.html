@@ -1195,14 +1195,44 @@ window.renderList = () => {
 
         window.renderEditLessonUI = () => {
             const c = document.getElementById('edit-lesson-container');
-            if(window.editWordBook==='note') {
-                c.innerHTML="";
+        
+            const btn1 = document.getElementById('edit-book1-btn');
+            const btn2 = document.getElementById('edit-book2-btn');
+            const btnNote = document.getElementById('edit-book-note-btn');
+        
+            if (btn1) {
+                btn1.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${
+                    window.editWordBook === 1
+                        ? 'lesson-active text-white'
+                        : 'bg-white text-slate-500'
+                }`;
+            }
+        
+            if (btn2) {
+                btn2.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${
+                    window.editWordBook === 2
+                        ? 'lesson-active text-white'
+                        : 'bg-white text-slate-500'
+                }`;
+            }
+        
+            if (btnNote) {
+                btnNote.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${
+                    window.editWordBook === 'note'
+                        ? 'note-active text-white'
+                        : 'bg-white text-slate-500'
+                }`;
+            }
+        
+            if (window.editWordBook === 'note') {
+                c.innerHTML = "";
             } else {
                 c.className = "no-scrollbar pb-3";
                 c.innerHTML = BOOK_MAP[window.editWordBook].map(l => `
                     <button onclick="window.setEditLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedEditLesson===l?'active-edit-cat bg-indigo-600 text-white':'bg-white'}">${l}</button>
                 `).join('');
             }
+        
             setupDraggable();
         };
 
