@@ -1360,20 +1360,50 @@ window.renderList = () => {
 
         const setupDraggable = () => {
             document.querySelectorAll('.no-scrollbar').forEach(el => {
-                let isDown = false, startX, scrollLeft;
+                let isDown = false;
+                let startX = 0;
+                let scrollLeft = 0;
+                let isDragging = false;
+                const DRAG_THRESHOLD = 10; // 可改 8 ~ 12 試手感
+        
                 el.onmousedown = (e) => {
                     isDown = true;
+                    isDragging = false;
                     startX = e.pageX - el.offsetLeft;
                     scrollLeft = el.scrollLeft;
                 };
-                el.onmouseleave = () => isDown = false;
-                el.onmouseup = () => isDown = false;
+        
+                el.onmouseleave = () => {
+                    isDown = false;
+                };
+        
+                el.onmouseup = () => {
+                    isDown = false;
+        
+                    // 拖曳結束後，延遲一下再恢復 click
+                    setTimeout(() => {
+                        isDragging = false;
+                    }, 0);
+                };
+        
                 el.onmousemove = (e) => {
-                    if(!isDown) return;
-                    e.preventDefault();
+                    if (!isDown) return;
+        
                     const x = e.pageX - el.offsetLeft;
                     const dist = x - startX;
-                    el.scrollLeft = scrollLeft - dist;
+        
+                    if (Math.abs(dist) > DRAG_THRESHOLD) {
+                        isDragging = true;
+                        e.preventDefault();
+                        el.scrollLeft = scrollLeft - dist;
+                    }
+                };
+        
+                el.onclick = (e) => {
+                    if (isDragging) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
                 };
             });
         };
