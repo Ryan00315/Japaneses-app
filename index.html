@@ -171,7 +171,7 @@
                     </div>
                 </div>
             </div>
-
+                        <p id="tap-to-reveal" class="text-xs text-slate-400 mt-2">點一下顯示選項</p>
             <div id="choice-area" class="mb-6 hidden">
                 <div class="grid grid-cols-1 gap-3 mb-4">
                     <button onclick="window.submitChoice(0)" id="opt-0" class="option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg"></button>
@@ -825,10 +825,10 @@ window.renderList = () => {
 
         window.nextQuestion = () => {
             if (!window.remainingPool.length) return location.reload();
-
+        
             const card = document.getElementById('quiz-card');
             card.classList.remove('is-flipped');
-
+        
             const spellingInput = document.getElementById('spelling-input');
             spellingInput.value = '';
             spellingInput.onkeydown = (e) => {
@@ -848,20 +848,20 @@ window.renderList = () => {
                     }
                 }
             };
-
+        
             for(let i=0; i<3; i++) {
                 const btn = document.getElementById(`opt-${i}`);
                 btn.className = "option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg";
                 btn.disabled = false;
             }
-
+        
             window.currentQuizWord = window.remainingPool.shift();
+            window.choiceOptionsRevealed = false;
             document.getElementById('quiz-progress-display').innerText = `剩：${window.remainingPool.length} 題`;
-
+        
             const isH = window.quizMode === 'hearing';
             const isC = window.quizMode === 'choice';
-            window.choiceOptionsRevealed = false;
-
+        
             if (isH) {
                 document.getElementById('q-meaning-front').innerText = "";
             } else if (isC) {
@@ -869,21 +869,21 @@ window.renderList = () => {
             } else {
                 document.getElementById('q-meaning-front').innerText = window.currentQuizWord.meaning;
             }
-
+        
             document.getElementById('hear-icon').classList.toggle('hidden', !isH);
             document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
             document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
             document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
-
+        
             if (isC || isH) {
                 document.getElementById('choice-area').classList.add('hidden');
                 document.getElementById('standard-actions').classList.add('hidden');
                 document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
-
+        
                 const others = window.quizPool.filter(v => v.id !== window.currentQuizWord.id);
                 const shuffled = others.sort(() => Math.random() - 0.5);
                 window.currentChoices = [window.currentQuizWord, shuffled[0], shuffled[1]].sort(() => Math.random() - 0.5);
-
+        
                 window.currentChoices.forEach((choice, idx) => {
                     const btn = document.getElementById(`opt-${idx}`);
                     if (isH) btn.innerText = choice.meaning;
@@ -894,12 +894,10 @@ window.renderList = () => {
                 document.getElementById('standard-actions').classList.remove('hidden');
                 document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
             }
-
-            if(isH) setTimeout(() => {
-                if(window.quizMode === 'hearing') window.speakAction(window.currentQuizWord.word);
-            }, 600);
-
-            if(document.getElementById('spelling-mode').checked) setTimeout(() => spellingInput.focus(), 400);
+        
+            if(document.getElementById('spelling-mode').checked) {
+                setTimeout(() => spellingInput.focus(), 400);
+            }
         };
 
         window.submitChoice = (idx) => {
@@ -1123,17 +1121,15 @@ window.renderList = () => {
         window.handleCardClick = (e) => {
             if (e.target.closest('button')) return;
         
-            if (window.quizMode === 'choice' || window.quizMode === 'hearing') {
+            if (window.quizMode === 'choice') {
                 if (!window.choiceOptionsRevealed) {
                     window.choiceOptionsRevealed = true;
                     document.getElementById('choice-area').classList.remove('hidden');
-        
-                    if (window.quizMode === 'hearing') {
-                        window.speakAction(window.currentQuizWord.word);
-                    }
                 }
                 return;
             }
+        
+            if(window.quizMode === 'hearing') return;
         
             const card = document.getElementById('quiz-card');
             card.classList.toggle('is-flipped');
