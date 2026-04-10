@@ -860,6 +860,7 @@ window.renderList = () => {
 
             const isH = window.quizMode === 'hearing';
             const isC = window.quizMode === 'choice';
+            window.choiceOptionsRevealed = false;
 
             if (isH) {
                 document.getElementById('q-meaning-front').innerText = "";
@@ -875,9 +876,9 @@ window.renderList = () => {
             document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
 
             if (isC || isH) {
-                document.getElementById('choice-area').classList.remove('hidden');
+                document.getElementById('choice-area').classList.add('hidden');
                 document.getElementById('standard-actions').classList.add('hidden');
-                document.getElementById('quiz-card-container').classList.add('pointer-events-none');
+                document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
 
                 const others = window.quizPool.filter(v => v.id !== window.currentQuizWord.id);
                 const shuffled = others.sort(() => Math.random() - 0.5);
@@ -1120,8 +1121,20 @@ window.renderList = () => {
         };
 
         window.handleCardClick = (e) => {
-            if(window.quizMode === 'choice' || window.quizMode === 'hearing') return;
-            if(e.target.closest('button')) return;
+            if (e.target.closest('button')) return;
+        
+            if (window.quizMode === 'choice' || window.quizMode === 'hearing') {
+                if (!window.choiceOptionsRevealed) {
+                    window.choiceOptionsRevealed = true;
+                    document.getElementById('choice-area').classList.remove('hidden');
+        
+                    if (window.quizMode === 'hearing') {
+                        window.speakAction(window.currentQuizWord.word);
+                    }
+                }
+                return;
+            }
+        
             const card = document.getElementById('quiz-card');
             card.classList.toggle('is-flipped');
             if(card.classList.contains('is-flipped')) window.speakAction(window.currentQuizWord.word);
