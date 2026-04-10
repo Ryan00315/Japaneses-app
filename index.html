@@ -1125,6 +1125,7 @@ window.renderList = () => {
                 if (!window.choiceOptionsRevealed) {
                     window.choiceOptionsRevealed = true;
                     document.getElementById('choice-area').classList.remove('hidden');
+                    document.getElementById('tap-to-reveal')?.classList.add('hidden'); 
                 }
                 return;
             }
