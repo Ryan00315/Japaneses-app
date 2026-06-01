@@ -132,14 +132,21 @@
                     <button id="modeStdBtn" onclick="window.setQuizType('standard')" class="py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600">單字卡</button>
                     <button id="modeHearBtn" onclick="window.setQuizType('hearing')" class="py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">聽力模式</button>
                     <button id="modeChoiceBtn" onclick="window.setQuizType('choice')" class="py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">選擇題</button>
-                    <button id="modeWeakBtn" onclick="window.setQuizType('weak')" class="py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">弱點</button>
+                    
                 </div>
             </div>
-            <div id="choice-sub-options" class="mb-6 hidden"><p class="text-[10px] text-slate-500 font-bold mb-3 uppercase tracking-widest">選擇題題型</p>
-                <div class="flex gap-2">
-                    <button id="subModeJPCH" onclick="window.setChoiceSub('jp-ch')" class="flex-1 py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600">日選中</button>
-                    <button id="subModeCHJP" onclick="window.setChoiceSub('ch-jp')" class="flex-1 py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">中選日</button>
-                </div>
+    <div id="choice-sub-options" class="mb-6 hidden">
+        <p class="text-[10px] text-slate-500 font-bold mb-3 uppercase tracking-widest">選擇題題型</p>
+        <div class="flex gap-2 mb-3">
+            <button id="subModeJPCH" onclick="window.setChoiceSub('jp-ch')" class="flex-1 py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600">日選中</button>
+            <button id="subModeCHJP" onclick="window.setChoiceSub('ch-jp')" class="flex-1 py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">中選日</button>
+        </div>
+    
+        <label class="flex items-center justify-center gap-2 text-sm font-bold text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-2xl py-3 cursor-pointer">
+            <input type="checkbox" id="weak-choice-mode" class="w-5 h-5">
+            <span>只測個人弱點</span>
+        </label>
+    </div>
             </div>
             <div class="mb-8 font-bold text-base flex items-center justify-center gap-4">
                 <input type="checkbox" id="spelling-mode" class="w-7 h-7 rounded-lg cursor-pointer">
@@ -831,51 +838,83 @@ window.setQuizType = (m) => {
                 return !v.uid;
             });
         };
-        window.openQuizSetup = () => {
-            const pool = window.vocabs.filter(v => {
-                if (v.lesson === '個人筆記') return v.uid === currentUser && (window.currentBook === 'note');
-                else return !v.uid && (window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson));
-            });
-            if(!pool.length) return alert("範圍內沒有單字");
+        window.getQuizBasePool = () => {
+    return window.vocabs.filter(v => {
+        if (v.lesson === '個人筆記') {
+            if (v.uid !== currentUser) return false;
+        } else {
+            if (v.uid) return false;
+        }
 
-            window.quizPool = pool;
-            document.getElementById('quiz-overlay').classList.remove('hidden');
+        const matchL =
+            window.selectedLessons.length === 0 ||
+            window.selectedLessons.includes(v.lesson);
 
-            const stats = {};
-            pool.forEach(v => stats[v.lesson] = (stats[v.lesson] || 0) + 1);
-            document.getElementById('quiz-range-list').innerHTML = Object.entries(stats).map(([l, c]) => `
-                <div class="bg-white/5 p-2 rounded-lg border border-white/10 flex justify-between items-center">
-                    <span class="font-bold text-xs">${l}</span>
-                    <span class="text-indigo-300 text-xs">${c} 題</span>
-                </div>
-            `).join('');
-        };
+        return matchL;
+    });
+};
 
-            window.startQuiz = () => {
-                if (window.quizMode === 'weak') {
-                    window.quizPool = window.getWeakQuizPool();
-            
-                    if (!window.quizPool.length) {
-                        return alert("目前沒有個人弱點單字");
-                    }
-                }
-            
-                if (window.quizMode === 'choice' && window.quizPool.length < 3) {
-                    return alert("單字量不足以開啟選擇題 (最少需3個)");
-                }
-            
-                window.remainingPool = [...window.quizPool].sort(() => Math.random() - 0.5);
-            
-                document.getElementById('spelling-input-area').classList.toggle(
-                    'hidden',
-                    !document.getElementById('spelling-mode').checked
-                );
-            
-                document.getElementById('quiz-setup').classList.add('hidden');
-                document.getElementById('quiz-content').classList.remove('hidden');
-            
-                window.nextQuestion();
-            };
+window.getWeakQuizPool = () => {
+    return window.getQuizBasePool().filter(v => {
+        const prog = window.userProgress[v.id];
+        return prog && Number(prog.wrongCount || 0) > 0;
+    });
+};
+window.openQuizSetup = () => {
+    const pool = window.getQuizBasePool();
+
+    if (!pool.length) return alert("範圍內沒有單字");
+
+    window.quizPool = pool;
+    document.getElementById('quiz-overlay').classList.remove('hidden');
+
+    const weakCheckbox = document.getElementById('weak-choice-mode');
+    if (weakCheckbox) weakCheckbox.checked = false;
+
+    const stats = {};
+    pool.forEach(v => stats[v.lesson] = (stats[v.lesson] || 0) + 1);
+
+    document.getElementById('quiz-range-list').innerHTML = Object.entries(stats).map(([l, c]) => `
+        <div class="bg-white/5 p-2 rounded-lg border border-white/10 flex justify-between items-center">
+            <span class="font-bold text-xs">${l}</span>
+            <span class="text-indigo-300 text-xs">${c} 題</span>
+        </div>
+    `).join('');
+};
+
+window.startQuiz = () => {
+    const weakMode = document.getElementById('weak-choice-mode')?.checked;
+
+    if (window.quizMode === 'choice' && weakMode) {
+        window.quizPool = window.getWeakQuizPool();
+
+        if (!window.quizPool.length) {
+            return alert("目前範圍內沒有弱點單字");
+        }
+    } else {
+        window.quizPool = window.getQuizBasePool();
+
+        if (!window.quizPool.length) {
+            return alert("範圍內沒有單字");
+        }
+    }
+
+    if (window.quizMode === 'choice' && window.quizPool.length < 3) {
+        return alert("單字量不足以開啟選擇題 (最少需3個)");
+    }
+
+    window.remainingPool = [...window.quizPool].sort(() => Math.random() - 0.5);
+
+    document.getElementById('spelling-input-area').classList.toggle(
+        'hidden',
+        !document.getElementById('spelling-mode').checked
+    );
+
+    document.getElementById('quiz-setup').classList.add('hidden');
+    document.getElementById('quiz-content').classList.remove('hidden');
+
+    window.nextQuestion();
+};
 
         window.nextQuestion = () => {
             if (!window.remainingPool.length) return location.reload();
