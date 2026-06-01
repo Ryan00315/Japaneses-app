@@ -128,10 +128,11 @@
             <h2 class="text-2xl font-black mb-6 tracking-tighter uppercase">測試設定</h2>
             <div id="quiz-range-info" class="bg-slate-800 p-6 rounded-[32px] mb-6 text-left border border-white/10 text-xs"><div id="quiz-range-list" class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto no-scrollbar py-2"></div></div>
             <div class="mb-6"><p class="text-[10px] text-slate-500 font-bold mb-3 uppercase tracking-widest">模式選擇</p>
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-4 gap-2">
                     <button id="modeStdBtn" onclick="window.setQuizType('standard')" class="py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600">單字卡</button>
                     <button id="modeHearBtn" onclick="window.setQuizType('hearing')" class="py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">聽力模式</button>
                     <button id="modeChoiceBtn" onclick="window.setQuizType('choice')" class="py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">選擇題</button>
+                    <button id="modeWeakBtn" onclick="window.setQuizType('weak')" class="py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600">弱點</button>
                 </div>
             </div>
             <div id="choice-sub-options" class="mb-6 hidden"><p class="text-[10px] text-slate-500 font-bold mb-3 uppercase tracking-widest">選擇題題型</p>
@@ -155,7 +156,7 @@
                 <button onclick="location.reload()" class="text-2xl text-white">✕</button>
             </div>
 
- <div id="quiz-card-container" onclick="window.handleCardClick(event)" class="card-flip w-full h-[420px] relative mb-6">
+ <div id="quiz-card-container" onclick="window.handleCardClick(event)" class="card-flip w-full h-[420px] relative mb-4">
     <div id="quiz-card" class="card-inner">
         <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-8 h-full">
             <p id="q-meaning-front" class="text-4xl font-black text-center w-full"></p>
@@ -780,20 +781,54 @@ window.renderList = () => {
     window.initVocabSortable();
 };
 
-        window.setQuizType = (m) => {
-            window.quizMode = m;
-            document.getElementById('modeStdBtn').className = (m==='standard'?'py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600':'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
-            document.getElementById('modeHearBtn').className = (m==='hearing'?'py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600':'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
-            document.getElementById('modeChoiceBtn').className = (m==='choice'?'py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600':'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
-            document.getElementById('choice-sub-options').classList.toggle('hidden', m !== 'choice');
-        };
+window.setQuizType = (m) => {
+    window.quizMode = m;
+
+    document.getElementById('modeStdBtn').className =
+        (m === 'standard'
+            ? 'py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600'
+            : 'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
+
+    document.getElementById('modeHearBtn').className =
+        (m === 'hearing'
+            ? 'py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600'
+            : 'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
+
+    document.getElementById('modeChoiceBtn').className =
+        (m === 'choice'
+            ? 'py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600'
+            : 'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
+
+    document.getElementById('modeWeakBtn').className =
+        (m === 'weak'
+            ? 'py-3 rounded-xl text-xs font-bold bg-rose-600 border border-rose-600'
+            : 'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
+
+    document.getElementById('choice-sub-options').classList.toggle('hidden', m !== 'choice');
+
+    if (m === 'weak') {
+        window.showToast("🔥 弱點模式：只測驗錯過的單字");
+    }
+};
 
         window.setChoiceSub = (s) => {
             window.choiceSub = s;
             document.getElementById('subModeJPCH').className = (s==='jp-ch'?'flex-1 py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600':'flex-1 py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
             document.getElementById('subModeCHJP').className = (s==='ch-jp'?'flex-1 py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600':'flex-1 py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
         };
-
+        window.getWeakQuizPool = () => {
+            return window.vocabs.filter(v => {
+                const prog = window.userProgress[v.id];
+        
+                if (!prog || !prog.wrongCount || prog.wrongCount <= 0) return false;
+        
+                if (v.lesson === '個人筆記') {
+                    return v.uid === currentUser;
+                }
+        
+                return !v.uid;
+            });
+        };
         window.openQuizSetup = () => {
             const pool = window.vocabs.filter(v => {
                 if (v.lesson === '個人筆記') return v.uid === currentUser && (window.currentBook === 'note');
@@ -814,14 +849,31 @@ window.renderList = () => {
             `).join('');
         };
 
-        window.startQuiz = () => {
-            if (window.quizMode === 'choice' && window.quizPool.length < 3) return alert("單字量不足以開啟選擇題 (最少需3個)");
-            window.remainingPool = [...window.quizPool].sort(() => Math.random() - 0.5);
-            document.getElementById('spelling-input-area').classList.toggle('hidden', !document.getElementById('spelling-mode').checked);
-            document.getElementById('quiz-setup').classList.add('hidden');
-            document.getElementById('quiz-content').classList.remove('hidden');
-            window.nextQuestion();
-        };
+            window.startQuiz = () => {
+                if (window.quizMode === 'weak') {
+                    window.quizPool = window.getWeakQuizPool();
+            
+                    if (!window.quizPool.length) {
+                        return alert("目前沒有個人弱點單字");
+                    }
+                }
+            
+                if (window.quizMode === 'choice' && window.quizPool.length < 3) {
+                    return alert("單字量不足以開啟選擇題 (最少需3個)");
+                }
+            
+                window.remainingPool = [...window.quizPool].sort(() => Math.random() - 0.5);
+            
+                document.getElementById('spelling-input-area').classList.toggle(
+                    'hidden',
+                    !document.getElementById('spelling-mode').checked
+                );
+            
+                document.getElementById('quiz-setup').classList.add('hidden');
+                document.getElementById('quiz-content').classList.remove('hidden');
+            
+                window.nextQuestion();
+            };
 
         window.nextQuestion = () => {
             if (!window.remainingPool.length) return location.reload();
