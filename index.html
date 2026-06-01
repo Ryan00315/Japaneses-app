@@ -147,12 +147,12 @@
             <span>只測個人弱點</span>
         </label>
     </div>
-            </div>
-            <div class="mb-8 font-bold text-base flex items-center justify-center gap-4">
+
+                <div class="mb-8 font-bold text-base flex items-center justify-center gap-4">
                 <input type="checkbox" id="spelling-mode" class="w-7 h-7 rounded-lg cursor-pointer">
                 <label for="spelling-mode" class="cursor-pointer text-lg">開啟拼寫模式</label>
             </div>
-            <button onclick="window.startQuiz()" class="w-full py-6 bg-indigo-600 rounded-3xl mb-4 font-bold text-xl active:scale-95 shadow-xl">開始練習</button>
+            <button onclick="window.startQuiz()" class="w-full max-w-md py-6 bg-indigo-600 rounded-3xl mb-4 font-bold text-xl active:scale-95 shadow-xl">開始練習</button>
             <button onclick="document.getElementById('quiz-overlay').classList.add('hidden')" class="text-slate-500 font-bold">返回首頁</button>
         </div>
 
@@ -929,7 +929,7 @@ window.startQuiz = () => {
         
             window.currentQuizWord = window.remainingPool.shift();
             window.choiceOptionsRevealed = false;
-            document.getElementById('tap-to-reveal')?.classList.remove('hidden');
+            document.getElementById('tap-to-reveal')?.classList.toggle('hidden', window.quizMode !== 'choice');
             document.getElementById('quiz-progress-display').innerText = `剩：${window.remainingPool.length} 題`;
         
             const isH = window.quizMode === 'hearing';
@@ -949,7 +949,7 @@ window.startQuiz = () => {
             document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
         
             if (isC || isH) {
-                document.getElementById('choice-area').classList.add('hidden');
+                document.getElementById('choice-area').classList.toggle('hidden', isC);
                 document.getElementById('standard-actions').classList.add('hidden');
                 document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
         
