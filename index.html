@@ -521,7 +521,6 @@
             `).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`;
         };
 
-        // 【修改核心點 1】優化傳統排序按鈕切換邏輯
         window.toggleSort = () => {
             window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc');
             document.getElementById('sort-btn').innerText = `排序${window.sortOrder === 'desc' ? '↓' : '↑'}`;
@@ -534,11 +533,14 @@
             if (window.manualSortEnabled) {
                 btn.className = "ml-2 text-[11px] bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0";
                 btn.innerText = "手動排序中";
-                window.showToast("✋ 已開啟手動排序");
+                // 【核心修改點 1】進入手動拖曳時，強制重置排序按鈕為正序，防止反轉時拖曳造成寫入權重顛倒
+                window.sortOrder = 'asc';
+                document.getElementById('sort-btn').innerText = "排序↑";
+                window.showToast("✋ 已開啟手動排序（排序按鈕已鎖定正序）");
             } else {
                 btn.className = "ml-2 text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0";
                 btn.innerText = "手動排序";
-                window.showToast("✅ 已關閉手動排序");
+                window.showToast("✅ 已關閉手動排序（現在可以自由使用 排序↑↓ 切換順序）");
             }
             window.updateManualModeUI();
             window.renderList();
@@ -607,16 +609,25 @@
             });
             document.getElementById("review-badge-count").innerText = totalReviewCount;
 
-            // 【修改核心點 2】重構排序器權重分配：手動排序狀態下完美連動 排序↑ 與 排序↓ 按鈕
+            // 【修改核心點 2】重寫排序引擎：手動排序狀態下完美連動 排序↑ 與 排序↓ 按鈕
             if (window.manualSortEnabled) {
+                // 在手動拖曳進行中，完全依照當前 manualOrder 的正向排序顯示
                 filtered.sort((a, b) => {
                     const mA = typeof a.manualOrder === 'number' ? a.manualOrder : 999999;
                     const mB = typeof b.manualOrder === 'number' ? b.manualOrder : 999999;
-                    // 正序與倒序直接控制 manualOrder 的正反轉
-                    return window.sortOrder === 'desc' ? mB - mA : mA - mB;
+                    return mA - mB;
                 });
             } else {
+                // 非拖曳模式下，傳統排序按鈕「排序↑」與「排序↓」完美切換手動調整後的順序
                 filtered.sort((a, b) => {
+                    const mA = typeof a.manualOrder === 'number' ? a.manualOrder : 999999;
+                    const mB = typeof b.manualOrder === 'number' ? b.manualOrder : 999999;
+                    
+                    if (mA !== mB) {
+                        return window.sortOrder === 'desc' ? mB - mA : mA - mB;
+                    }
+                    
+                    // 如果沒有排過，則依預設時間與章節排列
                     const lA = LESSON_ORDER.indexOf(a.lesson);
                     const lB = LESSON_ORDER.indexOf(b.lesson);
                     if (lA !== lB) return lA - lB;
@@ -1130,9 +1141,10 @@
                     items.forEach((item, index) => {
                         const id = item.dataset.id;
                         
-                        // 【修改核心點 3】如果是倒序排序（排序↓）狀態下拖拽，權重需要反向計算賦值，避免重繪時順序錯亂
-                        const actualOrder = window.sortOrder === 'desc' ? (items.length - 1 - index) : index;
+                        // 【修改核心點 3】拖曳時強制寫入正向絕對索引值固定住
+                        const actualOrder = index;
                         
+                        // 直接更新本地端記憶體暫存陣列，防止畫面因為即時監聽而回彈
                         const targetWord = window.vocabs.find(v => v.id === id);
                         if (targetWord) targetWord.manualOrder = actualOrder;
                         
@@ -1140,7 +1152,7 @@
                     });
                 
                     await batch.commit();
-                    window.showToast("✅ 排序已成功同步至雲端");
+                    window.showToast("✅ 手動順序已儲存（關閉手動排序後即可使用 ↑↓ 倒序切換）");
                 }
             });
         };
