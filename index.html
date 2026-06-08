@@ -521,8 +521,8 @@
             `).join('') + `<button onclick="window.addNewUserAction()" class="text-[10px] bg-slate-100 px-2.5 py-0.5 rounded-full font-bold border">+ 新增</button>`;
         };
 
+        // 【修改核心點 1】優化傳統排序按鈕切換邏輯
         window.toggleSort = () => {
-            if (window.manualSortEnabled) return; // 開啟手動排序時，禁用傳統時間排序切換
             window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc');
             document.getElementById('sort-btn').innerText = `排序${window.sortOrder === 'desc' ? '↓' : '↑'}`;
             window.renderList();
@@ -531,16 +531,13 @@
         window.toggleManualSort = () => {
             window.manualSortEnabled = !window.manualSortEnabled;
             const btn = document.getElementById('manual-sort-btn');
-            const sortBtn = document.getElementById('sort-btn');
             if (window.manualSortEnabled) {
                 btn.className = "ml-2 text-[11px] bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0";
                 btn.innerText = "手動排序中";
-                if(sortBtn) sortBtn.className = "bg-slate-100 border border-slate-200 px-4 rounded-2xl text-[13px] font-bold text-slate-300 shadow-sm cursor-not-allowed";
                 window.showToast("✋ 已開啟手動排序");
             } else {
                 btn.className = "ml-2 text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0";
                 btn.innerText = "手動排序";
-                if(sortBtn) sortBtn.className = "bg-white border border-slate-200 px-4 rounded-2xl text-[13px] font-bold text-slate-400 shadow-sm";
                 window.showToast("✅ 已關閉手動排序");
             }
             window.updateManualModeUI();
@@ -610,12 +607,13 @@
             });
             document.getElementById("review-badge-count").innerText = totalReviewCount;
 
-            // 【核心修正點 1】修復排序渲染規則。開啟手動排序時，完全依照手動指定的權重，不被大課別拆開
+            // 【修改核心點 2】重構排序器權重分配：手動排序狀態下完美連動 排序↑ 與 排序↓ 按鈕
             if (window.manualSortEnabled) {
                 filtered.sort((a, b) => {
                     const mA = typeof a.manualOrder === 'number' ? a.manualOrder : 999999;
                     const mB = typeof b.manualOrder === 'number' ? b.manualOrder : 999999;
-                    return mA - mB;
+                    // 正序與倒序直接控制 manualOrder 的正反轉
+                    return window.sortOrder === 'desc' ? mB - mA : mA - mB;
                 });
             } else {
                 filtered.sort((a, b) => {
@@ -851,7 +849,7 @@
             const data = {
                 word: w, reading: r, meaning: m, example: example || "",
                 lesson: window.selectedNewLesson, category: window.selectedNewCat,
-                createdAt: new Date(), manualOrder: 999999 // 預設擺在手動排序的最尾端
+                createdAt: new Date(), manualOrder: 999999
             };
             if (window.selectedNewLesson === '個人筆記') data.uid = currentUser;
             await addDoc(vocabsCol, data);
@@ -1126,17 +1124,19 @@
                 ghostClass: 'sortable-ghost',
                 dragClass: 'dragging-card',
                 onEnd: async () => {
-                    // 【核心修正點 2】只針對當前畫面看得到的項目抓取 index 權重更新，確保排序精準儲存
                     const items = document.querySelectorAll('#vocab-list li[data-id]');
                     const batch = writeBatch(db);
                     
                     items.forEach((item, index) => {
                         const id = item.dataset.id;
-                        // 同步更新本地端記憶體暫存陣列，避免畫面回彈
-                        const targetWord = window.vocabs.find(v => v.id === id);
-                        if (targetWord) targetWord.manualOrder = index;
                         
-                        batch.update(doc(db, "vocabs", id), { manualOrder: index });
+                        // 【修改核心點 3】如果是倒序排序（排序↓）狀態下拖拽，權重需要反向計算賦值，避免重繪時順序錯亂
+                        const actualOrder = window.sortOrder === 'desc' ? (items.length - 1 - index) : index;
+                        
+                        const targetWord = window.vocabs.find(v => v.id === id);
+                        if (targetWord) targetWord.manualOrder = actualOrder;
+                        
+                        batch.update(doc(db, "vocabs", id), { manualOrder: actualOrder });
                     });
                 
                     await batch.commit();
@@ -1171,7 +1171,6 @@
             u.lang='ja-JP'; u.rate=0.7; window.speechSynthesis.speak(u);
         };
 
-        // 【核心修正點 3】移除資料庫監聽器的 orderBy 限制，排序權完全交給本地前端處理，避免即時監聽造成卡片位置跳動回彈
         onSnapshot(vocabsCol, (snap) => {
             window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()}));
             window.renderList();
