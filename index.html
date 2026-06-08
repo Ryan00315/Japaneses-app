@@ -313,7 +313,7 @@
                     console.error("更新例句失敗：", vocab.word, e);
                 }
             }
-            window.showToast(`✨ 已更新 ${updated} 筆例句`);
+            window.showToast("✨ 已更新 " + updated + " 筆例句");
         };
         
         window.normalizeExampleKey = (text) => {
@@ -355,7 +355,7 @@
             if (!content) { alert("沒有可匯出的單字"); return; }
             try {
                 await navigator.clipboard.writeText(content);
-                window.showToast(`✅ 已複製 ${uniqueWords.length} 個單字`);
+                window.showToast("✅ 已複製 " + uniqueWords.length + " 個單字");
             } catch (e) {
                 console.error("複製失敗：", e);
                 window.showToast("⚠️ 複製失敗，改用下載");
@@ -364,7 +364,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `jp_words_${new Date().toISOString().slice(0,10)}.txt`;
+            a.download = "jp_words_" + new Date().toISOString().slice(0,10) + ".txt";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -412,10 +412,10 @@
             const btn = document.getElementById('submit-btn');
             const existing = window.vocabs.find(v => w && m && (v.word || "").trim() === w && (v.meaning || "").trim() === m);
             if (existing) {
-                btn.innerText = `⚠️ 單字已存在 (點擊查看)`;
+                btn.innerText = "⚠️ 單字已存在 (點擊查看)";
                 btn.className = "w-3/4 mx-auto bg-yellow-500 text-white py-3 rounded-2xl font-bold shadow-xl block text-sm";
                 btn.onclick = () => {
-                    document.getElementById('searchInput').value = `${w} ${m}`;
+                    document.getElementById('searchInput').value = w + " " + m;
                     window.renderList();
                     window.showToast("已為您搜尋現有單字");
                 };
@@ -443,12 +443,12 @@
             const now = Date.now();
             if (window.translateBlockedUntil && now < window.translateBlockedUntil) {
                 const sec = Math.ceil((window.translateBlockedUntil - now) / 1000);
-                window.showToast(`🚫 配額冷卻中，請 ${sec} 秒後再試`);
+                window.showToast("🚫 配額冷卻中，請 " + sec + " 秒後再試");
                 return;
             }
             if (now - window.lastTranslateTime < window.TRANSLATE_COOLDOWN) {
                 const sec = Math.ceil((window.TRANSLATE_COOLDOWN - (now - window.lastTranslateTime)) / 1000);
-                window.showToast(`⏳ 請 ${sec} 秒後再翻譯`);
+                window.showToast("⏳ 請 " + sec + " 秒後再翻譯");
                 return;
             }
             if (window.translateCache[inputVal]) {
@@ -462,9 +462,9 @@
                 return;
             }
             const today = new Date().toLocaleDateString("zh-TW");
-            const usageKey = `translate_usage_${today}`;
+            const usageKey = "translate_usage_" + today;
             let usage = parseInt(localStorage.getItem(usageKey) || "0", 10);
-            if (usage >= window.TRANSLATE_DAILY_LIMIT) { alert(`🚫 今日翻譯已達上限（${window.TRANSLATE_DAILY_LIMIT}次）`); return; }
+            if (usage >= window.TRANSLATE_DAILY_LIMIT) { alert("🚫 今日翻譯已達上限（" + window.TRANSLATE_DAILY_LIMIT + "次）"); return; }
             window.isTranslating = true;
             window.lastTranslateTime = now;
             if (transBtn) { transBtn.disabled = true; transBtn.innerText = "⏳ AI 思考中..."; }
@@ -486,7 +486,7 @@
                     if (/quota|rate limit|too many requests|exceeded|resource exhausted/i.test(errText)) {
                         if (!window.translateBlockedUntil) { window.translateBlockedUntil = Date.now() + 15000; }
                         const sec = Math.ceil((window.translateBlockedUntil - Date.now()) / 1000);
-                        throw new Error(`翻譯額度已滿，請 ${sec} 秒後再試`);
+                        throw new Error("翻譯額度已滿，請 " + sec + " 秒後再試");
                     }
                     throw new Error(errText || "翻譯失敗");
                 }
@@ -502,7 +502,7 @@
                 window.translateCache[inputVal] = { kanji: kanjiValue, chinese: chineseValue, savedAt: Date.now() };
                 localStorage.setItem("translate_cache_v1", JSON.stringify(window.translateCache));
                 window.translateBlockedUntil = 0;
-                window.showToast(`✨ AI 翻譯成功 (${usage}/${window.TRANSLATE_DAILY_LIMIT})`);
+                window.showToast("✨ AI 翻譯成功 (" + usage + "/" + window.TRANSLATE_DAILY_LIMIT + ")");
             } catch (e) {
                 console.error("翻譯失敗：", e);
                 alert("翻譯失敗：" + (e.message || "未知錯誤"));
@@ -523,7 +523,7 @@
 
         window.toggleSort = () => {
             window.sortOrder = (window.sortOrder === 'desc' ? 'asc' : 'desc');
-            document.getElementById('sort-btn').innerText = `排序${window.sortOrder === 'desc' ? '↓' : '↑'}`;
+            document.getElementById('sort-btn').innerText = "排序" + (window.sortOrder === 'desc' ? '↓' : '↑');
             window.renderList();
         };
 
@@ -533,7 +533,6 @@
             if (window.manualSortEnabled) {
                 btn.className = "ml-2 text-[11px] bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0";
                 btn.innerText = "手動排序中";
-                // 【核心修改點 1】進入手動拖曳時，強制重置排序按鈕為正序，防止反轉時拖曳造成寫入權重顛倒
                 window.sortOrder = 'asc';
                 document.getElementById('sort-btn').innerText = "排序↑";
                 window.showToast("✋ 已開啟手動排序（排序按鈕已鎖定正序）");
@@ -558,9 +557,9 @@
 
         window.renderLessonUI = () => {
             const c = document.getElementById('lesson-filter-container');
-            document.getElementById('book1-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500'}`;
-            document.getElementById('book2-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500'}`;
-            document.getElementById('book-note-btn').className = `flex-1 border py-2 rounded-xl text-xs font-bold ${window.currentBook==='note'?'note-active text-white':'bg-white text-slate-500'}`;
+            document.getElementById('book1-btn').className = "flex-1 border py-2 rounded-xl text-xs font-bold " + (window.currentBook===1?'lesson-active text-white':'bg-white text-slate-500');
+            document.getElementById('book2-btn').className = "flex-1 border py-2 rounded-xl text-xs font-bold " + (window.currentBook===2?'lesson-active text-white':'bg-white text-slate-500');
+            document.getElementById('book-note-btn').className = "flex-1 border py-2 rounded-xl text-xs font-bold " + (window.currentBook==='note'?'note-active text-white':'bg-white text-slate-500');
             if (window.currentBook === 'note') { c.innerHTML = ""; } else {
                 c.innerHTML = BOOK_MAP[window.currentBook].map(l => `
                     <button onclick="window.toggleLesson('${l}')" class="ls-btn-style px-4 py-1 border rounded-lg ${window.selectedLessons.includes(l)?'lesson-active text-white':'bg-white'}">${l}</button>
@@ -609,16 +608,13 @@
             });
             document.getElementById("review-badge-count").innerText = totalReviewCount;
 
-            // 【修改核心點 2】重寫排序引擎：手動排序狀態下完美連動 排序↑ 與 排序↓ 按鈕
             if (window.manualSortEnabled) {
-                // 在手動拖曳進行中，完全依照當前 manualOrder 的正向排序顯示
                 filtered.sort((a, b) => {
                     const mA = typeof a.manualOrder === 'number' ? a.manualOrder : 999999;
                     const mB = typeof b.manualOrder === 'number' ? b.manualOrder : 999999;
                     return mA - mB;
                 });
             } else {
-                // 非拖曳模式下，傳統排序按鈕「排序↑」與「排序↓」完美切換手動調整後的順序
                 filtered.sort((a, b) => {
                     const mA = typeof a.manualOrder === 'number' ? a.manualOrder : 999999;
                     const mB = typeof b.manualOrder === 'number' ? b.manualOrder : 999999;
@@ -627,7 +623,6 @@
                         return window.sortOrder === 'desc' ? mB - mA : mA - mB;
                     }
                     
-                    // 如果沒有排過，則依預設時間與章節排列
                     const lA = LESSON_ORDER.indexOf(a.lesson);
                     const lB = LESSON_ORDER.indexOf(b.lesson);
                     if (lA !== lB) return lA - lB;
@@ -640,7 +635,7 @@
             document.getElementById('vocab-list').innerHTML = filtered.map(v => {
                 const prog = window.userProgress[v.id] || { wrongCount: 0, isMastered: false, nextReview: 0 };
                 const isNeedReviewNow = prog.nextReview <= now && !prog.isMastered;
-                const reviewBadgeHTML = isNeedReviewNow ? `<span class="text-[10px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-md font-black">⏳ 該複習</span>` : '';
+                const reviewBadgeHTML = isNeedReviewNow ? '<span class="text-[10px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-md font-black">⏳ 該複習</span>' : '';
                 return `
                     <li data-id="${v.id}" class="bg-white p-5 rounded-[32px] flex justify-between items-start shadow-sm border border-slate-200 transition-all duration-300 ${prog.isMastered ? 'opacity-50' : ''}">
                         <div class="flex-1 pr-2 text-left">
@@ -653,9 +648,10 @@
                             <div class="text-xl font-bold flex items-center gap-1.5 mt-1">
                                 <span>${v.word}</span>
                             </div>
-                            <div class="text-sm mt-1 font-bold flex flex-wrap items-center gap-2">
-                                ${v.reading ? `<span class="text-slate-400">【${v.reading}】</span>` : ''}
-                                <span class="text-rose-500">${v.meaning}</span>
+                            
+                            <div class="mt-2 font-bold flex flex-wrap items-center gap-2 leading-tight">
+                                ${v.reading ? `<span class="text-slate-400 text-base font-normal">【${v.reading}】</span>` : ''}
+                                <span class="text-orange-500 text-base font-black">${v.meaning}</span>
                             </div>
                             <div class="text-sky-400 text-sm mt-1 whitespace-nowrap overflow-hidden text-ellipsis">${v.example || '—'}</div>
                         </div>
@@ -695,7 +691,7 @@
                 window.showToast("⏳ 已排入今日密切複習佇列");
             }
             const nextReviewTimestamp = Date.now() + (nextInterval * 24 * 60 * 60 * 1000);
-            const progDocId = `${currentUser}_${wordId}`;
+            const progDocId = currentUser + "_" + wordId;
             try {
                 await setDoc(doc(db, "user_progress", progDocId), {
                     uid: currentUser,
@@ -711,16 +707,16 @@
 
         window.setQuizType = (m) => {
             window.quizMode = m;
-            document.getElementById('modeStdBtn').className = (m === 'standard' ? 'py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600' : 'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
-            document.getElementById('modeHearBtn').className = (m === 'hearing' ? 'py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600' : 'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
-            document.getElementById('modeChoiceBtn').className = (m === 'choice' ? 'py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600' : 'py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
+            document.getElementById('modeStdBtn').className = "py-3 rounded-xl text-xs font-bold " + (m === 'standard' ? 'bg-indigo-600 border border-indigo-600' : 'bg-slate-700 text-slate-300 border border-slate-600');
+            document.getElementById('modeHearBtn').className = "py-3 rounded-xl text-xs font-bold " + (m === 'hearing' ? 'bg-indigo-600 border border-indigo-600' : 'bg-slate-700 text-slate-300 border border-slate-600');
+            document.getElementById('modeChoiceBtn').className = "py-3 rounded-xl text-xs font-bold " + (m === 'choice' ? 'bg-indigo-600 border border-indigo-600' : 'bg-slate-700 text-slate-300 border border-slate-600');
             document.getElementById('choice-sub-options').classList.toggle('hidden', m !== 'choice');
         };
 
         window.setChoiceSub = (s) => {
             window.choiceSub = s;
-            document.getElementById('subModeJPCH').className = (s==='jp-ch'?'flex-1 py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600':'flex-1 py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
-            document.getElementById('subModeCHJP').className = (s==='ch-jp'?'flex-1 py-3 rounded-xl text-xs font-bold bg-indigo-600 border border-indigo-600':'flex-1 py-3 rounded-xl text-xs font-bold bg-slate-700 text-slate-300 border border-slate-600');
+            document.getElementById('subModeJPCH').className = "flex-1 py-3 rounded-xl text-xs font-bold " + (s==='jp-ch'?'bg-indigo-600 border border-indigo-600':'bg-slate-700 text-slate-300 border border-slate-600');
+            document.getElementById('subModeCHJP').className = "flex-1 py-3 rounded-xl text-xs font-bold " + (s==='ch-jp'?'bg-indigo-600 border border-indigo-600':'bg-slate-700 text-slate-300 border border-slate-600');
         };
 
         window.getQuizBasePool = () => {
@@ -788,7 +784,7 @@
                     const ans = spellingInput.value.trim();
                     const correctAns = window.currentQuizWord.word;
                     if (ans === correctAns) { window.quizPass(); } else {
-                        document.getElementById('feedback-msg').innerText = `❌ 正確答案：${correctAns}`;
+                        document.getElementById('feedback-msg').innerText = "❌ 正確答案：" + correctAns;
                         document.getElementById('quiz-card').classList.add('is-flipped');
                         window.speakAction(correctAns);
                         setTimeout(() => { document.getElementById('feedback-msg').innerText = ''; window.quizFail(); }, 2500);
@@ -796,14 +792,14 @@
                 }
             };
             for(let i=0; i<3; i++) {
-                const btn = document.getElementById(`opt-${i}`);
+                const btn = document.getElementById("opt-" + i);
                 btn.className = "option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg";
                 btn.disabled = false;
             }
             window.currentQuizWord = window.remainingPool.shift();
             window.choiceOptionsRevealed = false;
             document.getElementById('tap-to-reveal')?.classList.toggle('hidden', window.quizMode !== 'choice');
-            document.getElementById('quiz-progress-display').innerText = `剩：${window.remainingPool.length} 題`;
+            document.getElementById('quiz-progress-display').innerText = "剩：" + window.remainingPool.length + " 題";
             const isH = window.quizMode === 'hearing';
             const isC = window.quizMode === 'choice';
             if (isH) { document.getElementById('q-meaning-front').innerText = ""; } else if (isC) {
@@ -821,7 +817,7 @@
                 const shuffled = others.sort(() => Math.random() - 0.5);
                 window.currentChoices = [window.currentQuizWord, shuffled[0], shuffled[1]].sort(() => Math.random() - 0.5);
                 window.currentChoices.forEach((choice, idx) => {
-                    const btn = document.getElementById(`opt-${idx}`);
+                    const btn = document.getElementById("opt-" + idx);
                     if (isH) btn.innerText = choice.meaning; else btn.innerText = (window.choiceSub === 'jp-ch') ? choice.meaning : choice.word;
                 });
             } else {
@@ -834,8 +830,8 @@
 
         window.submitChoice = (idx) => {
             const isCorrect = window.currentChoices[idx].id === window.currentQuizWord.id;
-            const btn = document.getElementById(`opt-${idx}`);
-            for(let i=0; i<3; i++) document.getElementById(`opt-${i}`).disabled = true;
+            const btn = document.getElementById("opt-" + idx);
+            for(let i=0; i<3; i++) document.getElementById("opt-" + i).disabled = true;
             if (isCorrect) {
                 btn.classList.add('opt-correct');
                 window.speakAction(window.currentQuizWord.word);
@@ -843,7 +839,7 @@
             } else {
                 btn.classList.add('opt-wrong');
                 const correctIdx = window.currentChoices.findIndex(c => c.id === window.currentQuizWord.id);
-                document.getElementById(`opt-${correctIdx}`).classList.add('opt-correct');
+                document.getElementById("opt-" + correctIdx).classList.add('opt-correct');
                 document.getElementById('quiz-card').classList.add('is-flipped');
                 window.speakAction(window.currentQuizWord.word);
                 setTimeout(() => window.quizFail(), 2000);
@@ -907,9 +903,9 @@
         window.renderNewLessonUI = () => {
             const c = document.getElementById('new-lesson-container');
             if (!c) return;
-            document.getElementById('new-book1-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook===1?'lesson-active text-white':'bg-white'}`;
-            document.getElementById('new-book2-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook===2?'lesson-active text-white':'bg-white'}`;
-            document.getElementById('new-note-tab').className = `flex-1 border py-1.5 rounded-xl text-xs font-bold ${window.newWordBook==='note'?'note-active text-white':'bg-white'}`;
+            document.getElementById('new-book1-tab').className = "flex-1 border py-1.5 rounded-xl text-xs font-bold " + (window.newWordBook===1?'lesson-active text-white':'bg-white');
+            document.getElementById('new-book2-tab').className = "flex-1 border py-1.5 rounded-xl text-xs font-bold " + (window.newWordBook===2?'lesson-active text-white':'bg-white');
+            document.getElementById('new-note-tab').className = "flex-1 border py-1.5 rounded-xl text-xs font-bold " + (window.newWordBook==='note'?'note-active text-white':'bg-white');
             if (window.newWordBook === 'note') { c.innerHTML = ""; } else {
                 c.className = "no-scrollbar pb-3 mb-2";
                 c.innerHTML = BOOK_MAP[window.newWordBook].map(l => `
@@ -1013,7 +1009,7 @@
             if(window.quizMode === 'choice' || window.quizMode === 'hearing') {
                 document.getElementById('quiz-card').classList.add('is-flipped');
                 window.speakAction(window.currentQuizWord.word);
-                for(let i=0; i<3; i++) document.getElementById(`opt-${i}`).disabled = true;
+                for(let i=0; i<3; i++) document.getElementById("opt-" + i).disabled = true;
                 await window.markEbbinghausMemory(window.currentQuizWord.id, false);
                 setTimeout(() => window.nextQuestion(), 2000);
             } else {
@@ -1080,9 +1076,9 @@
             const btn1 = document.getElementById('edit-book1-btn');
             const btn2 = document.getElementById('edit-book2-btn');
             const btnNote = document.getElementById('edit-book-note-btn');
-            if (btn1) btn1.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.editWordBook === 1 ? 'lesson-active text-white' : 'bg-white text-slate-500'}`;
-            if (btn2) btn2.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.editWordBook === 2 ? 'lesson-active text-white' : 'bg-white text-slate-500'}`;
-            if (btnNote) btnNote.className = `flex-1 border py-1.5 rounded-xl text-sm font-bold ${window.editWordBook === 'note' ? 'note-active text-white' : 'bg-white text-slate-500'}`;
+            if (btn1) btn1.className = "flex-1 border py-1.5 rounded-xl text-sm font-bold " + (window.editWordBook === 1 ? 'lesson-active text-white' : 'bg-white text-slate-500');
+            if (btn2) btn2.className = "flex-1 border py-1.5 rounded-xl text-sm font-bold " + (window.editWordBook === 2 ? 'lesson-active text-white' : 'bg-white text-slate-500');
+            if (btnNote) btnNote.className = "flex-1 border py-1.5 rounded-xl text-sm font-bold " + (window.editWordBook === 'note' ? 'note-active text-white' : 'bg-white text-slate-500');
             if (window.editWordBook === 'note') { c.innerHTML = ""; } else {
                 c.className = "no-scrollbar pb-3";
                 c.innerHTML = BOOK_MAP[window.editWordBook].map(l => `
@@ -1140,11 +1136,8 @@
                     
                     items.forEach((item, index) => {
                         const id = item.dataset.id;
-                        
-                        // 【修改核心點 3】拖曳時強制寫入正向絕對索引值固定住
                         const actualOrder = index;
                         
-                        // 直接更新本地端記憶體暫存陣列，防止畫面因為即時監聽而回彈
                         const targetWord = window.vocabs.find(v => v.id === id);
                         if (targetWord) targetWord.manualOrder = actualOrder;
                         
