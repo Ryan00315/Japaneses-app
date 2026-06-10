@@ -45,6 +45,13 @@
         #translate-btn-action:disabled { background-color: #f1f5f9; color: #cbd5e1; cursor: not-allowed; }
         .sortable-ghost { opacity: 0.45; }
         .dragging-card { box-shadow: 0 12px 28px rgba(0,0,0,0.18); }
+        /* 標示被選取準備多重拖曳的卡片 */
+        .sortable-selected {
+            border: 2px solid #4f46e5 !important;
+            background-color: #e0e7ff !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
@@ -1128,6 +1135,9 @@
 
             window.vocabSortable = new Sortable(list, {
                 animation: 150,
+                multiDrag: true,             // 🌟 啟用多重拖曳
+                selectedClass: 'sortable-selected', // 🌟 套用剛才寫的 CSS
+                fallbackTolerance: 3,        // 🌟 增加容錯，避免稍微滑動就變成拖曳，讓點擊選取更順暢
                 ghostClass: 'sortable-ghost',
                 dragClass: 'dragging-card',
                 onEnd: async () => {
@@ -1145,7 +1155,11 @@
                     });
                 
                     await batch.commit();
-                    window.showToast("✅ 手動順序已儲存（關閉手動排序後即可使用 ↑↓ 倒序切換）");
+                    
+                    // 🌟 拖曳完成後，取消所有卡片的選取狀態，方便進行下一次操作
+                    Sortable.utils.deselect(list.querySelectorAll('.sortable-selected'));
+                    
+                    window.showToast("✅ 手動順序已儲存");
                 }
             });
         };
