@@ -51,6 +51,12 @@
             background-color: #e0e7ff !important;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             transform: scale(0.98);
+        .dragging-card { 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important; 
+            transition: none !important; /* 🚫 強制關閉延遲動畫，讓卡片緊緊黏著滑鼠 */
+            z-index: 9999 !important;    /* 🌟 確保拖曳的卡片絕對在最上層 */
+            cursor: grabbing !important; /* 🐭 滑鼠游標變成抓取的圖案 */
+            background-color: white !important; /* 確保多重選取拖曳時背景不透明 */
         }
     </style>
 </head>
