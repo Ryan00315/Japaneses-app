@@ -1137,13 +1137,16 @@
                 animation: 150,
                 multiDrag: true,
                 selectedClass: 'sortable-selected',
+                
+                // 🌟 關鍵1：強制使用自訂拖曳機制，解鎖拖曳時的滑鼠滾輪功能！
+                forceFallback: true, 
                 fallbackTolerance: 3, 
                 
-                // 🌟 優化長距離拖曳的捲動體驗
-                scroll: true,             // 確保啟用捲動功能
-                scrollSensitivity: 80,    // 距離螢幕邊緣 80px 時就開始自動捲動（數值越大越容易觸發）
-                scrollSpeed: 20,          // 自動捲動的移動速度（調快一點，長距離飛比較快）
-                bubbleScroll: true,       // 允許捲動事件穿透，確保整個網頁能順暢跟著捲
+                // 🌟 關鍵2：保留邊緣自動捲動，長距離短距離都好用
+                scroll: true,             
+                scrollSensitivity: 80,    
+                scrollSpeed: 20,          
+                bubbleScroll: true,       
                 
                 ghostClass: 'sortable-ghost',
                 dragClass: 'dragging-card',
