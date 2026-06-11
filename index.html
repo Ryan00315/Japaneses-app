@@ -46,7 +46,6 @@
         #translate-btn-action:disabled { background-color: #f1f5f9; color: #cbd5e1; cursor: not-allowed; }
         .sortable-ghost { opacity: 0.45; }
         .dragging-card { box-shadow: 0 12px 28px rgba(0,0,0,0.18); }
-        /* 標示被選取準備多重拖曳的卡片 */
         .sortable-selected {
             border: 2px solid #4f46e5 !important;
             background-color: #e0e7ff !important;
@@ -55,10 +54,10 @@
         }
         .dragging-card { 
             box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important; 
-            transition: none !important; /* 🚫 強制關閉延遲動畫，讓卡片緊緊黏著滑鼠 */
-            z-index: 9999 !important;    /* 🌟 確保拖曳的卡片絕對在最上層 */
-            cursor: grabbing !important; /* 🐭 滑鼠游標變成抓取的圖案 */
-            background-color: white !important; /* 確保多重選取拖曳時背景不透明 */
+            transition: none !important; 
+            z-index: 9999 !important;    
+            cursor: grabbing !important; 
+            background-color: white !important; 
         }
     </style>
 </head>
@@ -75,16 +74,11 @@
                     ⏳ 必複習 <span id="review-badge-count" class="bg-rose-500 text-white text-[9px] px-1 rounded-full">0</span>
                 </button>
 
-                <button
-                    id="manual-sort-btn"
-                    onclick="window.toggleManualSort()"
-                    class="ml-2 text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0">
+                <button id="manual-sort-btn" onclick="window.toggleManualSort()" class="ml-2 text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0">
                     手動排序
                 </button>
 
-                <button
-                    onclick="window.speakAction('こんにちは')"
-                    class="ml-2 text-[9px] bg-yellow-400 text-white px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0">
+                <button onclick="window.speakAction('こんにちは')" class="ml-2 text-[9px] bg-yellow-400 text-white px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0">
                     🔈 測試語音
                 </button>
             </div>
@@ -115,7 +109,6 @@
             
             <div class="flex gap-2">
                 <button id="toggleFilterBtn" onclick="window.toggleFilters()" class="bg-indigo-50 border border-indigo-200 px-3 rounded-2xl text-[13px] font-bold text-indigo-600 shadow-sm shrink-0 transition-all">顯示篩選</button>
-                
                 <input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋單字庫..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner min-w-0">
                 <button id="sort-btn" onclick="window.toggleSort()" class="bg-white border border-slate-200 px-4 rounded-2xl text-[13px] font-bold text-slate-400 shadow-sm shrink-0">排序↑</button>
             </div>
@@ -273,7 +266,6 @@
     <script type="module">
         import { LOCAL_EXAMPLES } from './exampleData.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // 【修改】加入 initializeFirestore, persistentLocalCache, persistentMultipleTabManager
         import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy, where, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -287,7 +279,6 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        // 【修改】開啟 Firebase 離線快取與多頁籤支援
         const db = initializeFirestore(app, {
             localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
         });
@@ -551,19 +542,17 @@
             document.getElementById('sort-btn').innerText = "排序" + (window.sortOrder === 'desc' ? '↓' : '↑');
             window.renderList();
         };
-        // 顯示/隱藏第 2. 3. 階層的切換功能
+
         window.toggleFilters = () => {
             const filterLevels = document.getElementById('filter-levels');
             const btn = document.getElementById('toggleFilterBtn');
             
             if (filterLevels.classList.contains('hidden')) {
-                // 展開狀態
                 filterLevels.classList.remove('hidden');
                 btn.innerText = '隱藏篩選';
                 btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
                 btn.classList.remove('bg-indigo-50', 'text-indigo-600', 'border-indigo-200');
             } else {
-                // 隱藏狀態
                 filterLevels.classList.add('hidden');
                 btn.innerText = '顯示篩選';
                 btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
@@ -1174,17 +1163,12 @@
                 animation: 150,
                 multiDrag: true,
                 selectedClass: 'sortable-selected',
-                
-                // 🌟 關鍵1：強制使用自訂拖曳機制，解鎖拖曳時的滑鼠滾輪功能！
                 forceFallback: true, 
                 fallbackTolerance: 3, 
-                
-                // 🌟 關鍵2：保留邊緣自動捲動，長距離短距離都好用
                 scroll: true,             
                 scrollSensitivity: 80,    
                 scrollSpeed: 20,          
                 bubbleScroll: true,       
-                
                 ghostClass: 'sortable-ghost',
                 dragClass: 'dragging-card',
                 onEnd: async () => {
@@ -1194,10 +1178,8 @@
                     items.forEach((item, index) => {
                         const id = item.dataset.id;
                         const actualOrder = index;
-                        
                         const targetWord = window.vocabs.find(v => v.id === id);
                         if (targetWord) targetWord.manualOrder = actualOrder;
-                        
                         batch.update(doc(db, "vocabs", id), { manualOrder: actualOrder });
                     });
                 
@@ -1251,7 +1233,7 @@
         window.renderNewCategoryUI();
         window.updateManualModeUI();
 
-        // 【新增】註冊 PWA Service Worker
+        // PWA 註冊機制
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./service-worker.js')
