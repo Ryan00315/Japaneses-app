@@ -105,11 +105,17 @@
                 <button id="book2-btn" onclick="window.switchBook(2)" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">第二冊</button>
                 <button id="book-note-btn" onclick="window.switchBook('note')" class="flex-1 border py-2 rounded-xl text-xs font-bold transition-all">個人筆記</button>
             </div>
-            <div class="no-scrollbar pb-2" id="lesson-filter-container"></div>
-            <div id="type-filter" class="no-scrollbar pb-2"></div>
+            
+            <div id="filter-levels" class="hidden transition-all duration-300">
+                <div class="no-scrollbar pb-2" id="lesson-filter-container"></div>
+                <div id="type-filter" class="no-scrollbar pb-2"></div>
+            </div>
+            
             <div class="flex gap-2">
-                <input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋單字庫..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner">
-                <button id="sort-btn" onclick="window.toggleSort()" class="bg-white border border-slate-200 px-4 rounded-2xl text-[13px] font-bold text-slate-400 shadow-sm">排序↑</button>
+                <button id="toggleFilterBtn" onclick="window.toggleFilters()" class="bg-indigo-50 border border-indigo-200 px-3 rounded-2xl text-[13px] font-bold text-indigo-600 shadow-sm shrink-0 transition-all">顯示篩選</button>
+                
+                <input type="text" id="searchInput" oninput="window.renderList()" placeholder="🔍 搜尋單字庫..." class="flex-1 p-3 rounded-2xl bg-white border border-slate-200 outline-none text-sm shadow-inner min-w-0">
+                <button id="sort-btn" onclick="window.toggleSort()" class="bg-white border border-slate-200 px-4 rounded-2xl text-[13px] font-bold text-slate-400 shadow-sm shrink-0">排序↑</button>
             </div>
         </div>
     </div>
