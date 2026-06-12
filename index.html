@@ -866,7 +866,8 @@
             }
 
             if (isC || isH) {
-                document.getElementById('choice-area').classList.toggle('hidden', !isC && !isH);
+                // 👇 改成這行：如果是選擇題(isC)，就加上 hidden 先隱藏起來，等待點擊
+                document.getElementById('choice-area').classList.toggle('hidden', isC); 
                 document.getElementById('standard-actions').classList.add('hidden');
                 document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
                 
