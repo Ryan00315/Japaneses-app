@@ -4,15 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kingtex JPNote</title>
-    <title>Kingtex JPNote</title>
     <link rel="manifest" href="./manifest.json">
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JPNote">
     <link rel="apple-touch-icon" href="./21.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href="./manifest.json">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -677,13 +675,9 @@
                     return window.sortOrder === 'desc' ? tB - tA : tA - tB;
                 });
             }
-            // ... (上面是排序的邏輯)
 
-            // 👇 新增這行，讓系統記住現在畫面上顯示了哪些單字 👇
+            // 👇 記錄當前過濾後的單字，給「閱讀」按鈕使用 👇
             window.currentFilteredVocabs = filtered;
-
-            document.getElementById('vocab-list').innerHTML = filtered.map(v => {
-            // ... (下面是原本渲染卡片的邏輯)
 
             document.getElementById('vocab-list').innerHTML = filtered.map(v => {
                 const prog = window.userProgress[v.id] || { wrongCount: 0, isMastered: false, nextReview: 0 };
@@ -796,12 +790,10 @@
             window.quizPool = pool;
             document.getElementById('quiz-overlay').classList.remove('hidden');
             
-            // 👇 修改這裡：讓勾選框的狀態跟隨「必複習 (isReviewFilterActive)」的狀態
             const weakCheckbox = document.getElementById('weak-choice-mode');
             if (weakCheckbox) {
                 weakCheckbox.checked = window.isReviewFilterActive; 
             }
-            // 👆 修改結束 👆
 
             const stats = {};
             pool.forEach(v => stats[v.lesson] = (stats[v.lesson] || 0) + 1);
@@ -868,18 +860,13 @@
             document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
             document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
             document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
-            // 👇 新增這段：如果是聽力模式，延遲 0.2 秒後自動發音 👇
-            if (isH) {
-                setTimeout(() => window.speakAction(window.currentQuizWord.word), 200);
-            }
-            // 👇 這是正確的發音邏輯 👇
+            
             if (isH) {
                 setTimeout(() => window.speakAction(window.currentQuizWord.word), 200);
             }
 
-            // 👇 這是正常的選擇題/聽力題按鈕顯示邏輯（不要重複寫兩次） 👇
             if (isC || isH) {
-                document.getElementById('choice-area').classList.toggle('hidden', !isC && !isH); // 確保都有顯示
+                document.getElementById('choice-area').classList.toggle('hidden', !isC && !isH);
                 document.getElementById('standard-actions').classList.add('hidden');
                 document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
                 
@@ -890,7 +877,7 @@
                 window.currentChoices.forEach((choice, idx) => {
                     const btn = document.getElementById("opt-" + idx);
                     if (isH) {
-                        btn.innerText = choice.meaning; // 聽力模式：選項是中文
+                        btn.innerText = choice.meaning; 
                     } else {
                         btn.innerText = (window.choiceSub === 'jp-ch') ? choice.meaning : choice.word;
                     }
@@ -1258,43 +1245,30 @@
             u.lang='ja-JP'; u.rate=0.7; window.speechSynthesis.speak(u);
         };
 
-        onSnapshot(vocabsCol, (snap) => {
-            window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()}));
-            window.renderList();
-        });
-
-        onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => {
-            window.userProgress = {};
-            snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); });
-            window.renderList();
-        });
         // 記錄目前是否正在閱讀中
         window.isReading = false;
 
         // 建立可以「等待發音結束」的 Promise 語音函數
         window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.7) => {
             return new Promise(resolve => {
-                if (!window.isReading) return resolve(); // 如果已經按停止，就直接跳出
+                if (!window.isReading) return resolve();
                 const u = new SpeechSynthesisUtterance(text);
                 u.lang = lang;
                 u.rate = rate;
-                u.onend = resolve; // 唸完時告訴系統「我唸完了」
-                u.onerror = resolve; // 發生錯誤也繼續往下走
+                u.onend = resolve;
+                u.onerror = resolve;
                 window.speechSynthesis.speak(u);
             });
         };
 
-        // 建立精確等待時間的函數 (ms)
         window.delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-        // 閱讀按鈕的點擊觸發函數
         window.toggleReadList = async () => {
             const btn = document.getElementById('read-all-btn');
             
-            // 如果正在閱讀中，再次點擊就會「停止」
             if (window.isReading) {
                 window.isReading = false;
-                window.speechSynthesis.cancel(); // 立刻切斷正在唸的聲音
+                window.speechSynthesis.cancel();
                 btn.innerText = "🔈 閱讀";
                 btn.classList.replace('bg-rose-500', 'bg-yellow-400');
                 return;
@@ -1305,39 +1279,43 @@
                 return;
             }
 
-            // 開始閱讀的狀態設定
             window.isReading = true;
             btn.innerText = "⏹ 停止";
-            btn.classList.replace('bg-yellow-400', 'bg-rose-500'); // 變成紅色提醒正在播放
-            window.speechSynthesis.cancel(); // 清空先前的語音佇列
+            btn.classList.replace('bg-yellow-400', 'bg-rose-500');
+            window.speechSynthesis.cancel();
 
-            // 依照目前畫面上的單字順序，一個一個唸
             for (let i = 0; i < window.currentFilteredVocabs.length; i++) {
-                if (!window.isReading) break; // 檢查是否被中途喊停
+                if (!window.isReading) break;
                 
                 const v = window.currentFilteredVocabs[i];
                 
-                // 1. 唸日文單字
                 await window.speakWithPromise(v.word, 'ja-JP', 0.7);
                 if (!window.isReading) break;
                 
-                // 2. 日文唸完後，等待 0.5 秒
                 await window.delay(500);
                 if (!window.isReading) break;
                 
-                // 3. 唸中文意思 (語言設定為 zh-TW)
                 await window.speakWithPromise(v.meaning, 'zh-TW', 0.85);
                 if (!window.isReading) break;
                 
-                // 4. 中文唸完後，等待 1 秒，再進入下一個單字
                 await window.delay(1000);
             }
 
-            // 整個清單唸完後的收尾工作
             window.isReading = false;
             btn.innerText = "🔈 閱讀";
             btn.classList.replace('bg-rose-500', 'bg-yellow-400');
         };
+
+        onSnapshot(vocabsCol, (snap) => {
+            window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()}));
+            window.renderList();
+        });
+
+        onSnapshot(query(progressCol, where("uid", "==", currentUser)), (snap) => {
+            window.userProgress = {};
+            snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); });
+            window.renderList();
+        });
 
         window.renderUserHistory();
         window.switchBook(1);
@@ -1345,14 +1323,12 @@
         window.renderNewCategoryUI();
         window.updateManualModeUI();
 
-        // PWA 註冊機制
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./service-worker.js')
                     .then(reg => console.log('✅ Service Worker 註冊成功！範圍：', reg.scope))
                     .catch(err => console.error('⚠️ Service Worker 註冊失敗：', err));
             });
-        
         }
     </script>
 </body>
