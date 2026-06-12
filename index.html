@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kingtex JPNote</title>
-    <link rel="manifest" href="./manifest.json">
     
+    <link rel="manifest" href="./manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JPNote">
@@ -14,6 +14,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         .card-flip { perspective: 1000px; height: 100%; width: 100%; }
         .card-inner { transition: transform 0.4s; transform-style: preserve-3d; cursor: pointer; height: 100%; width: 100%; position: relative; }
@@ -676,7 +677,6 @@
                 });
             }
 
-            // 👇 記錄當前過濾後的單字，給「閱讀」按鈕使用 👇
             window.currentFilteredVocabs = filtered;
 
             document.getElementById('vocab-list').innerHTML = filtered.map(v => {
@@ -837,7 +837,7 @@
                     if (ans === correctAns) { window.quizPass(); } else {
                         document.getElementById('feedback-msg').innerText = "❌ 正確答案：" + correctAns;
                         document.getElementById('quiz-card').classList.add('is-flipped');
-                        window.speakAction(correctAns);
+                        window.speakAction(window.currentQuizWord.word);
                         setTimeout(() => { document.getElementById('feedback-msg').innerText = ''; window.quizFail(); }, 2500);
                     }
                 }
@@ -1239,13 +1239,19 @@
             if (!audioUnlocked) { try { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } catch(e) {} }
         };
 
-        // 👇 新增：去系統裡挑選「最好聽」的聲音 (嚴格篩選版)
+        // 👇 1. 新增：強制喚醒 iOS 的語音包清單（破解 Safari 延遲地雷）
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+            window.speechSynthesis.getVoices();
+        }
+
         window.getBestVoice = (lang) => {
             const voices = window.speechSynthesis.getVoices();
             const langVoices = voices.filter(v => v.lang.includes(lang) || v.lang.includes(lang.replace('-', '_')));
             if (langVoices.length === 0) return null;
 
-            // 1. 第一志願：強制尋找名字裡有「高級/進階」標籤的聲音 (對應中英文)
             let bestVoice = langVoices.find(v => 
                 v.name.includes('Premium') || 
                 v.name.includes('Enhanced') || 
@@ -1253,32 +1259,32 @@
                 v.name.includes('進階')
             );
 
-            // 2. 第二志願：如果手機沒下載高級版，才退而求其次找普通的 Kyoko(女) 或 Otoya(男)
             if (!bestVoice) {
                 bestVoice = langVoices.find(v => v.name.includes('Kyoko') || v.name.includes('Otoya'));
             }
 
-            // 3. 第三志願：如果都找不到，就拿系統預設的第一個
             return bestVoice || langVoices[0]; 
         };
 
-        // 修改：點擊單字發音
+        // 👇 2. 修改：在單字發音時，跳出提示框告訴你它選了誰
         window.speakAction = (t) => {
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(t);
             u.lang = 'ja-JP'; 
             u.rate = 0.7; 
             
-            // 👉 套用高音質聲音
             const bestVoice = window.getBestVoice('ja-JP');
-            if (bestVoice) u.voice = bestVoice;
+            if (bestVoice) {
+                u.voice = bestVoice;
+                // 👉 顯示提示框！這樣我們就知道到底有沒有抓到 Premium
+                window.showToast("🎤 使用語音: " + bestVoice.name);
+            }
             
             window.speechSynthesis.speak(u);
         };
 
         window.isReading = false;
 
-        // 修改：連續閱讀發音
         window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.7) => {
             return new Promise(resolve => {
                 if (!window.isReading) return resolve();
@@ -1286,7 +1292,6 @@
                 u.lang = lang;
                 u.rate = rate;
                 
-                // 👉 套用高音質聲音
                 const bestVoice = window.getBestVoice(lang);
                 if (bestVoice) u.voice = bestVoice;
 
