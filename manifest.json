@@ -1,0 +1,16 @@
+{
+  "name": "Kingtex JPNote",
+  "short_name": "JPNote",
+  "description": "個人的日文單字庫與複習系統",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3211/3211425.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
