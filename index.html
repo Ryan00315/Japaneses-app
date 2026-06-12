@@ -67,6 +67,11 @@
             cursor: grabbing !important; 
             background-color: white !important; 
         }
+        /* 讓畫面像原生 App，禁止下拉出現重新整理的圈圈與反彈特效 */
+        html, body {
+            overscroll-behavior-y: none;
+            -webkit-overflow-scrolling: touch;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
