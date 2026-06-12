@@ -91,8 +91,8 @@
                     手動排序
                 </button>
 
-                <button onclick="window.speakAction('こんにちは')" class="ml-2 text-[9px] bg-yellow-400 text-white px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0">
-                    🔈 測試語音
+                <button id="read-all-btn" onclick="window.toggleReadList()" class="ml-2 text-[9px] bg-yellow-400 text-white px-2 py-0.5 rounded-md font-bold shadow-sm shrink-0 transition-all">
+                    🔈 閱讀
                 </button>
             </div>
 
@@ -677,6 +677,13 @@
                     return window.sortOrder === 'desc' ? tB - tA : tA - tB;
                 });
             }
+            // ... (上面是排序的邏輯)
+
+            // 👇 新增這行，讓系統記住現在畫面上顯示了哪些單字 👇
+            window.currentFilteredVocabs = filtered;
+
+            document.getElementById('vocab-list').innerHTML = filtered.map(v => {
+            // ... (下面是原本渲染卡片的邏輯)
 
             document.getElementById('vocab-list').innerHTML = filtered.map(v => {
                 const prog = window.userProgress[v.id] || { wrongCount: 0, isMastered: false, nextReview: 0 };
@@ -1261,6 +1268,76 @@
             snap.docs.forEach(d => { window.userProgress[d.data().vocabId] = d.data(); });
             window.renderList();
         });
+        // 記錄目前是否正在閱讀中
+        window.isReading = false;
+
+        // 建立可以「等待發音結束」的 Promise 語音函數
+        window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.7) => {
+            return new Promise(resolve => {
+                if (!window.isReading) return resolve(); // 如果已經按停止，就直接跳出
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = lang;
+                u.rate = rate;
+                u.onend = resolve; // 唸完時告訴系統「我唸完了」
+                u.onerror = resolve; // 發生錯誤也繼續往下走
+                window.speechSynthesis.speak(u);
+            });
+        };
+
+        // 建立精確等待時間的函數 (ms)
+        window.delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // 閱讀按鈕的點擊觸發函數
+        window.toggleReadList = async () => {
+            const btn = document.getElementById('read-all-btn');
+            
+            // 如果正在閱讀中，再次點擊就會「停止」
+            if (window.isReading) {
+                window.isReading = false;
+                window.speechSynthesis.cancel(); // 立刻切斷正在唸的聲音
+                btn.innerText = "🔈 閱讀";
+                btn.classList.replace('bg-rose-500', 'bg-yellow-400');
+                return;
+            }
+
+            if (!window.currentFilteredVocabs || window.currentFilteredVocabs.length === 0) {
+                window.showToast("目前沒有單字可以閱讀");
+                return;
+            }
+
+            // 開始閱讀的狀態設定
+            window.isReading = true;
+            btn.innerText = "⏹ 停止";
+            btn.classList.replace('bg-yellow-400', 'bg-rose-500'); // 變成紅色提醒正在播放
+            window.speechSynthesis.cancel(); // 清空先前的語音佇列
+
+            // 依照目前畫面上的單字順序，一個一個唸
+            for (let i = 0; i < window.currentFilteredVocabs.length; i++) {
+                if (!window.isReading) break; // 檢查是否被中途喊停
+                
+                const v = window.currentFilteredVocabs[i];
+                
+                // 1. 唸日文單字
+                await window.speakWithPromise(v.word, 'ja-JP', 0.7);
+                if (!window.isReading) break;
+                
+                // 2. 日文唸完後，等待 0.5 秒
+                await window.delay(500);
+                if (!window.isReading) break;
+                
+                // 3. 唸中文意思 (語言設定為 zh-TW)
+                await window.speakWithPromise(v.meaning, 'zh-TW', 0.85);
+                if (!window.isReading) break;
+                
+                // 4. 中文唸完後，等待 1 秒，再進入下一個單字
+                await window.delay(1000);
+            }
+
+            // 整個清單唸完後的收尾工作
+            window.isReading = false;
+            btn.innerText = "🔈 閱讀";
+            btn.classList.replace('bg-rose-500', 'bg-yellow-400');
+        };
 
         window.renderUserHistory();
         window.switchBook(1);
@@ -1275,6 +1352,7 @@
                     .then(reg => console.log('✅ Service Worker 註冊成功！範圍：', reg.scope))
                     .catch(err => console.error('⚠️ Service Worker 註冊失敗：', err));
             });
+        
         }
     </script>
 </body>
