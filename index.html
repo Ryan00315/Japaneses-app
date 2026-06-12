@@ -865,20 +865,28 @@
             if (isH) {
                 setTimeout(() => window.speakAction(window.currentQuizWord.word), 200);
             }
-            // 👆 新增結束 👆
+            // 👇 這是正確的發音邏輯 👇
+            if (isH) {
+                setTimeout(() => window.speakAction(window.currentQuizWord.word), 200);
+            }
 
+            // 👇 這是正常的選擇題/聽力題按鈕顯示邏輯（不要重複寫兩次） 👇
             if (isC || isH) {
-                document.getElementById('choice-area').classList.toggle('hidden', isC);
-            if (isC || isH) {
-                document.getElementById('choice-area').classList.toggle('hidden', isC);
+                document.getElementById('choice-area').classList.toggle('hidden', !isC && !isH); // 確保都有顯示
                 document.getElementById('standard-actions').classList.add('hidden');
                 document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
+                
                 const others = window.vocabs.filter(v => v.id !== window.currentQuizWord.id);
                 const shuffled = others.sort(() => Math.random() - 0.5);
                 window.currentChoices = [window.currentQuizWord, shuffled[0], shuffled[1]].sort(() => Math.random() - 0.5);
+                
                 window.currentChoices.forEach((choice, idx) => {
                     const btn = document.getElementById("opt-" + idx);
-                    if (isH) btn.innerText = choice.meaning; else btn.innerText = (window.choiceSub === 'jp-ch') ? choice.meaning : choice.word;
+                    if (isH) {
+                        btn.innerText = choice.meaning; // 聽力模式：選項是中文
+                    } else {
+                        btn.innerText = (window.choiceSub === 'jp-ch') ? choice.meaning : choice.word;
+                    }
                 });
             } else {
                 document.getElementById('choice-area').classList.add('hidden');
