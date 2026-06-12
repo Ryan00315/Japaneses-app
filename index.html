@@ -1239,20 +1239,27 @@
             if (!audioUnlocked) { try { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } catch(e) {} }
         };
 
-        // 👇 新增：去系統裡挑選「最好聽」的聲音
+        // 👇 新增：去系統裡挑選「最好聽」的聲音 (嚴格篩選版)
         window.getBestVoice = (lang) => {
             const voices = window.speechSynthesis.getVoices();
-            // 找出符合語言的聲音
             const langVoices = voices.filter(v => v.lang.includes(lang) || v.lang.includes(lang.replace('-', '_')));
             if (langVoices.length === 0) return null;
 
-            // 優先挑選名字裡有 Premium(大聲優)、Enhanced(進階)、Kyoko(蘋果女聲) 的聲音
-            const premiumVoice = langVoices.find(v => 
+            // 1. 第一志願：強制尋找名字裡有「高級/進階」標籤的聲音 (對應中英文)
+            let bestVoice = langVoices.find(v => 
                 v.name.includes('Premium') || 
                 v.name.includes('Enhanced') || 
-                v.name.includes('Kyoko')
+                v.name.includes('大聲優') || 
+                v.name.includes('進階')
             );
-            return premiumVoice || langVoices[0]; 
+
+            // 2. 第二志願：如果手機沒下載高級版，才退而求其次找普通的 Kyoko(女) 或 Otoya(男)
+            if (!bestVoice) {
+                bestVoice = langVoices.find(v => v.name.includes('Kyoko') || v.name.includes('Otoya'));
+            }
+
+            // 3. 第三志願：如果都找不到，就拿系統預設的第一個
+            return bestVoice || langVoices[0]; 
         };
 
         // 修改：點擊單字發音
