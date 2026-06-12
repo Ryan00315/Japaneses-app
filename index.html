@@ -1239,22 +1239,50 @@
             if (!audioUnlocked) { try { window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); audioUnlocked = true; } catch(e) {} }
         };
 
+        // 👇 新增：去系統裡挑選「最好聽」的聲音
+        window.getBestVoice = (lang) => {
+            const voices = window.speechSynthesis.getVoices();
+            // 找出符合語言的聲音
+            const langVoices = voices.filter(v => v.lang.includes(lang) || v.lang.includes(lang.replace('-', '_')));
+            if (langVoices.length === 0) return null;
+
+            // 優先挑選名字裡有 Premium(大聲優)、Enhanced(進階)、Kyoko(蘋果女聲) 的聲音
+            const premiumVoice = langVoices.find(v => 
+                v.name.includes('Premium') || 
+                v.name.includes('Enhanced') || 
+                v.name.includes('Kyoko')
+            );
+            return premiumVoice || langVoices[0]; 
+        };
+
+        // 修改：點擊單字發音
         window.speakAction = (t) => {
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(t);
-            u.lang='ja-JP'; u.rate=0.7; window.speechSynthesis.speak(u);
+            u.lang = 'ja-JP'; 
+            u.rate = 0.7; 
+            
+            // 👉 套用高音質聲音
+            const bestVoice = window.getBestVoice('ja-JP');
+            if (bestVoice) u.voice = bestVoice;
+            
+            window.speechSynthesis.speak(u);
         };
 
-        // 記錄目前是否正在閱讀中
         window.isReading = false;
 
-        // 建立可以「等待發音結束」的 Promise 語音函數
+        // 修改：連續閱讀發音
         window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.7) => {
             return new Promise(resolve => {
                 if (!window.isReading) return resolve();
                 const u = new SpeechSynthesisUtterance(text);
                 u.lang = lang;
                 u.rate = rate;
+                
+                // 👉 套用高音質聲音
+                const bestVoice = window.getBestVoice(lang);
+                if (bestVoice) u.voice = bestVoice;
+
                 u.onend = resolve;
                 u.onerror = resolve;
                 window.speechSynthesis.speak(u);
