@@ -788,8 +788,14 @@
             if (!pool.length) return alert("範圍內沒有單字");
             window.quizPool = pool;
             document.getElementById('quiz-overlay').classList.remove('hidden');
+            
+            // 👇 修改這裡：讓勾選框的狀態跟隨「必複習 (isReviewFilterActive)」的狀態
             const weakCheckbox = document.getElementById('weak-choice-mode');
-            if (weakCheckbox) weakCheckbox.checked = false;
+            if (weakCheckbox) {
+                weakCheckbox.checked = window.isReviewFilterActive; 
+            }
+            // 👆 修改結束 👆
+
             const stats = {};
             pool.forEach(v => stats[v.lesson] = (stats[v.lesson] || 0) + 1);
             document.getElementById('quiz-range-list').innerHTML = Object.entries(stats).map(([l, c]) => `
@@ -855,6 +861,14 @@
             document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
             document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
             document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
+            // 👇 新增這段：如果是聽力模式，延遲 0.2 秒後自動發音 👇
+            if (isH) {
+                setTimeout(() => window.speakAction(window.currentQuizWord.word), 200);
+            }
+            // 👆 新增結束 👆
+
+            if (isC || isH) {
+                document.getElementById('choice-area').classList.toggle('hidden', isC);
             if (isC || isH) {
                 document.getElementById('choice-area').classList.toggle('hidden', isC);
                 document.getElementById('standard-actions').classList.add('hidden');
