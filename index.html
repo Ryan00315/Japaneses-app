@@ -470,7 +470,7 @@
             const transBtn = document.getElementById("translate-btn-action");
             const hasKanji = (text) => /[一-龯々]/.test(text || "");
 
-            // 🔑 步驟一：把剛剛複製的 API Key 貼在下面這對引號裡面
+            // 🔑 請記得換成你「重新產生」的新 API Key 喔！
             const API_KEY = "AIzaSyCRY8wG71e46AdiFUlbXT0pwwa2iRH7WM8";
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
@@ -478,7 +478,7 @@
             if (transBtn) { transBtn.disabled = true; transBtn.innerText = "⏳ AI 思考中..."; }
             
             try {
-                // 🧙‍♂️ 強制防護咒語：規定它只能吐出乾淨的 JSON 格式，並且繁體中文與漢字絕對分開
+                // 🧙‍♂️ 強制防護咒語
                 const promptText = `
 你是一個專業的日語翻譯辭典 API。請分析以下日文單字，並以嚴格的 JSON 格式回傳，絕不要輸出其他廢話或 Markdown 語法。
 要求：
@@ -496,15 +496,23 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: promptText }] }],
-                        // 強制模型輸出 JSON 格式，防止它亂講話
-                        generationConfig: { response_mime_type: "application/json" }
+                        // 修正：必須使用駝峰大小寫 (responseMimeType)
+                        generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
-                if (!response.ok) throw new Error("API 連線失敗，請檢查金鑰或網路");
+                // 顯示真實的錯誤訊息，不再盲猜
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`Google 伺服器拒絕連線: ${errText}`);
+                }
                 
                 const data = await response.json();
-                const textResult = data.candidates[0].content.parts[0].text;
+                let textResult = data.candidates[0].content.parts[0].text;
+                
+                // 殺手鐧：暴力清除 AI 有時會亂加的 ```json 標籤
+                textResult = textResult.replace(/```json/gi, "").replace(/```/gi, "").trim();
+                
                 const parsed = JSON.parse(textResult);
 
                 const kanjiValue = parsed.kanji && hasKanji(parsed.kanji) ? parsed.kanji : "";
@@ -519,7 +527,8 @@
                 window.showToast("✨ AI 翻譯成功");
             } catch (e) {
                 console.error("翻譯失敗：", e);
-                alert("翻譯失敗：" + (e.message || "請檢查 API Key 是否正確填寫"));
+                // 這裡會彈出真實的錯誤原因
+                alert("翻譯失敗：" + (e.message || "未知錯誤"));
             } finally {
                 window.isTranslating = false;
                 if (transBtn) { transBtn.disabled = false; transBtn.innerText = "👉 翻譯(漢字、中文)"; }
