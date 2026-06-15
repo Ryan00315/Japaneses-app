@@ -784,7 +784,14 @@
         window.getQuizBasePool = () => {
             return window.vocabs.filter(v => {
                 if (v.lesson === '個人筆記') { if (v.uid !== currentUser) return false; } else { if (v.uid) return false; }
-                return window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
+                
+                // 檢查第一階層 (課數/附錄)
+                const matchL = window.selectedLessons.length === 0 || window.selectedLessons.includes(v.lesson);
+                // 👇 補上這行：檢查第二/三階層 (詞性/附錄細項)
+                const matchT = window.selectedTypes.length === 0 || window.selectedTypes.includes(v.category);
+                
+                // 必須兩個條件都符合，才放進題庫！
+                return matchL && matchT;
             });
         };
 
