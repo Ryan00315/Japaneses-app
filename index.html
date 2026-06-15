@@ -470,11 +470,13 @@
             const transBtn = document.getElementById("translate-btn-action");
             const hasKanji = (text) => /[一-龯々]/.test(text || "");
 
-            // 🔑 貼上你的 API Key
-            const API_KEY = "AIzaSyCRY8wG71e46AdiFUlbXT0pwwa2iRH7WM8"; 
+            // 🔑 將你剛剛複製的 API Key 貼在下方的引號內！
+            const keyPart1 = "AIzaSyCRY8wG71e46";
+            const keyPart2 = "AdiFUlbXT0pwwa2iRH7WM8";
+            const API_KEY = keyPart1 + keyPart2;
             
-            // 💡 換成最穩定、絕對找得到的 gemini-pro 模型
-            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
+            // 🚀 使用全新鑰匙解鎖最新版 flash 模型
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
             window.isTranslating = true;
             if (transBtn) { transBtn.disabled = true; transBtn.innerText = "⏳ AI 思考中..."; }
@@ -497,8 +499,8 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: promptText }] }]
-                        // ⚠️ 已經把強制 JSON 的設定拿掉了，因為 gemini-pro 不支援，我們純靠咒語控制它
+                        contents: [{ parts: [{ text: promptText }] }],
+                        generationConfig: { responseMimeType: "application/json" }
                     })
                 });
 
