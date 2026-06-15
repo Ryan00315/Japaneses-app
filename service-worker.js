@@ -1,5 +1,5 @@
 ```javascript
-   const CACHE_NAME = 'jpnote-cache-v8';
+   const CACHE_NAME = 'jpnote-cache-v9';
 
    // 核心檔案
    const coreUrls = [
