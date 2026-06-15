@@ -464,11 +464,13 @@
             const wordField = document.getElementById("word");
             const inputVal = wordField ? wordField.value.trim() : "";
             if (!inputVal) { alert("請輸入單字"); return; }
+            
             const readingEl = document.getElementById("reading");
             const meaningEl = document.getElementById("meaning");
             const transBtn = document.getElementById("translate-btn-action");
             const hasKanji = (text) => /[一-龯々]/.test(text || "");
             const now = Date.now();
+            
             if (window.translateBlockedUntil && now < window.translateBlockedUntil) {
                 const sec = Math.ceil((window.translateBlockedUntil - now) / 1000);
                 window.showToast("🚫 配額冷卻中，請 " + sec + " 秒後再試");
@@ -489,21 +491,30 @@
                 window.showToast("⚡ 使用快取翻譯");
                 return;
             }
+            
             const today = new Date().toLocaleDateString("zh-TW");
             const usageKey = "translate_usage_" + today;
             let usage = parseInt(localStorage.getItem(usageKey) || "0", 10);
-            if (usage >= window.TRANSLATE_DAILY_LIMIT) { alert("🚫 今日翻譯已達上限（" + window.TRANSLATE_DAILY_LIMIT + "次）"); return; }
+            
+            // 🚀 關鍵解鎖：直接把每天限制調高到 2000 次！
+            const DAILY_LIMIT = 2000;
+            if (usage >= DAILY_LIMIT) { alert("🚫 今日翻譯已達上限（" + DAILY_LIMIT + "次）"); return; }
+            
             window.isTranslating = true;
             window.lastTranslateTime = now;
             if (transBtn) { transBtn.disabled = true; transBtn.innerText = "⏳ AI 思考中..."; }
+            
             try {
+                // 🔙 回歸你原本最穩定的 Vercel 後台，繞過台灣地區限制
                 const response = await fetch("https://japaneses-app-1q3g.vercel.app/api/translate", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ text: inputVal })
                 });
+                
                 let data = {};
                 try { data = await response.json(); } catch (_) { data = {}; }
+                
                 if (!response.ok) {
                     const errText = String(data?.error || data?.message || "");
                     const retryMatch = errText.match(/retry in\s*([\d.]+)s/i);
@@ -518,19 +529,23 @@
                     }
                     throw new Error(errText || "翻譯失敗");
                 }
+                
                 const kanjiValue = data.kanji && hasKanji(data.kanji) ? data.kanji : "";
                 const chineseValue = data.chinese || "";
+                
                 if (readingEl) readingEl.value = kanjiValue;
                 if (meaningEl) {
                     meaningEl.value = chineseValue;
                     meaningEl.dispatchEvent(new Event("input", { bubbles: true }));
                 }
+                
                 usage += 1;
                 localStorage.setItem(usageKey, String(usage));
                 window.translateCache[inputVal] = { kanji: kanjiValue, chinese: chineseValue, savedAt: Date.now() };
                 localStorage.setItem("translate_cache_v1", JSON.stringify(window.translateCache));
                 window.translateBlockedUntil = 0;
-                window.showToast("✨ AI 翻譯成功 (" + usage + "/" + window.TRANSLATE_DAILY_LIMIT + ")");
+                window.showToast("✨ AI 翻譯成功 (" + usage + "/" + DAILY_LIMIT + ")");
+                
             } catch (e) {
                 console.error("翻譯失敗：", e);
                 alert("翻譯失敗：" + (e.message || "未知錯誤"));
