@@ -470,9 +470,11 @@
             const transBtn = document.getElementById("translate-btn-action");
             const hasKanji = (text) => /[一-龯々]/.test(text || "");
 
-            // 🔑 請記得換成你「重新產生」的新 API Key 喔！
-            const API_KEY = "AIzaSyCRY8wG71e46AdiFUlbXT0pwwa2iRH7WM8";
-            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+            // 🔑 貼上你的 API Key
+            const API_KEY = "AIzaSyCRY8wG71e46AdiFUlbXT0pwwa2iRH7WM8"; 
+            
+            // 💡 換成最穩定、絕對找得到的 gemini-pro 模型
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
             window.isTranslating = true;
             if (transBtn) { transBtn.disabled = true; transBtn.innerText = "⏳ AI 思考中..."; }
@@ -495,13 +497,11 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: promptText }] }],
-                        // 修正：必須使用駝峰大小寫 (responseMimeType)
-                        generationConfig: { responseMimeType: "application/json" }
+                        contents: [{ parts: [{ text: promptText }] }]
+                        // ⚠️ 已經把強制 JSON 的設定拿掉了，因為 gemini-pro 不支援，我們純靠咒語控制它
                     })
                 });
 
-                // 顯示真實的錯誤訊息，不再盲猜
                 if (!response.ok) {
                     const errText = await response.text();
                     throw new Error(`Google 伺服器拒絕連線: ${errText}`);
@@ -510,7 +510,7 @@
                 const data = await response.json();
                 let textResult = data.candidates[0].content.parts[0].text;
                 
-                // 殺手鐧：暴力清除 AI 有時會亂加的 ```json 標籤
+                // 暴力清除 Markdown 標籤
                 textResult = textResult.replace(/```json/gi, "").replace(/```/gi, "").trim();
                 
                 const parsed = JSON.parse(textResult);
@@ -527,7 +527,6 @@
                 window.showToast("✨ AI 翻譯成功");
             } catch (e) {
                 console.error("翻譯失敗：", e);
-                // 這裡會彈出真實的錯誤原因
                 alert("翻譯失敗：" + (e.message || "未知錯誤"));
             } finally {
                 window.isTranslating = false;
