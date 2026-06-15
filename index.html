@@ -469,56 +469,69 @@
             const meaningEl = document.getElementById("meaning");
             const transBtn = document.getElementById("translate-btn-action");
             const hasKanji = (text) => /[一-龯々]/.test(text || "");
-
-            // 🔑 將你剛剛複製的 API Key 貼在下方的引號內！
-            const keyPart1 = "AIzaSyCRY8wG71e46";
-            const keyPart2 = "AdiFUlbXT0pwwa2iRH7WM8";
-            const API_KEY = keyPart1 + keyPart2;
+            const now = Date.now();
             
-            // 🚀 使用全新鑰匙解鎖最新版 flash 模型
-            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-
+            if (window.translateBlockedUntil && now < window.translateBlockedUntil) {
+                const sec = Math.ceil((window.translateBlockedUntil - now) / 1000);
+                window.showToast("🚫 配額冷卻中，請 " + sec + " 秒後再試");
+                return;
+            }
+            if (now - window.lastTranslateTime < window.TRANSLATE_COOLDOWN) {
+                const sec = Math.ceil((window.TRANSLATE_COOLDOWN - (now - window.lastTranslateTime)) / 1000);
+                window.showToast("⏳ 請 " + sec + " 秒後再翻譯");
+                return;
+            }
+            if (window.translateCache[inputVal]) {
+                const cached = window.translateCache[inputVal];
+                if (readingEl) readingEl.value = cached.kanji || "";
+                if (meaningEl) {
+                    meaningEl.value = cached.chinese || "";
+                    meaningEl.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+                window.showToast("⚡ 使用快取翻譯");
+                return;
+            }
+            
+            const today = new Date().toLocaleDateString("zh-TW");
+            const usageKey = "translate_usage_" + today;
+            let usage = parseInt(localStorage.getItem(usageKey) || "0", 10);
+            
+            // 🚀 關鍵解鎖：直接把每天限制調高到 2000 次！
+            const DAILY_LIMIT = 2000;
+            if (usage >= DAILY_LIMIT) { alert("🚫 今日翻譯已達上限（" + DAILY_LIMIT + "次）"); return; }
+            
             window.isTranslating = true;
+            window.lastTranslateTime = now;
             if (transBtn) { transBtn.disabled = true; transBtn.innerText = "⏳ AI 思考中..."; }
             
             try {
-                // 🧙‍♂️ 強制防護咒語
-                const promptText = `
-你是一個專業的日語翻譯辭典 API。請分析以下日文單字，並以嚴格的 JSON 格式回傳，絕不要輸出其他廢話或 Markdown 語法。
-要求：
-1. "kanji": 如果單字本身包含漢字，填入帶有漢字的寫法；如果全平假/片假名，則留空字串 ""。
-2. "chinese": 填入繁體中文的意思，力求精簡準確。
-
-單字：${inputVal}
-
-回傳格式範例：
-{"kanji": "食べる", "chinese": "吃"}
-`;
-
-                const response = await fetch(API_URL, {
+                // 🔙 回歸你原本最穩定的 Vercel 後台，繞過台灣地區限制
+                const response = await fetch("https://japaneses-app-1q3g.vercel.app/api/translate", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: promptText }] }],
-                        generationConfig: { responseMimeType: "application/json" }
-                    })
+                    body: JSON.stringify({ text: inputVal })
                 });
-
+                
+                let data = {};
+                try { data = await response.json(); } catch (_) { data = {}; }
+                
                 if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`Google 伺服器拒絕連線: ${errText}`);
+                    const errText = String(data?.error || data?.message || "");
+                    const retryMatch = errText.match(/retry in\s*([\d.]+)s/i);
+                    if (retryMatch) {
+                        const retrySec = Math.ceil(parseFloat(retryMatch[1]));
+                        window.translateBlockedUntil = Date.now() + retrySec * 1000;
+                    }
+                    if (/quota|rate limit|too many requests|exceeded|resource exhausted/i.test(errText)) {
+                        if (!window.translateBlockedUntil) { window.translateBlockedUntil = Date.now() + 15000; }
+                        const sec = Math.ceil((window.translateBlockedUntil - Date.now()) / 1000);
+                        throw new Error("翻譯額度已滿，請 " + sec + " 秒後再試");
+                    }
+                    throw new Error(errText || "翻譯失敗");
                 }
                 
-                const data = await response.json();
-                let textResult = data.candidates[0].content.parts[0].text;
-                
-                // 暴力清除 Markdown 標籤
-                textResult = textResult.replace(/```json/gi, "").replace(/```/gi, "").trim();
-                
-                const parsed = JSON.parse(textResult);
-
-                const kanjiValue = parsed.kanji && hasKanji(parsed.kanji) ? parsed.kanji : "";
-                const chineseValue = parsed.chinese || "";
+                const kanjiValue = data.kanji && hasKanji(data.kanji) ? data.kanji : "";
+                const chineseValue = data.chinese || "";
                 
                 if (readingEl) readingEl.value = kanjiValue;
                 if (meaningEl) {
@@ -526,7 +539,13 @@
                     meaningEl.dispatchEvent(new Event("input", { bubbles: true }));
                 }
                 
-                window.showToast("✨ AI 翻譯成功");
+                usage += 1;
+                localStorage.setItem(usageKey, String(usage));
+                window.translateCache[inputVal] = { kanji: kanjiValue, chinese: chineseValue, savedAt: Date.now() };
+                localStorage.setItem("translate_cache_v1", JSON.stringify(window.translateCache));
+                window.translateBlockedUntil = 0;
+                window.showToast("✨ AI 翻譯成功 (" + usage + "/" + DAILY_LIMIT + ")");
+                
             } catch (e) {
                 console.error("翻譯失敗：", e);
                 alert("翻譯失敗：" + (e.message || "未知錯誤"));
@@ -535,7 +554,6 @@
                 if (transBtn) { transBtn.disabled = false; transBtn.innerText = "👉 翻譯(漢字、中文)"; }
             }
         };
-
         window.renderUserHistory = () => {
             const list = document.getElementById('user-history-list');
             list.innerHTML = userHistory.map(name => `
