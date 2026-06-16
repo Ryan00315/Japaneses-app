@@ -120,7 +120,7 @@ export default async function handler(req, res) {
     `.trim();
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/Gemini 3.1 Flash Lite:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
       {
         method: "POST",
         headers: {
