@@ -1318,9 +1318,12 @@
 
         window.isReading = false;
 
+        // 取代舊的 window.speakWithPromise
         window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.7) => {
             return new Promise(resolve => {
-                if (!window.isReading) return resolve();
+                // 檢查是否已被完全停止
+                if (window.readState === 'stopped') return resolve(); 
+                
                 const u = new SpeechSynthesisUtterance(text);
                 u.lang = lang;
                 u.rate = rate;
@@ -1335,82 +1338,132 @@
         };
 
         window.delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        let wakeLock = null; // 鎖定螢幕常亮的變數
+        
+        let wakeLock = null;
+        window.readState = 'stopped'; // 🧠 新增：狀態管理系統 (stopped, playing, paused)
+        let readClickTimer = null;    // ⏱️ 新增：用來判斷單/雙擊的計時器
 
-        // 偵測手機是否切換到背景，若是，則優雅停止語音避免當機
+        // 1. 偵測手機切換背景：改為「暫停」而不是無情停止
         document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === 'hidden' && window.isReading) {
-                window.isReading = false;
-                window.speechSynthesis.cancel();
-                const btn = document.getElementById('read-all-btn');
-                if(btn) {
-                    btn.innerText = "🔈 閱讀";
-                    btn.classList.replace('bg-rose-500', 'bg-yellow-400');
-                }
-                if (wakeLock) { wakeLock.release(); wakeLock = null; }
-                document.querySelectorAll('#vocab-list li').forEach(el => el.classList.remove('reading-active'));
+            if (document.visibilityState === 'hidden' && window.readState === 'playing') {
+                window.pauseReading();
                 console.log("切換背景，自動暫停閱讀");
             }
         });
-        window.toggleReadList = async () => {
-            const btn = document.getElementById('read-all-btn');
-            
-            if (window.isReading) {
-                window.isReading = false;
-                window.speechSynthesis.cancel();
-                btn.innerText = "🔈 閱讀";
-                btn.classList.replace('bg-rose-500', 'bg-yellow-400');
-                if (wakeLock) { wakeLock.release(); wakeLock = null; }
-                // 停止時移除所有卡片的高亮
-                document.querySelectorAll('#vocab-list li').forEach(el => el.classList.remove('reading-active'));
-                return;
-            }
 
+        // 2. 🎯 核心升級：具備單擊/雙擊判斷的主按鈕控制器
+        window.toggleReadList = () => {
+            if (readClickTimer === null) {
+                // 第一下點擊：給予 250ms 的等待期，判斷是單擊還是雙擊
+                readClickTimer = setTimeout(() => {
+                    readClickTimer = null;
+                    // 👉 單擊事件觸發
+                    if (window.readState === 'stopped') {
+                        window.startReading();
+                    } else if (window.readState === 'playing') {
+                        window.pauseReading();
+                    } else if (window.readState === 'paused') {
+                        window.resumeReading();
+                    }
+                }, 250);
+            } else {
+                // 👉 雙擊事件觸發 (250ms內點了第二下)
+                clearTimeout(readClickTimer);
+                readClickTimer = null;
+                if (window.readState !== 'stopped') {
+                    window.stopReading();
+                }
+            }
+        };
+
+        // 3. 暫停模組
+        window.pauseReading = () => {
+            window.readState = 'paused';
+            window.speechSynthesis.pause(); // 暫停原生語音
+            const btn = document.getElementById('read-all-btn');
+            if(btn) {
+                btn.innerText = "▶️ 繼續";
+                btn.classList.replace('bg-rose-500', 'bg-sky-500'); // 變藍色代表暫停中
+            }
+            if (wakeLock) { wakeLock.release(); wakeLock = null; }
+            window.showToast("⏸ 已暫停 (雙擊按鈕可完全停止)");
+        };
+
+        // 4. 繼續模組
+        window.resumeReading = async () => {
+            window.readState = 'playing';
+            window.speechSynthesis.resume(); // 恢復原生語音
+            const btn = document.getElementById('read-all-btn');
+            if(btn) {
+                btn.innerText = "⏸ 暫停";
+                btn.classList.replace('bg-sky-500', 'bg-rose-500'); // 變回紅色
+            }
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+        };
+
+        // 5. 完全停止模組
+        window.stopReading = () => {
+            window.readState = 'stopped';
+            window.speechSynthesis.cancel(); // 清空所有未唸完的語音佇列
+            const btn = document.getElementById('read-all-btn');
+            if(btn) {
+                btn.innerText = "🔈 閱讀";
+                btn.classList.remove('bg-rose-500', 'bg-sky-500');
+                btn.classList.add('bg-yellow-400');
+            }
+            if (wakeLock) { wakeLock.release(); wakeLock = null; }
+            document.querySelectorAll('#vocab-list li').forEach(el => el.classList.remove('reading-active'));
+            window.showToast("⏹ 已停止閱讀");
+        };
+
+        // 6. 啟動與主迴圈模組
+        window.startReading = async () => {
             if (!window.currentFilteredVocabs || window.currentFilteredVocabs.length === 0) {
                 window.showToast("目前沒有單字可以閱讀");
                 return;
             }
 
-            window.isReading = true;
-            btn.innerText = "⏹ 停止";
+            window.readState = 'playing';
+            const btn = document.getElementById('read-all-btn');
+            btn.innerText = "⏸ 暫停";
             btn.classList.replace('bg-yellow-400', 'bg-rose-500');
             window.speechSynthesis.cancel();
 
-            // 啟動螢幕常亮，防止唸到一半手機變黑休眠
             try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
 
             for (let i = 0; i < window.currentFilteredVocabs.length; i++) {
-                if (!window.isReading) break;
+                // 🛡️ 迴圈保護：如果處於「暫停」狀態，程式會在這裡死迴圈等待，不會繼續往下唸！
+                while (window.readState === 'paused') await window.delay(200);
+                if (window.readState === 'stopped') break; // 如果雙擊了停止，直接跳出迴圈
                 
                 const v = window.currentFilteredVocabs[i];
                 
-                // 👇 核心功能：卡片高亮與自動置中
+                // 卡片高亮與自動置中
                 document.querySelectorAll('#vocab-list li').forEach(el => el.classList.remove('reading-active'));
                 const currentCard = document.querySelector(`li[data-id="${v.id}"]`);
                 if (currentCard) {
                     currentCard.classList.add('reading-active');
-                    // 平滑滾動到畫面正中央
                     currentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 
                 await window.speakWithPromise(v.word, 'ja-JP', 0.7);
-                if (!window.isReading) break;
+                if (window.readState === 'stopped') break;
                 
                 await window.delay(500);
-                if (!window.isReading) break;
+                while (window.readState === 'paused') await window.delay(200);
+                if (window.readState === 'stopped') break;
                 
                 await window.speakWithPromise(v.meaning, 'zh-TW', 0.85);
-                if (!window.isReading) break;
+                if (window.readState === 'stopped') break;
                 
                 await window.delay(1000);
+                while (window.readState === 'paused') await window.delay(200);
             }
 
-            // 閱讀結束後的清理動作
-            window.isReading = false;
-            btn.innerText = "🔈 閱讀";
-            btn.classList.replace('bg-rose-500', 'bg-yellow-400');
-            if (wakeLock) { wakeLock.release(); wakeLock = null; }
-            document.querySelectorAll('#vocab-list li').forEach(el => el.classList.remove('reading-active'));
+            // 整個單字本播完後，自動回歸原狀
+            if (window.readState !== 'stopped') {
+                window.stopReading(); 
+            }
         };
 
         onSnapshot(vocabsCol, (snap) => {
