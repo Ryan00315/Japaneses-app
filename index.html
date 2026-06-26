@@ -1309,8 +1309,7 @@
             const bestVoice = window.getBestVoice('ja-JP');
             if (bestVoice) {
                 u.voice = bestVoice;
-                // 👉 顯示提示框！這樣我們就知道到底有沒有抓到 Premium
-                window.showToast("🎤 使用語音: " + bestVoice.name);
+
             }
             
             window.speechSynthesis.speak(u);
