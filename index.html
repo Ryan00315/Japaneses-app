@@ -73,6 +73,14 @@
             overscroll-behavior-y: none;
             -webkit-overflow-scrolling: touch;
         }
+        /* 👇 新增這段：閱讀模式進行時的單字卡高亮特效 */
+        .reading-active {
+            border: 2px solid #f59e0b !important;
+            background-color: #fffbeb !important;
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4);
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
@@ -1327,7 +1335,23 @@
         };
 
         window.delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        let wakeLock = null; // 鎖定螢幕常亮的變數
 
+        // 偵測手機是否切換到背景，若是，則優雅停止語音避免當機
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'hidden' && window.isReading) {
+                window.isReading = false;
+                window.speechSynthesis.cancel();
+                const btn = document.getElementById('read-all-btn');
+                if(btn) {
+                    btn.innerText = "🔈 閱讀";
+                    btn.classList.replace('bg-rose-500', 'bg-yellow-400');
+                }
+                if (wakeLock) { wakeLock.release(); wakeLock = null; }
+                document.querySelectorAll('#vocab-list li').forEach(el => el.classList.remove('reading-active'));
+                console.log("切換背景，自動暫停閱讀");
+            }
+        });
         window.toggleReadList = async () => {
             const btn = document.getElementById('read-all-btn');
             
@@ -1336,6 +1360,9 @@
                 window.speechSynthesis.cancel();
                 btn.innerText = "🔈 閱讀";
                 btn.classList.replace('bg-rose-500', 'bg-yellow-400');
+                if (wakeLock) { wakeLock.release(); wakeLock = null; }
+                // 停止時移除所有卡片的高亮
+                document.querySelectorAll('#vocab-list li').forEach(el => el.classList.remove('reading-active'));
                 return;
             }
 
@@ -1349,10 +1376,22 @@
             btn.classList.replace('bg-yellow-400', 'bg-rose-500');
             window.speechSynthesis.cancel();
 
+            // 啟動螢幕常亮，防止唸到一半手機變黑休眠
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+
             for (let i = 0; i < window.currentFilteredVocabs.length; i++) {
                 if (!window.isReading) break;
                 
                 const v = window.currentFilteredVocabs[i];
+                
+                // 👇 核心功能：卡片高亮與自動置中
+                document.querySelectorAll('#vocab-list li').forEach(el => el.classList.remove('reading-active'));
+                const currentCard = document.querySelector(`li[data-id="${v.id}"]`);
+                if (currentCard) {
+                    currentCard.classList.add('reading-active');
+                    // 平滑滾動到畫面正中央
+                    currentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
                 
                 await window.speakWithPromise(v.word, 'ja-JP', 0.7);
                 if (!window.isReading) break;
@@ -1366,9 +1405,12 @@
                 await window.delay(1000);
             }
 
+            // 閱讀結束後的清理動作
             window.isReading = false;
             btn.innerText = "🔈 閱讀";
             btn.classList.replace('bg-rose-500', 'bg-yellow-400');
+            if (wakeLock) { wakeLock.release(); wakeLock = null; }
+            document.querySelectorAll('#vocab-list li').forEach(el => el.classList.remove('reading-active'));
         };
 
         onSnapshot(vocabsCol, (snap) => {
