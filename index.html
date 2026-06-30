@@ -150,7 +150,9 @@
             </div>
             <div class="relative mb-4 text-left">
                 <input id="meaning" type="text" placeholder="中文意思" oninput="window.checkDuplicate()" onfocus="window.fixScroll()" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
-                <button id="translate-btn-action" onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500 transition-all">👉 翻譯(漢字、中文)</button>
+                <button id="translate-btn-action" onclick="window.autoTranslate()" class="absolute right-2 top-2 w-auto h-10 px-3 rounded-xl border border-slate-200 font-bold text-[10px] text-slate-500 transition-all bg-white">
+    👉 翻譯
+</button>
             <div class="mb-4 text-left">
                 <textarea id="example-input" rows="2" placeholder="AI 例句 (自動產生，可手動修改)" class="w-full bg-slate-50 p-3 rounded-2xl outline-none text-[13px] font-bold border focus:border-indigo-300 text-sky-500"></textarea>
             </div>
