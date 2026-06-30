@@ -253,6 +253,7 @@
                 <input id="edit-reading" type="text" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm">
                 <input id="edit-meaning" type="text" placeholder="中文意思" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm font-bold">
                 <textarea id="edit-example" placeholder="例句" class="w-full bg-slate-50 p-3 rounded-xl border outline-none text-sm"></textarea>
+                <button onclick="window.aiGenerateExampleForEdit()" class="w-full text-xs font-bold text-indigo-600 bg-indigo-50 py-2 rounded-xl mt-1 active:scale-95">產生例句</button>
                 <div class="flex gap-2">
                     <button id="edit-book1-btn" onclick="window.setEditBook(1)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第一冊</button>
                     <button id="edit-book2-btn" onclick="window.setEditBook(2)" class="flex-1 border py-1.5 rounded-xl text-sm font-bold">第二冊</button>
@@ -333,6 +334,32 @@
         window.currentChoices = [];
         window.vocabSortable = null;
         window.isReviewFilterActive = false;
+
+        window.aiGenerateExampleForEdit = async () => {
+            const word = document.getElementById('edit-word').value;
+            const exampleArea = document.getElementById('edit-example');
+            if (!word) return alert("請先填寫單字");
+            
+            window.showToast("🤖 AI 思考例句中...");
+            try {
+                // 直接呼叫我們剛升級好的後端 API
+                const response = await fetch("https://japaneses-app-1q3g.vercel.app/api/translate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: word })
+                });
+                const data = await response.json();
+                if (data.example) {
+                    exampleArea.value = data.example;
+                    window.showToast("✨ 例句已產生");
+                } else {
+                    window.showToast("⚠️ 無法產生例句");
+                }
+            } catch (e) {
+                console.error(e);
+                window.showToast("⚠️ 網路錯誤");
+            }
+        };
 
         window.bulkFillExamples = async () => {
             const targets = window.vocabs.filter(v => {
