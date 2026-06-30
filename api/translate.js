@@ -104,7 +104,8 @@ export default async function handler(req, res) {
 
 {
   "kanji": "日文漢字或原字",
-  "chinese": "繁體中文意思"
+  "chinese": "繁體中文意思",
+  "example": "請用該單字造一個實用的N5~N4日文例句（只需純日文，絕對不要附上中文翻譯，例如：本を読みます。）"
 }
 
 規則：
@@ -180,7 +181,8 @@ export default async function handler(req, res) {
 
     const finalResult = {
       kanji: result?.kanji || "",
-      chinese: result?.chinese || ""
+      chinese: result?.chinese || "",
+      example: result?.example || "" // 👈 新增這行：把 AI 造好的例句送出
     };
 
     // 4) 成功後寫入快取
