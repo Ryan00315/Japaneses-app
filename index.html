@@ -1267,33 +1267,11 @@
             });
         };
 
+        // 🎵 建立 MP3 音樂播放器 (CarPlay 用)
+        let globalAudio = new Audio();
         let audioUnlocked = false;
-        window.initAudioOnFirstClick = () => {
-            if (!audioUnlocked) { 
-                try { 
-                    // 1. 原本的喚醒語音引擎
-                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(" ")); 
-                    
-                    // 2. 🧙‍♂️ CarPlay 欺騙魔法：用 Web Audio API 播放一段「無聲的媒體音」
-                    // 這會強迫 iPhone 把這個網頁的聲音通道切換到「媒體播放」，藉此把聲音逼去 CarPlay
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    if (AudioContext) {
-                        const audioCtx = new AudioContext();
-                        const oscillator = audioCtx.createOscillator();
-                        const gainNode = audioCtx.createGain();
-                        gainNode.gain.value = 0; // 音量設為 0 (無聲)
-                        oscillator.connect(gainNode);
-                        gainNode.connect(audioCtx.destination);
-                        oscillator.start(0);
-                        oscillator.stop(audioCtx.currentTime + 0.1); // 播放 0.1 秒後停止
-                    }
-                    
-                    audioUnlocked = true; 
-                } catch(e) {} 
-            }
-        };
 
-        // 👇 1. 新增：強制喚醒 iOS 的語音包清單（破解 Safari 延遲地雷）
+        // 強制喚醒 iOS 的語音包清單（破解 Safari 延遲地雷）
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = () => {
                 window.speechSynthesis.getVoices();
@@ -1301,65 +1279,99 @@
             window.speechSynthesis.getVoices();
         }
 
+        // 🧠 抓取 iOS 內建高品質語音的函數（離線用引擎）
         window.getBestVoice = (lang) => {
             const voices = window.speechSynthesis.getVoices();
             const langVoices = voices.filter(v => v.lang.includes(lang) || v.lang.includes(lang.replace('-', '_')));
             if (langVoices.length === 0) return null;
-
+            
             let bestVoice = langVoices.find(v => 
-                v.name.includes('Premium') || 
-                v.name.includes('Enhanced') || 
-                v.name.includes('大聲優') || 
-                v.name.includes('進階')
+                v.name.includes('Premium') || v.name.includes('Enhanced') || 
+                v.name.includes('大聲優') || v.name.includes('進階')
             );
-
             if (!bestVoice) {
                 bestVoice = langVoices.find(v => v.name.includes('Kyoko') || v.name.includes('Otoya'));
             }
-
             return bestVoice || langVoices[0]; 
         };
 
-        // 👇 2. 修改：在單字發音時，跳出提示框告訴你它選了誰
-        window.speakAction = (t) => {
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(t);
-            u.lang = 'ja-JP'; 
-            u.rate = 0.7; 
-            
-            const bestVoice = window.getBestVoice('ja-JP');
-            if (bestVoice) {
-                u.voice = bestVoice;
-
+        // 第一次點擊螢幕時，同時解鎖雙引擎
+        window.initAudioOnFirstClick = () => {
+            if (!audioUnlocked) { 
+                try { 
+                    // 1. 解鎖 MP3 通道 (播 0.1 秒極短無聲音檔)
+                    globalAudio.src = "data:audio/mp3;base64,//OwgAAAAAAAAAAAAAAAWGluZwAAAA8AAAAEAAABjwCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA//////////////////////////////////////////////////////////////////8AAAA8TEFNRTMuMTAwA8AAAAAURgQCAgABQAAAAAABjwAAf38AAAAAAAAAAAAAAAAAAAA=";
+                    globalAudio.play().catch(()=>{});
+                    
+                    // 2. 解鎖原生語音通道
+                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
+                    
+                    audioUnlocked = true; 
+                } catch(e) {} 
             }
+        };
+
+        // 獨立出的「原生語音」發音器 (離線或斷線時的備用方案)
+        window.fallbackToNativeSpeech = (text, lang, rate, resolveCallback) => {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = lang; 
+            u.rate = rate; 
+            const bestVoice = window.getBestVoice(lang);
+            if (bestVoice) u.voice = bestVoice;
             
+            if (resolveCallback) {
+                u.onend = resolveCallback;
+                u.onerror = resolveCallback;
+            }
             window.speechSynthesis.speak(u);
+        };
+
+        // 🎵 單點發音：智慧切換模式
+        window.speakAction = (t) => {
+            if (!t) return;
+            
+            // 如果手機目前有網路，優先使用 MP3 模式以支援 CarPlay
+            if (navigator.onLine) {
+                globalAudio.pause(); 
+                globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ja&client=tw-ob&q=${encodeURIComponent(t)}`;
+                globalAudio.play().catch(e => {
+                    // 如果載入失敗，降級回原生語音
+                    window.fallbackToNativeSpeech(t, 'ja-JP', 0.7);
+                });
+            } else {
+                // 沒網路直接用原生語音
+                window.fallbackToNativeSpeech(t, 'ja-JP', 0.7);
+            }
         };
 
         window.isReading = false;
 
-        // 取代舊的 window.speakWithPromise
+        // 🎵 連續閱讀：智慧切換模式 + 隧道防斷線機制
         window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.7) => {
             return new Promise(resolve => {
-                // 檢查是否已被完全停止
                 if (window.readState === 'stopped') return resolve(); 
                 
-                const u = new SpeechSynthesisUtterance(text);
-                u.lang = lang;
-                u.rate = rate;
-                
-                const bestVoice = window.getBestVoice(lang);
-                if (bestVoice) u.voice = bestVoice;
-
-                u.onend = resolve;
-                u.onerror = resolve;
-                window.speechSynthesis.speak(u);
+                if (navigator.onLine) {
+                    const gLang = lang.includes('ja') ? 'ja' : 'zh-TW';
+                    globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${gLang}&client=tw-ob&q=${encodeURIComponent(text)}`;
+                    
+                    globalAudio.onended = resolve;
+                    globalAudio.onerror = () => {
+                        // 網路突然斷線時，無縫切換到原生離線語音繼續唸
+                        window.fallbackToNativeSpeech(text, lang, rate, resolve);
+                    }; 
+                    
+                    globalAudio.play().catch(err => {
+                        // 防呆機制
+                        window.fallbackToNativeSpeech(text, lang, rate, resolve);
+                    });
+                } else {
+                    // 沒網路時，直接使用原生離線語音
+                    window.fallbackToNativeSpeech(text, lang, rate, resolve);
+                }
             });
         };
-
-        window.delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        
-        let wakeLock = null;
         window.readState = 'stopped'; // 🧠 新增：狀態管理系統 (stopped, playing, paused)
         let readClickTimer = null;    // ⏱️ 新增：用來判斷單/雙擊的計時器
 
