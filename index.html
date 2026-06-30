@@ -336,24 +336,40 @@
 
         window.bulkFillExamples = async () => {
             const targets = window.vocabs.filter(v => {
-                const visibleToCurrentUser =
-                    v.lesson === '個人筆記' ? v.uid === currentUser : !v.uid;
+                const visibleToCurrentUser = v.lesson === '個人筆記' ? v.uid === currentUser : !v.uid;
                 return visibleToCurrentUser && !(v.example || "").trim();
             });
-            if (!targets.length) return;
+            if (!targets.length) { window.showToast("沒有需要補例句的單字囉！"); return; }
+            
             let updated = 0;
-            window.showToast(`⏳ 準備更新 ${targets.length} 筆例句`);
+            window.showToast(`⏳ 正在為 ${targets.length} 筆單字生成 AI 例句...`);
+            
             for (const vocab of targets) {
-                const example = await window.fetchExampleSentence(vocab.word);
+                // 1. 先試試看靜態庫
+                let example = await window.fetchExampleSentence(vocab.word);
+                
+                // 2. 如果靜態庫沒有，直接呼叫 API 補上 (呼叫我們剛改好的後端)
+                if (!example) {
+                    try {
+                        const response = await fetch("https://japaneses-app-1q3g.vercel.app/api/translate", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ text: vocab.word })
+                        });
+                        const data = await response.json();
+                        example = data.example || "";
+                    } catch (e) { console.error("AI 例句補救失敗", e); }
+                }
+
                 if (!example) continue;
+                
                 try {
                     await updateDoc(doc(db, "vocabs", vocab.id), { example });
                     updated += 1;
-                } catch (e) {
-                    console.error("更新例句失敗：", vocab.word, e);
-                }
+                    await new Promise(r => setTimeout(r, 1000)); // 避免觸發 AI 的過度請求保護
+                } catch (e) { console.error("更新失敗", e); }
             }
-            window.showToast("✨ 已更新 " + updated + " 筆例句");
+            window.showToast("✨ 完成！已補上 " + updated + " 筆純日文例句");
         };
         
         window.normalizeExampleKey = (text) => {
