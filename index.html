@@ -151,6 +151,8 @@
             <div class="relative mb-4 text-left">
                 <input id="meaning" type="text" placeholder="中文意思" oninput="window.checkDuplicate()" onfocus="window.fixScroll()" class="w-full bg-slate-50 p-4 pr-36 rounded-2xl outline-none text-sm border focus:border-indigo-300">
                 <button id="translate-btn-action" onclick="window.autoTranslate()" class="absolute right-2 top-2 bottom-2 bg-white text-[10px] px-2 rounded-xl border border-slate-200 font-bold text-slate-500 transition-all">👉 翻譯(漢字、中文)</button>
+            <div class="mb-4 text-left">
+                <textarea id="example-input" rows="2" placeholder="AI 例句 (自動產生，可手動修改)" class="w-full bg-slate-50 p-3 rounded-2xl outline-none text-[13px] font-bold border focus:border-indigo-300 text-sky-500"></textarea>
             </div>
             <div class="flex gap-2 mb-3">
                 <button id="new-book1-tab" onclick="window.setNewBookTab(1)" class="flex-1 border py-1.5 rounded-xl text-xs font-bold transition-all">第一冊</button>
@@ -498,6 +500,8 @@
                     meaningEl.value = cached.chinese || "";
                     meaningEl.dispatchEvent(new Event("input", { bubbles: true }));
                 }
+                // 👇 加入這行
+                if (document.getElementById("example-input")) document.getElementById("example-input").value = cached.example || "";
                 window.showToast("⚡ 使用快取翻譯");
                 return;
             }
@@ -542,12 +546,20 @@
                 
                 const kanjiValue = data.kanji && hasKanji(data.kanji) ? data.kanji : "";
                 const chineseValue = data.chinese || "";
+                const exampleValue = data.example || ""; // 👈 加入這行
                 
                 if (readingEl) readingEl.value = kanjiValue;
                 if (meaningEl) {
                     meaningEl.value = chineseValue;
                     meaningEl.dispatchEvent(new Event("input", { bubbles: true }));
                 }
+                // 👇 加入這行，把例句填入畫面
+                if (document.getElementById("example-input")) document.getElementById("example-input").value = exampleValue;
+                
+                usage += 1;
+                localStorage.setItem(usageKey, String(usage));
+                // 👇 快取也要記得把例句存起來
+                window.translateCache[inputVal] = { kanji: kanjiValue, chinese: chineseValue, example: exampleValue, savedAt: Date.now() };
                 
                 usage += 1;
                 localStorage.setItem(usageKey, String(usage));
@@ -945,20 +957,32 @@
             const w = document.getElementById('word').value.trim();
             const r = document.getElementById('reading').value.trim();
             const m = document.getElementById('meaning').value.trim();
+            const exampleEl = document.getElementById('example-input'); // 👈 抓取畫面上的例句
+            let uiExample = exampleEl ? exampleEl.value.trim() : "";
+            
             if (!w || !m) return alert("內容不完整");
-            let example = "";
-            try { example = await window.fetchExampleSentence(w); } catch (e) { console.error("抓例句失敗：", e); }
+            
+            // 優先使用 AI 產生並顯示在畫面上的例句，如果畫面沒例句，才去查舊的靜態資料庫當備案
+            let finalExample = uiExample;
+            if (!finalExample) {
+                try { finalExample = await window.fetchExampleSentence(w); } catch (e) { }
+            }
+            
             const data = {
-                word: w, reading: r, meaning: m, example: example || "",
+                word: w, reading: r, meaning: m, example: finalExample || "",
                 lesson: window.selectedNewLesson, category: window.selectedNewCat,
                 createdAt: new Date(), manualOrder: 999999
             };
             if (window.selectedNewLesson === '個人筆記') data.uid = currentUser;
             await addDoc(vocabsCol, data);
+            
+            // 儲存後清空所有輸入框
             document.getElementById('word').value = "";
             document.getElementById('reading').value = "";
             document.getElementById('meaning').value = "";
-            window.showToast(example ? "✅ 已儲存＋例句" : "✅ 已儲存");
+            if (exampleEl) exampleEl.value = ""; // 👈 清空例句
+            
+            window.showToast(finalExample ? "✅ 已儲存＋例句" : "✅ 已儲存");
             window.checkDuplicate();
         };
 
