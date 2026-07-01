@@ -6,6 +6,10 @@
        './',
        './index.html',
        './manifest.json'
+       './21.png',
+       'https://cdn.tailwindcss.com',
+       'https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js',
+       'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
    ];
 
    // 【安裝階段】
