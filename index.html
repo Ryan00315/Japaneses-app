@@ -1397,50 +1397,50 @@
         };
 
         // 🎵 單點發音：智慧切換模式
+        // 🎵 強健版：確保 CarPlay 通道不會因連續播放而鎖死
         window.speakAction = (t) => {
             if (!t) return;
+            globalAudio.pause();
+            globalAudio.currentTime = 0; // 強制重置
             
-            // 如果手機目前有網路，優先使用 MP3 模式以支援 CarPlay
             if (navigator.onLine) {
-                globalAudio.pause(); 
                 globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ja&client=tw-ob&q=${encodeURIComponent(t)}`;
-                globalAudio.play().catch(e => {
-                    // 如果載入失敗，降級回原生語音
-                    window.fallbackToNativeSpeech(t, 'ja-JP', 0.7);
-                });
+                globalAudio.play().catch(e => window.fallbackToNativeSpeech(t, 'ja-JP', 0.7));
             } else {
-                // 沒網路直接用原生語音
                 window.fallbackToNativeSpeech(t, 'ja-JP', 0.7);
             }
         };
 
-        window.isReading = false;
-
-        // 🎵 連續閱讀：智慧切換模式 + 隧道防斷線機制
         window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.7) => {
-            return new Promise(resolve => {
-                if (window.readState === 'stopped') return resolve(); 
-                
+            return new Promise(async (resolve) => {
+                if (window.readState === 'stopped') return resolve();
+
+                // 核心改進：在 CarPlay 環境，我們需要明確處理播放結束後的狀態
+                const onFinish = () => {
+                    globalAudio.onended = null;
+                    globalAudio.onerror = null;
+                    setTimeout(resolve, 300); // 這裡增加 300ms 緩衝，讓 CarPlay 通道回氣
+                };
+
                 if (navigator.onLine) {
                     const gLang = lang.includes('ja') ? 'ja' : 'zh-TW';
                     globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${gLang}&client=tw-ob&q=${encodeURIComponent(text)}`;
                     
-                    globalAudio.onended = resolve;
-                    globalAudio.onerror = () => {
-                        // 網路突然斷線時，無縫切換到原生離線語音繼續唸
-                        window.fallbackToNativeSpeech(text, lang, rate, resolve);
-                    }; 
+                    globalAudio.onended = onFinish;
+                    globalAudio.onerror = () => window.fallbackToNativeSpeech(text, lang, rate, onFinish);
                     
-                    globalAudio.play().catch(err => {
-                        // 防呆機制
-                        window.fallbackToNativeSpeech(text, lang, rate, resolve);
-                    });
+                    try {
+                        await globalAudio.play();
+                    } catch (err) {
+                        window.fallbackToNativeSpeech(text, lang, rate, onFinish);
+                    }
                 } else {
-                    // 沒網路時，直接使用原生離線語音
-                    window.fallbackToNativeSpeech(text, lang, rate, resolve);
+                    window.fallbackToNativeSpeech(text, lang, rate, onFinish);
                 }
             });
         };
+
+        window.isReading = false;
         window.readState = 'stopped'; // 🧠 新增：狀態管理系統 (stopped, playing, paused)
         let readClickTimer = null;    // ⏱️ 新增：用來判斷單/雙擊的計時器
 
@@ -1517,6 +1517,8 @@
             window.showToast("⏹ 已停止閱讀");
         };
 
+        let wakeLock = null;
+
         // 6. 啟動與主迴圈模組
         window.startReading = async () => {
             if (!window.currentFilteredVocabs || window.currentFilteredVocabs.length === 0) {
@@ -1567,6 +1569,8 @@
             }
         };
 
+        window.delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
         onSnapshot(vocabsCol, (snap) => {
             window.vocabs = snap.docs.map(d => ({id:d.id, ...d.data()}));
             window.renderList();
@@ -1594,4 +1598,3 @@
     </script>
 </body>
 </html>
-
