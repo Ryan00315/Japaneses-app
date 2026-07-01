@@ -1,12 +1,13 @@
 ```javascript
-   const CACHE_NAME = 'jpnote-cache-v22';
+   const CACHE_NAME = 'jpnote-cache-v23';
 
    // 核心檔案
    const coreUrls = [
        './',
        './index.html',
-       './manifest.json'
+       './manifest.json' ,
        './21.png',
+       './exampleData.js',
        'https://cdn.tailwindcss.com',
        'https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js',
        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
