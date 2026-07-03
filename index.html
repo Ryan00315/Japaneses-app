@@ -84,7 +84,8 @@
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
-
+    
+    <audio id="carplay-player" playsinline webkit-playsinline preload="auto" style="display:none;"></audio>
     <div id="toast">✅ 操作成功</div>
 
     <div class="sticky-header border-b border-slate-200">
@@ -1336,8 +1337,8 @@
             });
         };
 
-        // 🎵 建立 MP3 音樂播放器 (CarPlay 用)
-        let globalAudio = new Audio();
+        // 🎵 改用「實體播放器」，CarPlay 才會承認它是媒體！
+        let globalAudio = document.getElementById('carplay-player');
         let audioUnlocked = false;
 
         // 強制喚醒 iOS 的語音包清單（破解 Safari 延遲地雷）
@@ -1370,6 +1371,7 @@
                 try { 
                     // 1. 解鎖 MP3 通道 (播 0.1 秒極短無聲音檔)
                     globalAudio.src = "data:audio/mp3;base64,//OwgAAAAAAAAAAAAAAAWGluZwAAAA8AAAAEAAABjwCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA//////////////////////////////////////////////////////////////////8AAAA8TEFNRTMuMTAwA8AAAAAURgQCAgABQAAAAAABjwAAf38AAAAAAAAAAAAAAAAAAAA=";
+                    globalAudio.load(); // 強制載入
                     globalAudio.play().catch(()=>{});
                     
                     // 2. 解鎖原生語音通道
@@ -1396,38 +1398,46 @@
             window.speechSynthesis.speak(u);
         };
 
-        // 🎵 單點發音：智慧切換模式
-        // 🎵 強健版：確保 CarPlay 通道不會因連續播放而鎖死
+        // 🎵 單點發音：CarPlay 強制載入版
         window.speakAction = (t) => {
             if (!t) return;
             globalAudio.pause();
-            globalAudio.currentTime = 0; // 強制重置
+            globalAudio.currentTime = 0; 
             
             if (navigator.onLine) {
                 globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ja&client=tw-ob&q=${encodeURIComponent(t)}`;
-                globalAudio.play().catch(e => window.fallbackToNativeSpeech(t, 'ja-JP', 0.7));
+                globalAudio.load(); // 👈 核心關鍵：iOS 實體播放器必須明確呼叫 load()
+                
+                globalAudio.play().catch(e => {
+                    window.showToast("⚠️ 音響通道被阻擋，切換手機喇叭");
+                    window.fallbackToNativeSpeech(t, 'ja-JP', 0.7);
+                });
             } else {
                 window.fallbackToNativeSpeech(t, 'ja-JP', 0.7);
             }
         };
 
+        // 🎵 連續閱讀：增加緩衝時間與防死鎖機制
         window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.7) => {
             return new Promise(async (resolve) => {
                 if (window.readState === 'stopped') return resolve();
 
-                // 核心改進：在 CarPlay 環境，我們需要明確處理播放結束後的狀態
                 const onFinish = () => {
                     globalAudio.onended = null;
                     globalAudio.onerror = null;
-                    setTimeout(resolve, 300); // 這裡增加 300ms 緩衝，讓 CarPlay 通道回氣
+                    setTimeout(resolve, 400); // 👈 緩衝加長到 400ms，讓 CarPlay 通道回氣
                 };
 
                 if (navigator.onLine) {
                     const gLang = lang.includes('ja') ? 'ja' : 'zh-TW';
                     globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${gLang}&client=tw-ob&q=${encodeURIComponent(text)}`;
+                    globalAudio.load(); // 👈 核心關鍵
                     
                     globalAudio.onended = onFinish;
-                    globalAudio.onerror = () => window.fallbackToNativeSpeech(text, lang, rate, onFinish);
+                    globalAudio.onerror = () => {
+                        window.showToast("⚠️ 音訊超時，切換備用頻道");
+                        window.fallbackToNativeSpeech(text, lang, rate, onFinish);
+                    };
                     
                     try {
                         await globalAudio.play();
