@@ -1358,19 +1358,40 @@
         };
 
         window.fallbackToNativeSpeech = (text, lang, rate, resolveCallback) => {
-            window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = lang; 
-            u.rate = rate; 
-            const bestVoice = window.getBestVoice(lang);
-            if (bestVoice) u.voice = bestVoice;
-            
-            if (resolveCallback) {
-                u.onend = resolveCallback;
-                u.onerror = resolveCallback;
-            }
-            window.speechSynthesis.speak(u);
-        };
+    // 1. 確保每次發音前先強制清除殘留的語音佇列
+    window.speechSynthesis.cancel();
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang; 
+    u.rate = rate; 
+    const bestVoice = window.getBestVoice(lang);
+    if (bestVoice) u.voice = bestVoice;
+
+    let executed = false;
+    const safeResolve = () => {
+        if (executed) return;
+        executed = true;
+        clearTimeout(fallbackTimer);
+        if (resolveCallback) resolveCallback();
+    };
+
+    // 2. 安全網：如果瀏覽器語音的 onend 沒被觸發，強制在 5 秒後解鎖流程，絕不卡死
+    const fallbackTimer = setTimeout(() => {
+        window.speechSynthesis.cancel();
+        safeResolve();
+    }, 5000);
+
+    u.onend = () => {
+        safeResolve();
+    };
+    
+    u.onerror = () => {
+        window.speechSynthesis.cancel();
+        safeResolve();
+    };
+
+    window.speechSynthesis.speak(u);
+};
 
         window.speakAction = (t) => {
             if (!t) return;
