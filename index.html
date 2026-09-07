@@ -212,10 +212,15 @@
 
             <div id="quiz-card-container" onclick="window.handleCardClick(event)" class="card-flip w-full h-[160px] relative mb-4">
                 <div id="quiz-card" class="card-inner">
-                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-8 h-full">
-                        <p id="q-meaning-front" class="text-3xl font-black text-center w-full"></p>
-                        <div id="hear-icon" class="text-6xl hidden">🎧</div>
-                    </div>
+                    <div class="card-front bg-indigo-600 text-white rounded-[40px] flex flex-col items-center justify-center p-8 h-full relative">
+    <p id="q-meaning-front" class="text-3xl font-black text-center w-full mb-4"></p>
+    <div id="hear-icon" class="text-6xl hidden mb-4">🎧</div>
+    
+    <!-- 👇 新增重播按鈕 -->
+    <button onclick="window.replayCurrentQuizAudio(event)" id="replay-audio-btn" class="hidden bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full text-xs font-bold items-center gap-1.5 transition-all shadow-inner active:scale-95">
+        <i class="fa-solid fa-volume-high"></i> 重播聲音
+    </button>
+</div>
                     <div class="card-back bg-white text-slate-900 rounded-[40px] p-6 overflow-hidden relative">
                         <button onclick="window.playCurrentWord(event)" class="audio-btn absolute right-4 top-1/2 -translate-y-1/2 bg-slate-50 w-12 h-12 rounded-full text-xl shadow-inner active:scale-90 flex items-center justify-center">🔊</button>
                         <div class="w-full h-full flex flex-col items-center justify-center px-14 text-center">
@@ -337,6 +342,15 @@
         window.currentChoices = [];
         window.vocabSortable = null;
         window.isReviewFilterActive = false;
+
+        // 新增重播按鈕的觸發函式
+        window.replayCurrentQuizAudio = (e) => {
+            if (e) e.stopPropagation();
+            if (window.currentQuizWord && window.currentQuizWord.word) {
+                window.speakAction(window.currentQuizWord.word);
+                window.showToast("🔊 重新播放發音");
+            }
+        };
 
         window.aiGenerateExampleForEdit = async () => {
             const word = document.getElementById('edit-word').value;
@@ -925,8 +939,15 @@
             window.choiceOptionsRevealed = false;
             document.getElementById('tap-to-reveal')?.classList.toggle('hidden', window.quizMode !== 'choice');
             document.getElementById('quiz-progress-display').innerText = "剩：" + window.remainingPool.length + " 題";
+            // 在 nextQuestion() 裡面找到這段或加上這行
             const isH = window.quizMode === 'hearing';
             const isC = window.quizMode === 'choice';
+            
+            // 控制重播按鈕只在聽力模式（或你想開放的其他模式）顯示
+            const replayBtn = document.getElementById('replay-audio-btn');
+            if (replayBtn) {
+                replayBtn.classList.toggle('hidden', !isH);
+            }
             if (isH) { document.getElementById('q-meaning-front').innerText = ""; } else if (isC) {
                 document.getElementById('q-meaning-front').innerText = (window.choiceSub === 'jp-ch') ? window.currentQuizWord.word : window.currentQuizWord.meaning;
             } else { document.getElementById('q-meaning-front').innerText = window.currentQuizWord.meaning; }
