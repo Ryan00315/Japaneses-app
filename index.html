@@ -1378,15 +1378,15 @@
             globalAudio.currentTime = 0; 
             
             if (navigator.onLine) {
-                globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ja&client=tw-ob&q=${encodeURIComponent(t)}`;
+                globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ja&client=tw-ob&r=0.8&q=${encodeURIComponent(t)}`;
                 globalAudio.load(); 
                 
                 globalAudio.play().catch(e => {
                     window.showToast("⚠️ 音響通道被阻擋，切換手機喇叭");
-                    window.fallbackToNativeSpeech(t, 'ja-JP', 0.7);
+                    window.fallbackToNativeSpeech(t, 'ja-JP', 0.6);
                 });
             } else {
-                window.fallbackToNativeSpeech(t, 'ja-JP', 0.7);
+                window.fallbackToNativeSpeech(t, 'ja-JP', 0.6);
             }
         };
 
