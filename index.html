@@ -346,9 +346,13 @@
         // 新增重播按鈕的觸發函式
         window.replayCurrentQuizAudio = (e) => {
             if (e) e.stopPropagation();
-            if (window.currentQuizWord && window.currentQuizWord.word) {
-                window.speakAction(window.currentQuizWord.word);
+            // 確保抓得到當前測驗的單字
+            const targetWord = window.currentQuizWord ? window.currentQuizWord.word : null;
+            if (targetWord) {
+                window.speakAction(targetWord);
                 window.showToast("🔊 重新播放發音");
+            } else {
+                window.showToast("⚠️ 目前沒有可播放的單字");
             }
         };
 
@@ -1549,15 +1553,15 @@
                 window.showToast("目前沒有單字可以閱讀");
                 return;
             }
-
+        
             window.readState = 'playing';
             const btn = document.getElementById('read-all-btn');
             btn.innerText = "⏸ 暫停";
             btn.classList.replace('bg-yellow-400', 'bg-rose-500');
             window.speechSynthesis.cancel();
-
+        
             try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
-
+        
             for (let i = 0; i < window.currentFilteredVocabs.length; i++) {
                 while (window.readState === 'paused') await window.delay(200);
                 if (window.readState === 'stopped') break; 
@@ -1571,20 +1575,24 @@
                     currentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 
-                await window.speakWithPromise(v.word, 'ja-JP', 0.7);
+                // 1. 唸日文單字（將語速從 0.7 調慢到 0.55，讓它更慢、更清晰）
+                await window.speakWithPromise(v.word, 'ja-JP', 0.55);
                 if (window.readState === 'stopped') break;
                 
-                await window.delay(500);
+                // 2. 嚴格確保唸完日文後停頓 1 秒 (1000ms)
+                await window.delay(1000);
                 while (window.readState === 'paused') await window.delay(200);
                 if (window.readState === 'stopped') break;
                 
+                // 3. 唸中文意思
                 await window.speakWithPromise(v.meaning, 'zh-TW', 0.85);
                 if (window.readState === 'stopped') break;
                 
+                // 4. 換下一個單字前的間隔
                 await window.delay(1000);
                 while (window.readState === 'paused') await window.delay(200);
             }
-
+        
             if (window.readState !== 'stopped') {
                 window.stopReading(); 
             }
