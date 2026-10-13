@@ -927,7 +927,10 @@
             const card = document.getElementById('quiz-card');
             const spellingInput = document.getElementById('spelling-input');
             
-            card.classList.remove('is-flipped');
+            // 🔑 關鍵 1：每次換題時，絕對強制把卡片翻回正面（移除 is-flipped）
+            if (card) {
+                card.classList.remove('is-flipped');
+            }
             
             if (spellingInput) {
                 spellingInput.value = '';
@@ -955,6 +958,7 @@
                 }
             }
         
+            // 取得下一題單字
             window.currentQuizWord = window.remainingPool.shift();
             window.choiceOptionsRevealed = false;
         
@@ -967,15 +971,14 @@
                 const isH = window.quizMode === 'hearing';
                 const isC = window.quizMode === 'choice';
                 
-                // 🔑 這裡就是關鍵：控制重播按鈕只在「聽力模式」時顯示
+                // 控制重播按鈕只在聽力模式顯示
                 const replayBtn = document.getElementById('replay-audio-btn');
                 if (replayBtn) {
                     replayBtn.classList.toggle('hidden', !isH);
                 }
                 
                 if (isH) { 
-                    document.getElementById('q-meaning-front').innerText = "";
-                    document.getElementById('quiz-card').classList.add('is-flipped');
+                    document.getElementById('q-meaning-front').innerText = ""; 
                 } else if (isC) { 
                     document.getElementById('q-meaning-front').innerText = (window.choiceSub === 'jp-ch') ? window.currentQuizWord.word : window.currentQuizWord.meaning; 
                 } else { 
@@ -983,10 +986,13 @@
                 }
                 
                 document.getElementById('hear-icon').classList.toggle('hidden', !isH);
+                
+                // 填入背面答案（但此時卡片是正面朝外，使用者看不到背面）
                 document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
                 document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
                 document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
         
+                // 如果是聽力模式，自動播放一次語音
                 if (isH) {
                     setTimeout(() => window.speakAction(window.currentQuizWord.word), 150);
                 }
