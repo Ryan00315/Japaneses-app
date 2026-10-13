@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jpnote-cache-v31'; 
+const CACHE_NAME = 'jpnote-cache-v32'; 
 
 // 📂 1. 只放本地絕對不會報錯的檔案，確保安裝 100% 成功！
 const coreUrls = [
