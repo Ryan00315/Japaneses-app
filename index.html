@@ -1436,46 +1436,56 @@
             }
         };
 
-        window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.7) => {
-    return new Promise((resolve) => {
-        if (window.readState === 'stopped') {
-            resolve();
-            return;
-        }
-
-        let isFinished = false;
-        const finish = () => {
-            if (isFinished) return;
-            isFinished = true;
-            globalAudio.onended = null;
-            globalAudio.onerror = null;
-            clearTimeout(safetyTimeout);
-            setTimeout(resolve, 300);
-        };
-
-        // 安全防護：避免音訊卡住超過 8 秒不結束
-        const safetyTimeout = setTimeout(() => {
-            finish();
-        }, 8000);
-
-        if (navigator.onLine) {
-            const gLang = lang.includes('ja') ? 'ja' : 'zh-TW';
-            globalAudio.src = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${gLang}&client=tw-ob&q=${encodeURIComponent(text)}`;
-            globalAudio.load();
-            
-            globalAudio.onended = finish;
-            globalAudio.onerror = () => {
-                window.fallbackToNativeSpeech(text, lang, rate, finish);
-            };
-            
-            globalAudio.play().catch(() => {
-                window.fallbackToNativeSpeech(text, lang, rate, finish);
+        // 宣告全域變數，防止 JavaScript 記憶體回收（GC）導致語音唸到一半被卡斷
+        window.currentUtterance = null;
+        
+        window.speakWithPromise = (text, lang = 'ja-JP', rate = 0.5) => {
+            return new Promise((resolve) => {
+                if (window.readState === 'stopped') {
+                    resolve();
+                    return;
+                }
+        
+                // 確保每次發音前先清除殘留的語音
+                window.speechSynthesis.cancel();
+        
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = lang;
+                u.rate = rate; // 預設 0.5 慢速
+                const bestVoice = window.getBestVoice(lang);
+                if (bestVoice) u.voice = bestVoice;
+        
+                let isResolved = false;
+                const done = () => {
+                    if (isResolved) return;
+                    isResolved = true;
+                    clearTimeout(safetyTimer);
+                    window.currentUtterance = null;
+                    // 唸完後額外給 300ms 的緩衝，確保字尾絕對不被吃掉
+                    setTimeout(resolve, 300);
+                };
+        
+                // 安全防護：依據文字長度動態計算等待時間，絕對不允許提早逾時
+                const dynamicTimeout = Math.max(4000, text.length * 1200 + 2000);
+                const safetyTimer = setTimeout(() => {
+                    window.speechSynthesis.cancel();
+                    done();
+                }, dynamicTimeout);
+        
+                u.onend = () => {
+                    done();
+                };
+        
+                u.onerror = (err) => {
+                    console.warn("語音播放發生錯誤：", err);
+                    done();
+                };
+        
+                // 🔑 關鍵：將物件指定給全域變數，防止記憶體回收機制在唸到一半時把它砍掉
+                window.currentUtterance = u;
+                window.speechSynthesis.speak(u);
             });
-        } else {
-            window.fallbackToNativeSpeech(text, lang, rate, finish);
-        }
-    });
-};
+        };
 
         window.isReading = false;
         window.readState = 'stopped'; 
