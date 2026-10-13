@@ -924,7 +924,6 @@
             const card = document.getElementById('quiz-card');
             const spellingInput = document.getElementById('spelling-input');
             
-            // 1. 先強制把卡片翻回正面
             card.classList.remove('is-flipped');
             
             if (spellingInput) {
@@ -953,11 +952,9 @@
                 }
             }
         
-            // 2. 取得下一題單字
             window.currentQuizWord = window.remainingPool.shift();
             window.choiceOptionsRevealed = false;
         
-            // 3. 🔑 關鍵：利用 setTimeout(..., 200) 等 3D 動畫跑了一半或快結束時，才安全地替換文字
             setTimeout(() => {
                 if (!window.currentQuizWord) return;
         
@@ -966,6 +963,12 @@
                 
                 const isH = window.quizMode === 'hearing';
                 const isC = window.quizMode === 'choice';
+                
+                // 🔑 這裡就是關鍵：控制重播按鈕只在「聽力模式」時顯示
+                const replayBtn = document.getElementById('replay-audio-btn');
+                if (replayBtn) {
+                    replayBtn.classList.toggle('hidden', !isH);
+                }
                 
                 if (isH) { 
                     document.getElementById('q-meaning-front').innerText = ""; 
@@ -1008,7 +1011,7 @@
                 if (document.getElementById('spelling-mode')?.checked) { 
                     setTimeout(() => spellingInput?.focus(), 200); 
                 }
-            }, 200); // 給 200ms 讓畫面乾淨地翻回正面再換字，徹底消滅殘影
+            }, 200);
         };
 
         window.submitChoice = (idx) => {
