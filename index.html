@@ -218,7 +218,7 @@
     
     <!-- 👇 新增重播按鈕 -->
     <button onclick="window.replayCurrentQuizAudio(event)" id="replay-audio-btn" class="hidden bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full text-xs font-bold items-center gap-1.5 transition-all shadow-inner active:scale-95">
-        <i class="fa-solid fa-volume-high"></i> 重播聲音
+    <i class="fa-solid fa-volume-high"></i> 重播聲音
     </button>
 </div>
                     <div class="card-back bg-white text-slate-900 rounded-[40px] p-6 overflow-hidden relative">
@@ -345,11 +345,13 @@
 
         // 新增重播按鈕的觸發函式
         window.replayCurrentQuizAudio = (e) => {
-            if (e) e.stopPropagation();
-            // 確保抓得到當前測驗的單字
-            const targetWord = window.currentQuizWord ? window.currentQuizWord.word : null;
-            if (targetWord) {
-                window.speakAction(targetWord);
+            if (e) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            if (window.currentQuizWord && window.currentQuizWord.word) {
+                // 使用瀏覽器內建語音或你的發音函式重播
+                window.speakWithPromise(window.currentQuizWord.word, 'ja-JP', 0.5);
                 window.showToast("🔊 重新播放發音");
             } else {
                 window.showToast("⚠️ 目前沒有可播放的單字");
@@ -918,75 +920,95 @@
 
         window.nextQuestion = () => {
             if (!window.remainingPool.length) return location.reload();
+            
             const card = document.getElementById('quiz-card');
-            card.classList.remove('is-flipped');
             const spellingInput = document.getElementById('spelling-input');
-            spellingInput.value = '';
-            spellingInput.onkeydown = (e) => {
-                if (e.key === 'Enter') {
-                    const ans = spellingInput.value.trim();
-                    const correctAns = window.currentQuizWord.word;
-                    if (ans === correctAns) { window.quizPass(); } else {
-                        document.getElementById('feedback-msg').innerText = "❌ 正確答案：" + correctAns;
-                        document.getElementById('quiz-card').classList.add('is-flipped');
-                        window.speakAction(window.currentQuizWord.word);
-                        setTimeout(() => { document.getElementById('feedback-msg').innerText = ''; window.quizFail(); }, 2500);
+            
+            // 1. 先強制把卡片翻回正面
+            card.classList.remove('is-flipped');
+            
+            if (spellingInput) {
+                spellingInput.value = '';
+                spellingInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        const ans = spellingInput.value.trim();
+                        const correctAns = window.currentQuizWord.word;
+                        if (ans === correctAns) { 
+                            window.quizPass(); 
+                        } else {
+                            document.getElementById('feedback-msg').innerText = "❌ 正確答案：" + correctAns;
+                            document.getElementById('quiz-card').classList.add('is-flipped');
+                            window.speakAction(window.currentQuizWord.word);
+                            setTimeout(() => { document.getElementById('feedback-msg').innerText = ''; window.quizFail(); }, 2500);
+                        }
                     }
-                }
-            };
-            for(let i=0; i<3; i++) {
-                const btn = document.getElementById("opt-" + i);
-                btn.className = "option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg";
-                btn.disabled = false;
+                };
             }
+        
+            for(let i = 0; i < 3; i++) {
+                const btn = document.getElementById("opt-" + i);
+                if (btn) {
+                    btn.className = "option-btn bg-white/10 py-5 rounded-3xl font-bold text-lg";
+                    btn.disabled = false;
+                }
+            }
+        
+            // 2. 取得下一題單字
             window.currentQuizWord = window.remainingPool.shift();
             window.choiceOptionsRevealed = false;
-            document.getElementById('tap-to-reveal')?.classList.toggle('hidden', window.quizMode !== 'choice');
-            document.getElementById('quiz-progress-display').innerText = "剩：" + window.remainingPool.length + " 題";
-            // 在 nextQuestion() 裡面找到這段或加上這行
-            const isH = window.quizMode === 'hearing';
-            const isC = window.quizMode === 'choice';
-            
-            // 控制重播按鈕只在聽力模式（或你想開放的其他模式）顯示
-            const replayBtn = document.getElementById('replay-audio-btn');
-            if (replayBtn) {
-                replayBtn.classList.toggle('hidden', !isH);
-            }
-            if (isH) { document.getElementById('q-meaning-front').innerText = ""; } else if (isC) {
-                document.getElementById('q-meaning-front').innerText = (window.choiceSub === 'jp-ch') ? window.currentQuizWord.word : window.currentQuizWord.meaning;
-            } else { document.getElementById('q-meaning-front').innerText = window.currentQuizWord.meaning; }
-            document.getElementById('hear-icon').classList.toggle('hidden', !isH);
-            document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
-            document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
-            document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
-            
-            if (isH) {
-                setTimeout(() => window.speakAction(window.currentQuizWord.word), 200);
-            }
-
-            if (isC || isH) {
-                document.getElementById('choice-area').classList.toggle('hidden', isC); 
-                document.getElementById('standard-actions').classList.add('hidden');
-                document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
+        
+            // 3. 🔑 關鍵：利用 setTimeout(..., 200) 等 3D 動畫跑了一半或快結束時，才安全地替換文字
+            setTimeout(() => {
+                if (!window.currentQuizWord) return;
+        
+                document.getElementById('tap-to-reveal')?.classList.toggle('hidden', window.quizMode !== 'choice');
+                document.getElementById('quiz-progress-display').innerText = "剩：" + window.remainingPool.length + " 題";
                 
-                const others = window.vocabs.filter(v => v.id !== window.currentQuizWord.id);
-                const shuffled = others.sort(() => Math.random() - 0.5);
-                window.currentChoices = [window.currentQuizWord, shuffled[0], shuffled[1]].sort(() => Math.random() - 0.5);
+                const isH = window.quizMode === 'hearing';
+                const isC = window.quizMode === 'choice';
                 
-                window.currentChoices.forEach((choice, idx) => {
-                    const btn = document.getElementById("opt-" + idx);
-                    if (isH) {
-                        btn.innerText = choice.meaning; 
-                    } else {
-                        btn.innerText = (window.choiceSub === 'jp-ch') ? choice.meaning : choice.word;
-                    }
-                });
-            } else {
-                document.getElementById('choice-area').classList.add('hidden');
-                document.getElementById('standard-actions').classList.remove('hidden');
-                document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
-            }
-            if(document.getElementById('spelling-mode').checked) { setTimeout(() => spellingInput.focus(), 400); }
+                if (isH) { 
+                    document.getElementById('q-meaning-front').innerText = ""; 
+                } else if (isC) { 
+                    document.getElementById('q-meaning-front').innerText = (window.choiceSub === 'jp-ch') ? window.currentQuizWord.word : window.currentQuizWord.meaning; 
+                } else { 
+                    document.getElementById('q-meaning-front').innerText = window.currentQuizWord.meaning; 
+                }
+                
+                document.getElementById('hear-icon').classList.toggle('hidden', !isH);
+                document.getElementById('q-word-answer').innerText = window.currentQuizWord.word;
+                document.getElementById('q-reading-back').innerText = window.currentQuizWord.reading || '';
+                document.getElementById('q-meaning-back').innerText = window.currentQuizWord.meaning;
+        
+                if (isH) {
+                    setTimeout(() => window.speakAction(window.currentQuizWord.word), 150);
+                }
+        
+                if (isC || isH) {
+                    document.getElementById('choice-area').classList.toggle('hidden', isC); 
+                    document.getElementById('standard-actions').classList.add('hidden');
+                    document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
+                    
+                    const others = window.vocabs.filter(v => v.id !== window.currentQuizWord.id);
+                    const shuffled = others.sort(() => Math.random() - 0.5);
+                    window.currentChoices = [window.currentQuizWord, shuffled[0], shuffled[1]].sort(() => Math.random() - 0.5);
+                    
+                    window.currentChoices.forEach((choice, idx) => {
+                        const optBtn = document.getElementById("opt-" + idx);
+                        if (optBtn) {
+                            optBtn.innerText = isH ? choice.meaning : ((window.choiceSub === 'jp-ch') ? choice.meaning : choice.word);
+                        }
+                    });
+                } else {
+                    document.getElementById('choice-area').classList.add('hidden');
+                    document.getElementById('standard-actions').classList.remove('hidden');
+                    document.getElementById('quiz-card-container').classList.remove('pointer-events-none');
+                }
+        
+                if (document.getElementById('spelling-mode')?.checked) { 
+                    setTimeout(() => spellingInput?.focus(), 200); 
+                }
+            }, 200); // 給 200ms 讓畫面乾淨地翻回正面再換字，徹底消滅殘影
         };
 
         window.submitChoice = (idx) => {
