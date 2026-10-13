@@ -85,6 +85,21 @@
             box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4);
             z-index: 10;
         }
+        /* 老花眼大字版模式：當 body 加上 .large-text-mode 時觸發 */
+        body.large-text-mode h1 { font-size: 1.5rem !important; }
+        body.large-text-mode button { font-size: 15px !important; padding-top: 10px !important; padding-bottom: 10px !important; }
+        body.large-text-mode .sticky-header button, 
+        body.large-text-mode .sticky-header h1 { 
+            /* 頂部導覽列字體放大 */
+        }
+        body.large-text-mode #vocab-list li .text-xl { font-size: 1.6rem !important; } /* 日文單字變大 */
+        body.large-text-mode #vocab-list li .text-base { font-size: 1.2rem !important; } /* 中文意思與漢字變大 */
+        body.large-text-mode .ls-btn-style { font-size: 14px !important; padding: 8px 14px !important; } /* 篩選按鈕變大 */
+        
+        /* 測試卡片內的文字也同步放大 */
+        body.large-text-mode #q-word-answer { font-size: 4rem !important; }
+        body.large-text-mode #q-meaning-front, 
+        body.large-text-mode #q-meaning-back { font-size: 2rem !important; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
@@ -113,6 +128,10 @@
             <div class="flex items-center justify-between gap-1">
                 <h1 class="text-lg font-black text-indigo-600 tracking-tighter shrink-0">Kingtex JPNote</h1>
                 <div class="flex items-center gap-1">
+                    <!-- 👇 新增老花放大切換按鈕 -->
+                    <button onclick="window.toggleLargeTextMode()" id="large-text-btn" class="text-[10px] bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-2 rounded-full font-black">
+                        🔍 大字版
+                    </button>
                     <button id="export-btn" onclick="window.exportWords()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold hidden">匯出</button>
                     <button id="bulk-example-btn" onclick="window.bulkFillExamples()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold hidden">補例句</button>
                     <button onclick="window.showStatsModal()" class="text-[9px] bg-slate-100 px-2 py-2 rounded-full font-bold">進度</button>
@@ -1655,6 +1674,38 @@
                 window.stopReading(); 
             }
         };
+
+        // 切換老花大字版
+        window.toggleLargeTextMode = () => {
+            const isLarge = document.body.classList.toggle('large-text-mode');
+            localStorage.setItem('jp_large_text', isLarge ? 'true' : 'false');
+            
+            const btn = document.getElementById('large-text-btn');
+            if (btn) {
+                if (isLarge) {
+                    btn.className = "text-[10px] bg-indigo-600 text-white px-2.5 py-2 rounded-full font-black shadow-md";
+                    btn.innerText = "🔍 標準版";
+                    window.showToast("🔍 已切換為老花大字版");
+                } else {
+                    btn.className = "text-[10px] bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-2 rounded-full font-black";
+                    btn.innerText = "🔍 大字版";
+                    window.showToast("✨ 已切換為標準版");
+                }
+            }
+        };
+        
+        // 網頁載入時自動套用之前的設定
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedLarge = localStorage.getItem('jp_large_text') === 'true';
+            if (savedLarge) {
+                document.body.classList.add('large-text-mode');
+                const btn = document.getElementById('large-text-btn');
+                if (btn) {
+                    btn.className = "text-[10px] bg-indigo-600 text-white px-2.5 py-2 rounded-full font-black shadow-md";
+                    btn.innerText = "🔍 標準版";
+                }
+            }
+        });
 
         window.delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
