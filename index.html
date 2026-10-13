@@ -1575,20 +1575,25 @@
                     currentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 
-                // 1. 唸日文單字（將語速從 0.7 調慢到 0.55，讓它更慢、更清晰）
-                await window.speakWithPromise(v.word, 'ja-JP', 0.55);
+                // 1. 唸日文單字（將語速降到 0.45，確保非常慢且清晰）
+                await window.speakWithPromise(v.word, 'ja-JP', 0.45);
                 if (window.readState === 'stopped') break;
                 
-                // 2. 嚴格確保唸完日文後停頓 1 秒 (1000ms)
+                // 🛡️ 額外保障：日文唸完後強制多停頓 500ms，確保字尾不會被吃掉
+                await window.delay(500);
+                while (window.readState === 'paused') await window.delay(200);
+                if (window.readState === 'stopped') break;
+                
+                // 2. 嚴格要求的 1 秒 (1000ms) 靜默停頓，再念中文
                 await window.delay(1000);
                 while (window.readState === 'paused') await window.delay(200);
                 if (window.readState === 'stopped') break;
                 
-                // 3. 唸中文意思
-                await window.speakWithPromise(v.meaning, 'zh-TW', 0.85);
+                // 3. 唸中文意思（語速 0.8）
+                await window.speakWithPromise(v.meaning, 'zh-TW', 0.8);
                 if (window.readState === 'stopped') break;
                 
-                // 4. 換下一個單字前的間隔
+                // 4. 進入下一個單字前的緩衝間隔 (1秒)
                 await window.delay(1000);
                 while (window.readState === 'paused') await window.delay(200);
             }
