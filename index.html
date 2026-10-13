@@ -85,21 +85,38 @@
             box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4);
             z-index: 10;
         }
-        /* 老花眼大字版模式：當 body 加上 .large-text-mode 時觸發 */
+        /* 放大版模式：當 body 加上 .large-text-mode 時觸發 */
         body.large-text-mode h1 { font-size: 1.5rem !important; }
-        body.large-text-mode button { font-size: 15px !important; padding-top: 10px !important; padding-bottom: 10px !important; }
-        body.large-text-mode .sticky-header button, 
-        body.large-text-mode .sticky-header h1 { 
-            /* 頂部導覽列字體放大 */
-        }
-        body.large-text-mode #vocab-list li .text-xl { font-size: 1.6rem !important; } /* 日文單字變大 */
-        body.large-text-mode #vocab-list li .text-base { font-size: 1.2rem !important; } /* 中文意思與漢字變大 */
-        body.large-text-mode .ls-btn-style { font-size: 14px !important; padding: 8px 14px !important; } /* 篩選按鈕變大 */
+        body.large-text-mode button { font-size: 14px !important; }
         
-        /* 測試卡片內的文字也同步放大 */
-        body.large-text-mode #q-word-answer { font-size: 4rem !important; }
-        body.large-text-mode #q-meaning-front, 
-        body.large-text-mode #q-meaning-back { font-size: 2rem !important; }
+        /* 1. 主清單的單字與字體放大 */
+        body.large-text-mode #vocab-list li .text-xl { font-size: 1.8rem !important; } 
+        body.large-text-mode #vocab-list li .text-base { font-size: 1.3rem !important; } 
+        body.large-text-mode .ls-btn-style { font-size: 14px !important; padding: 8px 14px !important; } 
+    
+        /* 2. 隨機測試 / 聽力模式 / 選擇題的字體與按鈕全面放大 */
+        body.large-text-mode #quiz-content #q-word-answer { font-size: 3.5rem !important; } /* 測驗背面答案 */
+        body.large-text-mode #quiz-content #q-meaning-front { font-size: 2.2rem !important; } /* 測驗正面題目 */
+        body.large-text-mode #quiz-content #q-meaning-back { font-size: 1.5rem !important; } /* 測驗背面中文意思 */
+        body.large-text-mode #quiz-content #q-reading-back { font-size: 1.2rem !important; } /* 測驗背面漢字 */
+        
+        /* 選擇題選項按鈕放大 */
+        body.large-text-mode #choice-area button { 
+            font-size: 1.5rem !important; 
+            padding-top: 1.5rem !important; 
+            padding-bottom: 1.5rem !important; 
+        }
+        /* 測驗下方的「加強」與「下一個」按鈕放大 */
+        body.large-text-mode #standard-actions button { 
+            font-size: 1.4rem !important; 
+            padding-top: 1.5rem !important; 
+            padding-bottom: 1.5rem !important; 
+        }
+        /* 聽力模式重播按鈕放大 */
+        body.large-text-mode #replay-audio-btn { 
+            font-size: 1rem !important; 
+            padding: 10px 20px !important; 
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900" onclick="window.initAudioOnFirstClick()">
